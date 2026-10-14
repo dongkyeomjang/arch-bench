@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import java.util.concurrent.atomic.AtomicLong
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
@@ -56,5 +57,24 @@ subprojects {
         // 테스트가 발견되지 않아 실행되지 않으면 이전 측정값이 남지 않도록 먼저 지운다.
         val archOutput = layout.buildDirectory.dir("arch")
         doFirst { delete(archOutput) }
+
+        // 가드: 태그 필터·엔진 설정 오류로 arch 테스트가 0개 실행되면 "통과"가 아니라 실패로 처리한다.
+        val executedTests = AtomicLong()
+        addTestListener(object : TestListener {
+            override fun beforeSuite(suite: TestDescriptor) {}
+            override fun beforeTest(testDescriptor: TestDescriptor) {}
+            override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {}
+            override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+                if (suite.parent == null) {
+                    executedTests.set(result.testCount - result.skippedTestCount)
+                }
+            }
+        })
+        doLast {
+            if (executedTests.get() == 0L) {
+                throw GradleException("$path executed 0 @Tag(\"arch\") tests — check @ArchTag/@Tag and the test engine")
+            }
+            logger.lifecycle("$path executed ${executedTests.get()} arch tests")
+        }
     }
 }

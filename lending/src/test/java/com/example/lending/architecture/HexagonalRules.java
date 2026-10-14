@@ -1,5 +1,7 @@
 package com.example.lending.architecture;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaParameter;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -10,6 +12,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import java.util.List;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.codeUnits;
@@ -19,7 +22,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
- * 헥사고날 아키텍처 규칙 R1~R6. 양성(lending)·음성(violation-fixtures) 검증이 같은 규칙 객체를 쓰도록
+ * 헥사고날 아키텍처 규칙 R1~R7. 양성(lending)·음성(violation-fixtures) 검증이 같은 규칙 객체를 쓰도록
  * 기준 패키지를 인자로 받는다. 번호(id)는 실험 결과 JSON의 키다.
  *
  * <p>모든 규칙은 allowEmptyShould(true): 축소 픽스처처럼 특정 레이어가 없는 저장소에서
@@ -34,6 +37,7 @@ public final class HexagonalRules {
     private static final String COMPONENT = "org.springframework.stereotype.Component";
     private static final String SERVICE = "org.springframework.stereotype.Service";
     private static final String JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty";
+    private static final String SPRING_BOOT_APPLICATION = "org.springframework.boot.autoconfigure.SpringBootApplication";
 
     private HexagonalRules() {
     }
@@ -47,10 +51,13 @@ public final class HexagonalRules {
         String port = basePackage + ".application.port..";
         String portOut = basePackage + ".application.port.out..";
 
-        String r1Reason = "domain은 ..application.., ..adapter.., org.springframework.., jakarta.persistence..을 의존하지 않는다";
+        // jakarta.validation.., com.fasterxml.jackson..: 2차 변경에서 추가 (실험 설계자 결정 — 도메인에 validation/Jackson 금지)
+        String r1Reason = "domain은 ..application.., ..adapter.., org.springframework.., jakarta.persistence.., "
+                + "jakarta.validation.., com.fasterxml.jackson..을 의존하지 않는다";
         ArchRule r1 = noClasses().that().resideInAPackage(domain)
                 .should().dependOnClassesThat().resideInAnyPackage(
-                        application, adapter, "org.springframework..", "jakarta.persistence..")
+                        application, adapter, "org.springframework..", "jakarta.persistence..",
+                        "jakarta.validation..", "com.fasterxml.jackson..")
                 .because(r1Reason)
                 .allowEmptyShould(true);
 
@@ -115,13 +122,25 @@ public final class HexagonalRules {
                         .because(r6Reason)
                         .allowEmptyShould(true));
 
+        // base 직속 클래스 중 @SpringBootApplication 메인 클래스만 예외 (메타 어노테이션 아님, 하위 패키지 아님)
+        DescribedPredicate<JavaClass> springBootMainClass = DescribedPredicate.describe(
+                "@SpringBootApplication class directly in " + basePackage,
+                javaClass -> javaClass.getPackageName().equals(basePackage)
+                        && javaClass.isAnnotatedWith(SPRING_BOOT_APPLICATION));
+        ArchRule r7 = classes().that().resideInAPackage(basePackage + "..")
+                .and(not(springBootMainClass))
+                .should().resideInAnyPackage(domain, application, adapter)
+                .because("base 바로 아래의 최상위 패키지는 domain, application, adapter 셋뿐이어야 한다")
+                .allowEmptyShould(true);
+
         return List.of(
                 new NamedRule("R1", "domain-no-outward-deps", r1),
                 new NamedRule("R2", "application-no-adapter-deps", r2),
                 new NamedRule("R3", "adapters-independent", r3),
                 new NamedRule("R4", "no-layer-cycles", r4),
                 new NamedRule("R5", "domain-no-framework-annotations", r5),
-                new NamedRule("R6", "ports-are-interfaces-implemented-in-adapters", r6));
+                new NamedRule("R6", "ports-are-interfaces-implemented-in-adapters", r6),
+                new NamedRule("R7", "only-three-top-level-packages", r7));
     }
 
     private static ArchCondition<JavaCodeUnit> notHaveParametersAnnotatedWith(String annotationName) {

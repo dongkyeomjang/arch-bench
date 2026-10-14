@@ -1,7 +1,10 @@
 # arch-bench REPORT — 헥사고날 ArchUnit 규칙 R1~R6 구현 및 양방향 검증
 
 - 환경: Java 21 (Temurin 21.0.8), Gradle 8.14.3 (wrapper), Spring Boot 3.5.3, ArchUnit 1.3.2, JUnit 5.12, H2
-- 최종 상태: `./gradlew clean build archTest` → **BUILD SUCCESSFUL**
+> **2차 변경(R7 추가, R1 확장, JSON 스키마 변경, 0개 가드, git) 이후의 현재 상태는 맨 아래 "7. 2차 변경" 절을 보라.**
+> 1~6절은 1차 작업 당시의 기록이며, 2차에서 바뀐 사항은 7절에 적었다(1차 서술은 지우지 않음).
+
+- 최종 상태(1차): `./gradlew clean build archTest` → **BUILD SUCCESSFUL**
   - `lending/build/arch/lending.json` = `{"R1": 0, "R2": 0, "R3": 0, "R4": 0, "R5": 0, "R6": 0}`
   - `ViolationDetectionTest` 6/6 통과 (6개 픽스처 모두 기대 집합 및 기대 건수와 일치)
   - `LendingIntegrationTest` 1/1 통과 (책 등록 → 대출 201 → 재대출 409)
@@ -335,3 +338,184 @@ ArchitectureTest > hexagonal_rules_hold PASSED
 | `violation-fixtures` | `spring-boot-starter-web`, `spring-boot-starter-data-jpa` (main) | 픽스처가 Spring/JPA/Jackson 어노테이션과 타입을 실제로 써야 컴파일된다(지시 사항) |
 | `violation-fixtures`(test) | `project(":lending", configuration = "archRules")` | 양성·음성 테스트가 **같은 규칙 객체**를 쓰도록 한다. `lending`의 test 출력 중 `HexagonalRules*` 클래스만 담은 jar를 노출한다 |
 | `violation-fixtures`(test) | `project(":lending")` | R4 패턴 조사 테스트가 `lending` 클래스를 import하기 위함. 측정(`archTest`)에는 쓰이지 않는다 |
+
+---
+
+## 7. 2차 변경 (2026-10-14)
+
+현재 상태: `./gradlew clean build archTest` → **BUILD SUCCESSFUL**
+- `:lending:archTest executed 7 arch tests`, `lending.json`: `tests_executed` = 7, `violating_classes` = 0
+- `:violation-fixtures:archTest executed 8 arch tests`: 7규칙 × 8픽스처의 걸림 여부, 건수, 원인 클래스가 모두 기대와 일치
+- `LendingIntegrationTest` 통과
+- git: 기준 커밋(1차 상태) + 2차 변경 커밋
+
+### 7.1 변경 요약과 근거
+
+**변경 1 — R1 블랙리스트 확장.** `jakarta.validation..`과 `com.fasterxml.jackson..`을 추가했다. 최종 목록은 `base.application..`, `base.adapter..`, `org.springframework..`, `jakarta.persistence..`, `jakarta.validation..`, `com.fasterxml.jackson..`이다.
+- **"도메인에 validation/Jackson 어노테이션 금지"는 실험 설계자의 결정이다.** 5절 8번 항목(도메인의 `@NotNull`을 어느 규칙도 잡지 못함)에 대한 대응이다. 코드에서 토글할 수 없게 고정했다.
+- `lending` 도메인에는 validation 어노테이션이 없음을 확인했다(`grep jakarta.validation|NotNull|NotBlank` 결과 0건). `lending`에는 validation 의존성 자체가 없다. 값 검증은 원래 생성자에서 한다.
+- 새 픽스처 **v8**: `domain.Member` 필드에 `@NotNull`이 있다. R1에만 1건 걸린다. R5는 validation을 검사하지 않으므로 통과한다.
+- **이 변경으로 기존 테스트가 깨진 지점**: v5의 R1 기대 건수가 3에서 9로 바뀌었다. 이유는 v5의 `@JsonProperty` 2곳(필드, 생성자 파라미터)이 이제 R1의 금지 대상이 되었고, ArchUnit이 어노테이션 하나를 **3개의 의존**으로 세기 때문이다. 어노테이션 자체 1건에, 멤버 기본값의 타입인 `JsonProperty$Access`와 `OptBoolean`이 1건씩 더해진다. 9건을 모두 상세로 확인했으며, 전부 실제 Jackson 의존이다. 기대값을 9로 고쳤다. 원인 클래스(`Book`, `Loan`, `Member`)는 그대로다.
+
+**변경 2 — R7 `only-three-top-level-packages` 신설.**
+
+```java
+DescribedPredicate<JavaClass> springBootMainClass = DescribedPredicate.describe(
+        "@SpringBootApplication class directly in " + basePackage,
+        javaClass -> javaClass.getPackageName().equals(basePackage)
+                && javaClass.isAnnotatedWith(SPRING_BOOT_APPLICATION));
+ArchRule r7 = classes().that().resideInAPackage(basePackage + "..")
+        .and(not(springBootMainClass))
+        .should().resideInAnyPackage(domain, application, adapter)
+        .because("base 바로 아래의 최상위 패키지는 domain, application, adapter 셋뿐이어야 한다")
+        .allowEmptyShould(true);
+```
+
+- 단위: 위반 클래스 1개당 1건(`JavaClass` 위반 객체).
+- 예외 범위: base 패키지에 **직접** 있고, `@SpringBootApplication`이 **직접** 붙은 클래스만이다. 메타 어노테이션과 하위 패키지는 예외가 아니다. 그 밖의 base 직속 클래스는 위반이다.
+- 새 픽스처 **v7**:
+
+  | 클래스 | 위치 | R7 |
+  | --- | --- | --- |
+  | `V7Application` (`@SpringBootApplication`) | base 직속 | 허용 (예외 경로 검증) |
+  | `AppConstants` | base 직속 | **위반** |
+  | `common.DateUtils` | 비허용 최상위 패키지 | **위반** |
+  | `adapter.common.Mapper` | `adapter..` 하위 | 허용 (의도된 범위) |
+  | `domain.Book` → `common.DateUtils` 사용 | domain | 허용 |
+
+  - `domain → base.common` 의존은 **R1에 걸리지 않는다.** R1 블랙리스트에 `base.common`이 없기 때문이다. 이 결함은 `DateUtils`가 놓인 위치를 통해 R7로만 잡힌다. `adapter.common`은 `adapter..` 아래라서 R7 범위 밖이며, 이것이 의도된 범위다.
+  - 지시와 다른 점(판단 사항 J19): 지시에 적힌 클래스(`common.DateUtils`, `adapter.common.Mapper`, `domain.Book`)만으로는 R7이 **1건**(`DateUtils`)만 나온다. 기대값 "R7 2건"과 맞지 않는다. 기대값을 1로 낮추는 대신, 지시의 R7 문장에 있는 "그 외 base 직속 클래스도 위반" 경로를 덮는 `AppConstants`를 추가해 2건으로 맞췄다. 예외 경로를 음성 쪽에서도 검증하려고 `V7Application`도 함께 넣었다.
+- 기존 픽스처 v1~v6은 R7에 걸리지 않음을 **실측으로 확인**했다(7.2 표의 R7 열이 모두 pass). 각 픽스처의 base가 `com.example.fixtures.vN`이고, 그 아래에는 domain/application/adapter만 있기 때문이다.
+- `lending`에서도 통과한다. `LendingApplication`은 예외로 허용된다. `LendingIntegrationTest`(base 직속)와 `architecture.*`(비허용 최상위)는 테스트 코드라서 `DoNotIncludeTests`로 제외된다. **R7은 테스트 코드 제외를 전제로 한다**(7.5의 N4).
+
+**변경 3 — 측정 JSON 스키마.** 주 지표를 "위반이 하나라도 있는 고유 클래스 수"(`violating_classes`)로 바꿨다. 규칙별 `count`는 1차와 같은 단위로 유지한다.
+- 추출기 `ViolationExtractor`(`HexagonalRules` 옆, 같은 test 패키지)를 두었다. `EvaluationResult.handleViolations`로 받은 **위반 객체의 타입**으로 원인 클래스를 정한다. 실패 리포트 문자열은 파싱하지 않는다.
+
+  | 위반 객체 타입 | 해당 규칙 | 원인 클래스 |
+  | --- | --- | --- |
+  | `Dependency` | R1~R3 | `getOriginClass()` |
+  | `JavaAccess` | (방어용) | `getOriginOwner()` |
+  | `Cycle` | R4 | `cycle.convertTo(Dependency.class)`의 출발 클래스와 도착 클래스 **전부** |
+  | `JavaMember` | R5의 필드, 메서드, 생성자, 파라미터 조건 | `getOwner()` |
+  | `JavaClass` | R5 클래스, R6, R7 | 그 클래스 |
+
+  - 지시는 "타입별 핸들러 등록"이었다. 하지만 `handleViolations`를 타입별로 여러 번 등록하면 **어느 핸들러에도 맞지 않는 타입의 위반이 조용히 버려진다.** 그래서 `T=Object` 핸들러 하나에서 `instanceof`로 타입별 분기하고, 모르는 타입이 오면 `IllegalStateException`을 던진다. 위반이 있는데 원인 클래스가 0개인 경우에도 예외를 던진다. 타입별로 처리한다는 점은 같고, 누락을 감지할 수 있다는 점이 다르다.
+  - R4: 지시가 우려한 `Slice` 단위 근사(순환에 포함된 슬라이스의 클래스 전부)를 쓰지 않았다. ArchUnit 1.3.2의 순환 위반 객체는 `Cycle`이며 `Convertible`이다. `convertTo(Dependency.class)`가 순환을 이루는 실제 클래스 간 의존을 돌려주므로, **순환에 실제로 참여한 클래스만** 집계한다. 민감도 M3(`Cycle` 분기를 지우면 "unhandled violation object types" 예외 발생)로 R4 위반이 실제로 `Cycle` 객체로 들어옴을 확인했다.
+- `ArchitectureTest`의 구조를 바꿨다. **기존 테스트 1개를 규칙당 1개, 총 7개로 나눴다**(`r1_domain_no_outward_deps` … `r7_only_three_top_level_packages`). 각 테스트는 실행될 때마다, 지금까지 실행된 규칙 결과로 `lending.json`을 다시 쓴 뒤 assert한다.
+  - 이유: 완료 기준 "`tests_executed` 7 이상"과 맞추고, 규칙별 성공/실패를 Gradle 결과에서 따로 볼 수 있게 하기 위함이다.
+  - `by_rule`에는 **실행된 규칙만** 들어간다. 실행되지 않은 규칙을 0으로 적으면 "위반 없음"과 구분할 수 없기 때문이다. `tests_executed`는 실행된 규칙 테스트 수와 같다.
+  - `HexagonalRules`에 규칙이 추가되었는데 테스트 메서드를 빠뜨리면, 모든 테스트가 실패하도록 ID 집합을 대조한다.
+- 음성 검증은 같은 추출기로 **기대 원인 클래스 집합**까지 고정한다(7.2).
+
+**변경 4 — archTest 가드.** 루트 `build.gradle.kts`의 `archTest`에 `TestListener`를 달아 루트 suite의 `testCount - skippedTestCount`를 센다. 0이면 `doLast`에서 `GradleException`을 던진다. 민감도 M4에서, `@ArchTag`를 지우자 `:lending:archTest executed 0 @Tag("arch") tests`로 빌드가 실패하고 `lending.json`이 생성되지 않음을 확인했다. 시작 시 `build/arch`를 비우는 동작은 유지했다.
+- **파이프라인 판정 규칙(권고)**: 아래 셋을 모두 만족할 때만 측정 성공으로 본다. `tests_executed == 7`(0보다 큰 것만으로는 부족하다. 테스트 하나가 예외로 중단되면 일부 규칙만 기록될 수 있다), `by_rule`에 R1~R7 키가 모두 있음, 파일이 존재함.
+
+**변경 5 — git.**
+- 순서: `git init` → `.gitignore`(Gradle, IDE, `build/`, `.DS_Store`)와 `.gitattributes`(`gradlew` LF, `*.bat` CRLF, `*.jar` binary) 추가 → 1차 완료 상태를 첫 커밋으로 → 이번 변경을 두 번째 커밋으로.
+- 1차 상태는 2차 작업을 시작하기 전에 커밋했으므로 재구성할 필요가 없었다. 커밋 전에 `clean build archTest` 통과를 다시 확인했다.
+- **커밋 직전에 발견한 문제**: IDE 출력 폴더용으로 넣은 `out/` 패턴이 `adapter/out/`와 `application/port/out/`까지 무시해서, **포트와 영속성 어댑터, 픽스처 일부(java 20개)가 커밋에서 빠질 뻔했다.** `/out/`, `/*/out/`로 루트 기준 매칭만 하게 고쳤다. 추적된 java 파일 수와 디스크의 java 파일 수가 같은지(55 = 55) 확인한 뒤 커밋했다. Test_tamper 검출의 기준 커밋에 소스가 빠지면 변조를 판정할 수 없으므로 치명적인 문제였다.
+- 커밋 메시지: 지시는 "영어 한 줄 + 본문"이고, `CLAUDE.md`의 규칙은 `<emoji> <Type>: <설명(한국어)>`다. 둘을 함께 만족하도록 **`<emoji> <Type>:` 형식에 영어 설명**을 썼다(판단 사항 J20).
+
+### 7.2 음성 검증 7×8 (걸림 여부, 건수, 원인 클래스)
+
+원인 클래스는 픽스처 base(`com.example.fixtures.vN`) 기준의 상대 이름이다. `FAIL(n)[…]` = 규칙이 AssertionError를 던짐, n = 건수, […] = 추출된 원인 클래스. 모든 칸이 `ViolationDetectionTest.fixtures()`의 기대값과 일치한다.
+
+| 픽스처 | R1 | R2 | R3 | R4 | R5 | R6 | R7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| v1 | **FAIL(3)** [domain.Book] | pass | pass | pass | pass | pass | pass |
+| v2 | pass | **FAIL(5)** [application.service.LoanBookService] | pass | pass | pass | pass | pass |
+| v3 | pass | pass | **FAIL(7)** [adapter.in.web.LoanController, adapter.out.persistence.BookJpaEntity] | pass | pass | pass | pass |
+| v4 | **FAIL(2)** [domain.Book] | pass | pass | **FAIL(1)** [application.service.LoanPolicy, domain.Book] | pass | pass | pass |
+| v5 | **FAIL(9)** [domain.Book, domain.Loan, domain.Member] | pass | pass | pass | **FAIL(5)** [domain.Book, domain.Loan, domain.Member] | pass | pass |
+| v6 | pass | pass | pass | pass | pass | **FAIL(2)** [application.port.out.LoadBookPort, application.service.InMemoryBookStore] | pass |
+| v7 | pass | pass | pass | pass | pass | pass | **FAIL(2)** [AppConstants, common.DateUtils] |
+| v8 | **FAIL(1)** [domain.Member] | pass | pass | pass | pass | pass | pass |
+
+픽스처별 `violating_classes`: v1=1, v2=1, v3=2, v4=2, v5=3, v6=2, v7=2, v8=1.
+1차 대비 바뀐 칸은 v5의 R1(3 → 9, 7.1 변경 1)과 새 열 R7, 새 행 v7·v8뿐이다.
+
+### 7.3 새 JSON 예시
+
+`lending` (`lending/build/arch/lending.json`, 실제 출력):
+
+```json
+{
+  "tests_executed" : 7,
+  "violating_classes" : 0,
+  "violating_classes_list" : [ ],
+  "by_rule" : {
+    "R1" : { "count" : 0, "classes" : [ ] },
+    "R2" : { "count" : 0, "classes" : [ ] },
+    "R3" : { "count" : 0, "classes" : [ ] },
+    "R4" : { "count" : 0, "classes" : [ ] },
+    "R5" : { "count" : 0, "classes" : [ ] },
+    "R6" : { "count" : 0, "classes" : [ ] },
+    "R7" : { "count" : 0, "classes" : [ ] }
+  }
+}
+```
+
+v7 (`ViolationDetectionTest`가 출력하는 `[json] v7` 행을 정렬한 것):
+
+```json
+{
+  "tests_executed": 7,
+  "violating_classes": 2,
+  "violating_classes_list": [
+    "com.example.fixtures.v7.AppConstants",
+    "com.example.fixtures.v7.common.DateUtils"
+  ],
+  "by_rule": {
+    "R1": {"count": 0, "classes": []},
+    "R2": {"count": 0, "classes": []},
+    "R3": {"count": 0, "classes": []},
+    "R4": {"count": 0, "classes": []},
+    "R5": {"count": 0, "classes": []},
+    "R6": {"count": 0, "classes": []},
+    "R7": {"count": 2, "classes": ["com.example.fixtures.v7.AppConstants", "com.example.fixtures.v7.common.DateUtils"]}
+  }
+}
+```
+
+### 7.4 민감도 확인
+
+각 변형은 원본을 수정해 `./gradlew archTest --continue`로 실행한 뒤 원복했다(원복 후 `cmp`로 동일함 확인).
+
+| # | 변형 | 결과 | 판정 |
+| --- | --- | --- | --- |
+| M1 | R7에서 `@SpringBootApplication` 예외 제거 | `lending` R7 **FAIL(1) [com.example.lending.LendingApplication]**, JSON `violating_classes`=1 / v7 `expected 2 violations but got 3` | ✅ 잡힘 (필수 1) |
+| M2 | R1에서 `jakarta.validation..` 제거 | `v8 R1: expected violation but rule passed (missed)` | ✅ 잡힘 (필수 2) |
+| M3 | `ViolationExtractor`에서 `Cycle` 분기 제거 | `IllegalStateException: unhandled violation object types` (v4 R4) | ✅ 추출기 누락이 조용히 지나가지 않음 |
+| M4 | `ArchitectureTest`에서 `@ArchTag` 제거 | `:lending:archTest executed 0 @Tag("arch") tests` → BUILD FAILED, `lending.json` 없음 | ✅ 0개 가드 동작 |
+
+1차의 S1~S10은 R1~R6 정의가 바뀌지 않았으므로(R1은 확장만 됨) 그대로 유효하다. 단, S8(R1에서 `jakarta.persistence..` 제거 → v5 R1 건수 감소)의 기대 건수는 이제 9 → 8이다.
+
+### 7.5 새로 발견한 모호한 지점
+
+- **N1. R5는 이제 R1에 완전히 포함된다.** R5의 4개 어노테이션(`@Entity`, `@Component`, `@Service`, `@JsonProperty`)이 모두 R1 블랙리스트 패키지에 속하게 되었다. R5의 원인 클래스(어노테이션이 붙은 멤버의 소유 클래스)는 항상 R1의 원인 클래스(그 어노테이션 의존의 출발 클래스)와 같다. 따라서 **주 지표 `violating_classes`에 R5가 더하는 클래스는 항상 0개다.** R5를 남길지, 아니면 R1이 잡지 못하는 어노테이션(예: 다른 프레임워크)용으로 재정의할지 정해야 한다.
+- **N2. R4의 원인 클래스에는 "피해자" 쪽 클래스도 들어간다.** v4에서 `LoanPolicy`는 올바른 방향(application → domain)의 의존만 가졌지만, 순환 참여자로서 원인 클래스에 포함된다. 그 결과 v4의 `violating_classes`는 실제로 잘못 작성된 클래스 수(1, `Book`)보다 1 많은 2다. 지시의 정의("순환에 참여한 모든 클래스")를 따랐다. 하지만 "잘못된 엣지의 출발 클래스"로 볼지는 설계상 결정이 필요하다.
+- **N3. `count`가 더 부풀었다.** R1에서 `@JsonProperty` 하나가 3건이 된다(어노테이션 + 멤버 타입 2개). 어노테이션 종류에 따라 1건당 무게가 다르다(`@NotNull`은 멤버 타입이 `java.*`뿐이라 1건). `count`를 주 지표에서 뺀 2차 결정을 뒷받침하는 사례다.
+- **N4. R7은 테스트 코드 제외를 전제로 한다.** `DoNotIncludeTests`가 없으면 `lending`의 `LendingIntegrationTest`(base 직속)와 `architecture.*`(비허용 최상위)가 R7 위반이 된다. 실험 중 에이전트가 main 소스에 base 직속 클래스를 추가하면 R7 위반이고, 테스트 소스에 추가하면 위반이 아니다.
+- **N5. R7의 화이트리스트는 최상위 패키지에만 적용된다.** `domain.common`, `application.util`, `adapter.common` 같은 하위 패키지는 자유롭다. 따라서 v7의 `DateUtils`를 `domain.common`으로 옮기기만 하면 R1~R7이 모두 통과한다. `adapter.common`을 통한 R3 우회(5절 7번 항목)도 그대로 남아 있다.
+- **N6. 중첩·익명 클래스는 별개 클래스로 센다.** `violating_classes_list`에는 FQN이 그대로 들어간다. `Book`과 `Book$1`(익명 클래스)이 각각 1개로 집계된다. 바깥 클래스로 정규화할지 정해야 한다. (현재 픽스처와 `lending`에는 해당 사례가 없다.)
+- **N7. R7 예외의 판정 기준.** 예외는 `@SpringBootApplication`이 "직접" 붙은 경우만이다. 메타 어노테이션으로 감싼 커스텀 부트 어노테이션이나, 부트 클래스의 중첩 클래스(`LendingApplication$Config`)는 위반이다. base 직속 부트 클래스가 여러 개여도 모두 허용된다.
+
+### 7.6 2차 판단 사항
+
+| # | 지점 | 선택 | 이유 |
+| --- | --- | --- | --- |
+| J19 | v7 기대 "R7 2건" vs 지시 클래스로는 1건 | `AppConstants`(base 직속, 비부트) 추가로 2건. `V7Application`(부트 예외)도 추가 | 기대값을 낮추지 않고, R7 문장의 두 위반 경로와 예외 경로를 모두 픽스처로 덮는다 |
+| J20 | 커밋 메시지 언어 (지시: 영어 / CLAUDE.md: 한국어) | `<emoji> <Type>: <English>` | 이번 작업 지시를 우선하되 형식 규칙은 지킨다 |
+| J21 | `handleViolations` 등록 방식 | `Object` 핸들러 1개 + `instanceof` 분기 + 모르는 타입이면 예외 | 타입별 등록은 누락이 조용히 지나간다(7.1 변경 3) |
+| J22 | R4 원인 클래스 | `Cycle.convertTo(Dependency.class)`의 출발·도착 클래스 | 슬라이스 전체 근사보다 정확하다. ArchUnit 1.3.2 API로 가능함을 확인했다 |
+| J23 | `ArchitectureTest` 구조 | 규칙당 `@ArchTest` 1개(7개), 실행 시마다 JSON 재작성 | `tests_executed`가 실제 실행된 측정 수를 뜻하게 하고, 규칙별 결과를 따로 보이게 한다 |
+| J24 | `by_rule`에 미실행 규칙 | 넣지 않음(0으로 채우지 않음) | 미실행과 무위반을 구분하기 위함. 파이프라인은 `tests_executed == 7`과 R1~R7 키 존재를 확인해야 한다 |
+| J25 | `.gitignore`의 `out/`, `bin/` | `/out/`, `/*/out/`, `/bin/`, `/*/bin/`로 루트 기준 매칭 | 헥사고날의 `adapter/out`, `port/out` 소스가 무시되는 문제를 막는다 |
+| J26 | 추출기와 JSON 구조의 위치 | `ViolationExtractor.violatingClasses()`와 `report()` 둘 다 같은 클래스에 둠. `archRules` jar에 `ViolationExtractor*` 포함 | 양성·음성 테스트가 같은 추출 로직과 같은 JSON 구조를 쓰게 한다. 지시대로 클래스 하나만 둔다 |
+
+### 7.7 2차 의존성 추가
+
+| 모듈 | 의존성 | 이유 |
+| --- | --- | --- |
+| `violation-fixtures` (main) | `jakarta.validation:jakarta.validation-api` (BOM 관리 버전) | v8의 도메인 `@NotNull`을 컴파일하기 위함. `spring-boot-starter-web`과 `data-jpa`에는 포함되지 않는다 |
+| `lending` (test) | 추가 없음 | `ArchitectureTest`의 JSON 직렬화에는 `spring-boot-starter-web`이 이미 가져오는 Jackson `ObjectMapper`를 쓴다 |

@@ -10,11 +10,12 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
-// violation-fixtures가 같은 규칙 객체(HexagonalRules)를 쓰도록 규칙 클래스만 jar로 노출한다.
+// violation-fixtures가 같은 규칙 객체(HexagonalRules)와 추출기(ViolationExtractor)를 쓰도록 두 클래스만 jar로 노출한다.
 val archRulesJar by tasks.registering(Jar::class) {
     archiveClassifier = "arch-rules"
     from(sourceSets.test.get().output) {
         include("com/example/lending/architecture/HexagonalRules*")
+        include("com/example/lending/architecture/ViolationExtractor*")
     }
 }
 

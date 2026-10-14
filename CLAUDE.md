@@ -75,7 +75,8 @@ TASK 번호는 **작업 종료 시점**에 확정한다. 시작 시점엔 "다�
 ```
 
 - Java 21, Spring Boot 3.5.3, Gradle 8.14.3 (Kotlin DSL, wrapper), JUnit 5, ArchUnit 1.3.2, H2 인메모리
-- 측정 출력: `lending/build/arch/lending.json` — `{"R1": n, ..., "R6": n}`. `archTest` 시작 시 `build/arch/` 를 지우므로, 파일이 없으면 테스트가 실행되지 않은 것이다
+- 측정 출력: `lending/build/arch/lending.json` (스키마는 아래 "Measurement JSON"). `archTest` 시작 시 `build/arch/` 를 지우므로, 파일이 없으면 테스트가 실행되지 않은 것이다
+- `archTest` 가드: 모듈별로 실행된 arch 테스트가 0개면 `GradleException` 으로 실패한다 (`executed N arch tests` 로그 확인)
 - `test` 태스크는 `arch`, `investigation` 태그를 제외한다. 아키텍처 측정은 반드시 `archTest` 로 돌린다
 
 ## Architecture
@@ -96,44 +97,64 @@ arch-bench/
 │   │       ├── in/web/          # @RestController, 요청/응답 record, WebExceptionHandler
 │   │       └── out/persistence/ # JPA 엔티티(도메인과 별개), Spring Data 리포지토리, 매퍼, 포트 구현체
 │   └── src/test/java/com/example/lending/architecture/
-│       ├── HexagonalRules.java  # 규칙 팩토리: forBasePackage(base) → List<NamedRule>
-│       └── ArchitectureTest.java # 양성 검증 + lending.json 기록
+│       ├── HexagonalRules.java     # 규칙 팩토리: forBasePackage(base) → List<NamedRule>
+│       ├── ViolationExtractor.java # 위반 객체 → 원인 클래스 FQN, 측정 JSON 구조(report)
+│       └── ArchitectureTest.java   # 양성 검증: 규칙당 @ArchTest 1개(7개) + lending.json 기록
 ├── violation-fixtures/          # 음성 검증용 축소 픽스처
-│   ├── src/main/java/com/example/fixtures/v1 ... v6/
+│   ├── src/main/java/com/example/fixtures/v1 ... v8/
 │   └── src/test/java/com/example/fixtures/
-│       ├── ViolationDetectionTest.java          # 픽스처별 기대 집합 + 기대 건수 검증
+│       ├── ViolationDetectionTest.java          # 픽스처별 기대 집합 + 기대 건수 + 기대 원인 클래스 검증
 │       └── R4SlicePatternInvestigationTest.java # 단계 4 조사용 (@Tag("investigation"))
 └── REPORT.md                    # 규칙별 구현·변경 이유, 검증 결과, 모호 지점, 판단 사항
 ```
 
-`violation-fixtures` 는 `lending` 의 `archRules` configuration(test 출력 중 `HexagonalRules*` 만 담은 jar)을 통해 **같은 규칙 객체**를 쓴다.
+`violation-fixtures` 는 `lending` 의 `archRules` configuration(test 출력 중 `HexagonalRules*`, `ViolationExtractor*` 만 담은 jar)을 통해 **같은 규칙 객체와 추출기**를 쓴다.
 
-## Rules (R1~R6)
+## Rules (R1~R7)
 
 | ID | 이름 | 요지 |
 | --- | --- | --- |
-| R1 | `domain-no-outward-deps` | domain → base.application / base.adapter / org.springframework / jakarta.persistence 금지 |
+| R1 | `domain-no-outward-deps` | domain → base.application / base.adapter / org.springframework / jakarta.persistence / jakarta.validation / com.fasterxml.jackson 금지 |
 | R2 | `application-no-adapter-deps` | application → base.adapter 금지 |
 | R3 | `adapters-independent` | adapter.in ↔ adapter.out 양방향 금지 |
 | R4 | `no-layer-cycles` | `slices().matching(base + ".(*)..")` 순환 금지 (패턴 A) |
 | R5 | `domain-no-framework-annotations` | domain 의 @Entity/@Component/@Service(클래스), @JsonProperty(클래스·필드·메서드·생성자·파라미터) 금지 |
 | R6 | `ports-are-interfaces-implemented-in-adapters` | port 아래 비-record 타입은 interface, port.out 구현체는 adapter.out 에만 |
+| R7 | `only-three-top-level-packages` | base 아래 최상위 패키지는 domain/application/adapter 뿐. base 직속은 `@SpringBootApplication` 클래스만 허용 |
 
 - **ID 와 이름은 실험 결과 JSON 의 키다. 바꾸지 않는다.**
-- 건수 단위는 규칙마다 다르다(R1~R3 의존 엣지, R4 순환, R5 어노테이션 요소, R6 클래스). 규칙 간 합산·비교 금지.
+- 건수(`count`) 단위는 규칙마다 다르다(R1~R3 의존 엣지, R4 순환, R5 어노테이션 요소, R6·R7 클래스). 규칙 간 합산·비교 금지. 주 지표는 `violating_classes`.
+- "도메인에 validation/Jackson 금지"(R1)는 실험 설계자의 결정이다. 토글 가능하게 만들지 않는다.
+- 규칙을 추가하면 `ArchitectureTest` 에 규칙당 `@ArchTest` 메서드와 `RULE_IDS_COVERED_BY_THIS_CLASS` 를 함께 갱신한다(안 하면 전 테스트 실패).
+
+## Measurement JSON
+
+```json
+{
+  "tests_executed": 7,
+  "violating_classes": 0,
+  "violating_classes_list": [],
+  "by_rule": { "R1": {"count": 0, "classes": []}, "...": "...", "R7": {"count": 0, "classes": []} }
+}
+```
+
+- `classes` = 위반 원인 클래스 FQN(정렬·중복 제거): R1~R3 의존 출발 클래스, R4 순환 참여 클래스 전부(`Cycle` → `Dependency` 출발·도착), R5 어노테이션이 붙은 멤버의 소유 클래스, R6·R7 해당 클래스.
+- `by_rule` 에는 **실행된 규칙만** 들어간다(0 으로 채우지 않음). 측정 성공 판정: 파일 존재 && `tests_executed == 7` && R1~R7 키 모두 존재.
+- 원인 클래스는 실패 리포트 문자열을 파싱하지 않고 `ViolationExtractor` 가 위반 객체 타입으로 뽑는다. 모르는 타입이 오면 예외를 던진다 — 새 규칙이 새 위반 객체 타입을 만들면 추출기 분기를 추가한다.
 
 ## Key Conventions
 
 **규칙·픽스처 수정 원칙**
 - 규칙이 픽스처를 못 잡으면 **규칙을 고친다**. 픽스처를 약하게 만들지 않는다.
 - `lending` 에서 규칙이 실패하면 먼저 `lending` 이 올바른지 의심한다. 그래도 오탐이면 규칙을 고치되 이유를 `REPORT.md` 에 적는다.
-- 규칙을 바꾸면 `ViolationDetectionTest` 의 기대 건수를 **위반 상세를 한 건씩 확인한 뒤** 갱신한다. 숫자만 맞추지 않는다.
+- 규칙을 바꾸면 `ViolationDetectionTest` 의 기대 건수와 기대 원인 클래스를 **위반 상세를 한 건씩 확인한 뒤** 갱신한다. 숫자만 맞추지 않는다.
 - 규칙 변경 후에는 해당 규칙을 일부 느슨하게 해서 픽스처가 실패하는지(민감도) 확인한다. `REPORT.md` 의 민감도 표 참조.
 - 판단이 필요한 지점은 멈추지 말고 가장 보수적인 쪽을 택한 뒤 `REPORT.md` "판단 사항" 에 적는다.
 
 **코드 제약**
 - Lombok, MapStruct 등 코드 생성 라이브러리 금지 (AST 기반 측정 단순화).
-- 규칙 팩토리와 `NamedRule` 외에 공통 베이스 클래스·유틸리티·설정 프레임워크를 만들지 않는다.
+- 규칙 팩토리(`HexagonalRules`, `NamedRule`)와 추출기(`ViolationExtractor`) 외에 공통 베이스 클래스·유틸리티·설정 프레임워크·인터페이스/전략 패턴을 만들지 않는다.
+- 기존 테스트가 깨지면 `@Disabled` 하지 말고, 무엇이 왜 바뀌어 깨졌는지 `REPORT.md` 에 적고 고친다.
 - 테스트 외 의존성을 추가하면 `REPORT.md` "의존성 추가 내역" 에 이유를 적는다.
 - 규칙의 어노테이션은 FQN 문자열로 매칭한다 (테스트 코드가 JPA/Spring/Jackson 에 컴파일 의존하지 않게).
 - 모든 규칙은 `.because(원래 문장)` + `.allowEmptyShould(true)`. 빈 import 방어는 테스트에서 한다.
@@ -145,6 +166,11 @@ arch-bench/
 - 도메인 예외는 `domain` 에 두고, HTTP 매핑은 `adapter.in.web.WebExceptionHandler` 에서 (`ProblemDetail`).
 - 컨트롤러는 유스케이스 인터페이스만 의존하고 도메인 객체를 직접 반환하지 않는다 (응답 record 의 `from()` 으로 변환).
 - JPA 엔티티는 도메인과 별개 클래스. 도메인↔엔티티 변환은 어노테이션 없는 package-private 매퍼 클래스 (`BookMapper`, `LoanMapper`).
+
+## Git
+
+- 이 저장소의 커밋 이력은 실험 파이프라인이 `git diff` 로 에이전트의 ArchUnit 테스트 변조(Test_tamper)를 검출하는 기준이다. 기준 커밋을 rewrite(amend/rebase/force push) 하지 않는다.
+- `.gitignore` 에 `out/` 같은 이름만의 패턴을 넣지 않는다 — 헥사고날의 `adapter/out`, `port/out` 소스가 무시된다. 루트 기준(`/out/`)으로 쓴다.
 
 ## Commit & PR Convention
 
