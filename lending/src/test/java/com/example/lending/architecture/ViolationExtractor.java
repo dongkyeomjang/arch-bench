@@ -67,15 +67,24 @@ public final class ViolationExtractor {
     }
 
     /**
+     * 주 지표(violating_classes) 합집합에 들어가는 규칙. R4·R5는 by_rule에만 남긴다.
+     * R4: 순환의 정상 방향 쪽 클래스(예: v4의 LoanPolicy)까지 원인으로 잡아 과대 집계한다. 패턴 A에서 R4는 R1 ∪ R2에 포함된다.
+     * R5: 4개 어노테이션이 모두 R1 블랙리스트 패키지라서 원인 클래스가 항상 R1의 부분집합이다(R5 ⊂ R1).
+     */
+    public static final List<String> PRIMARY_RULES = List.of("R1", "R2", "R3", "R6", "R7");
+
+    /**
      * 측정 JSON 구조. {@code resultsByRuleId}는 실행된 규칙만 규칙 순서대로 담는다
      * (실행되지 않은 규칙을 0으로 기록하지 않기 위해). tests_executed = 실행된 규칙 테스트 수.
      */
     public static Map<String, Object> report(Map<String, EvaluationResult> resultsByRuleId) {
-        SortedSet<String> allClasses = new TreeSet<>();
+        SortedSet<String> primaryClasses = new TreeSet<>();
         Map<String, Object> byRule = new LinkedHashMap<>();
         resultsByRuleId.forEach((ruleId, result) -> {
             SortedSet<String> classes = violatingClasses(result);
-            allClasses.addAll(classes);
+            if (PRIMARY_RULES.contains(ruleId)) {
+                primaryClasses.addAll(classes);
+            }
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("count", result.getFailureReport().getDetails().size());
             entry.put("classes", List.copyOf(classes));
@@ -84,8 +93,9 @@ public final class ViolationExtractor {
 
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("tests_executed", resultsByRuleId.size());
-        report.put("violating_classes", allClasses.size());
-        report.put("violating_classes_list", List.copyOf(allClasses));
+        report.put("primary_rules", PRIMARY_RULES);
+        report.put("violating_classes", primaryClasses.size());
+        report.put("violating_classes_list", List.copyOf(primaryClasses));
         report.put("by_rule", byRule);
         return report;
     }

@@ -132,12 +132,17 @@ arch-bench/
 ```json
 {
   "tests_executed": 7,
+  "primary_rules": ["R1", "R2", "R3", "R6", "R7"],
   "violating_classes": 0,
   "violating_classes_list": [],
   "by_rule": { "R1": {"count": 0, "classes": []}, "...": "...", "R7": {"count": 0, "classes": []} }
 }
 ```
 
+- **주 지표 `violating_classes` = `primary_rules`(R1·R2·R3·R6·R7) 의 `classes` 합집합 크기.** R4·R5 는 `by_rule` 에만 남고 합집합에서 제외한다 (TASK3 Follow-up):
+  - R4 제외: 순환의 정상 방향 쪽 클래스까지 원인으로 잡아 과대 집계한다(v4 의 `LoanPolicy` 는 application → domain 정방향 의존만 가짐). 또 패턴 A 의 R4 는 R1 ∪ R2 에 포함되어, 잘못된 엣지의 출발 클래스는 이미 R1/R2 로 집계된다.
+  - R5 제외: 4개 어노테이션이 모두 R1 블랙리스트 패키지라 R5 원인 클래스 ⊂ R1 원인 클래스(R5 ⊂ R1). 넣어도 합집합이 변하지 않지만, 정의상 중복이므로 범위에서 뺀다.
+  - 합집합 범위는 `ViolationExtractor.PRIMARY_RULES` 한 곳에서 정하고 JSON 의 `primary_rules` 로 선언한다. 바꾸면 `ViolationDetectionTest` 의 기대 `violating_classes` 와 `primary_rules` 기대값도 함께 바꾼다.
 - `classes` = 위반 원인 클래스 FQN(정렬·중복 제거): R1~R3 의존 출발 클래스, R4 순환 참여 클래스 전부(`Cycle` → `Dependency` 출발·도착), R5 어노테이션이 붙은 멤버의 소유 클래스, R6·R7 해당 클래스.
 - `by_rule` 에는 **실행된 규칙만** 들어간다(0 으로 채우지 않음). 측정 성공 판정: 파일 존재 && `tests_executed == 7` && R1~R7 키 모두 존재.
 - 원인 클래스는 실패 리포트 문자열을 파싱하지 않고 `ViolationExtractor` 가 위반 객체 타입으로 뽑는다. 모르는 타입이 오면 예외를 던진다 — 새 규칙이 새 위반 객체 타입을 만들면 추출기 분기를 추가한다.

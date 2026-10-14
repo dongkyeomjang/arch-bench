@@ -519,3 +519,44 @@ v7 (`ViolationDetectionTest`가 출력하는 `[json] v7` 행을 정렬한 것):
 | --- | --- | --- |
 | `violation-fixtures` (main) | `jakarta.validation:jakarta.validation-api` (BOM 관리 버전) | v8의 도메인 `@NotNull`을 컴파일하기 위함. `spring-boot-starter-web`과 `data-jpa`에는 포함되지 않는다 |
 | `lending` (test) | 추가 없음 | `ArchitectureTest`의 JSON 직렬화에는 `spring-boot-starter-web`이 이미 가져오는 Jackson `ObjectMapper`를 쓴다 |
+
+---
+
+## 8. 3차 변경 — 주 지표 합집합 범위 (2026-10-15)
+
+**변경**: `violating_classes` / `violating_classes_list` = **R1·R2·R3·R6·R7** 의 `classes` 합집합. R4·R5 는 `by_rule` 에만 남는다. `lending.json` 에 `"primary_rules": ["R1","R2","R3","R6","R7"]` 를 추가해 JSON 자체가 범위를 선언한다. 범위는 `ViolationExtractor.PRIMARY_RULES` 한 곳에서 정한다.
+
+**근거**
+- **R4 과대 집계** (7.5 N2): R4 원인 클래스는 순환 참여 클래스 전부라서, 정방향 의존만 가진 클래스(v4 의 `LoanPolicy`)까지 들어간다. 또 패턴 A 의 R4 ⊆ R1 ∪ R2 (4절) 이므로, 잘못된 역방향 엣지의 출발 클래스는 이미 R1/R2 로 집계된다. R4 를 합집합에 넣으면 피해자 쪽 클래스만 더해진다.
+- **R5 ⊂ R1** (7.5 N1): R5 의 4개 어노테이션이 모두 R1 블랙리스트 패키지(2차 변경 이후)에 속하므로 R5 원인 클래스는 항상 R1 원인 클래스의 부분집합이다.
+
+**갱신된 음성 검증 7×8** (규칙별 칸은 7.2 와 동일. 바뀐 것은 마지막 열)
+
+| 픽스처 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | violating_classes (주 지표) | 7.2 대비 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v1 | **FAIL(3)** [domain.Book] | pass | pass | pass | pass | pass | pass | 1 [domain.Book] | 1 → 1 |
+| v2 | pass | **FAIL(5)** [application.service.LoanBookService] | pass | pass | pass | pass | pass | 1 [application.service.LoanBookService] | 1 → 1 |
+| v3 | pass | pass | **FAIL(7)** [adapter.in.web.LoanController, adapter.out.persistence.BookJpaEntity] | pass | pass | pass | pass | 2 [adapter.in.web.LoanController, adapter.out.persistence.BookJpaEntity] | 2 → 2 |
+| v4 | **FAIL(2)** [domain.Book] | pass | pass | **FAIL(1)** [application.service.LoanPolicy, domain.Book] | pass | pass | pass | **1** [domain.Book] | **2 → 1** (LoanPolicy 제외) |
+| v5 | **FAIL(9)** [domain.Book, domain.Loan, domain.Member] | pass | pass | pass | **FAIL(5)** [domain.Book, domain.Loan, domain.Member] | pass | pass | 3 [domain.Book, domain.Loan, domain.Member] (= R1 원인 클래스) | 3 → 3 |
+| v6 | pass | pass | pass | pass | pass | **FAIL(2)** [application.port.out.LoadBookPort, application.service.InMemoryBookStore] | pass | 2 [application.port.out.LoadBookPort, application.service.InMemoryBookStore] | 2 → 2 |
+| v7 | pass | pass | pass | pass | pass | pass | **FAIL(2)** [AppConstants, common.DateUtils] | 2 [AppConstants, common.DateUtils] | 2 → 2 |
+| v8 | **FAIL(1)** [domain.Member] | pass | pass | pass | pass | pass | pass | 1 [domain.Member] | 1 → 1 |
+
+`ViolationDetectionTest` 는 이제 픽스처별로 `primary_rules` 값, `violating_classes_list`, `violating_classes` 까지 assert 한다.
+
+**`lending.json` (실제 출력, 발췌)**
+
+```json
+{
+  "tests_executed" : 7,
+  "primary_rules" : [ "R1", "R2", "R3", "R6", "R7" ],
+  "violating_classes" : 0,
+  "violating_classes_list" : [ ],
+  "by_rule" : { "R1" : { "count" : 0, "classes" : [ ] }, "...": "...", "R7" : { "count" : 0, "classes" : [ ] } }
+}
+```
+
+**민감도**: `PRIMARY_RULES` 에 R4 를 다시 넣으면 8개 픽스처 모두 `primary_rules expected [R1, R2, R3, R6, R7] but was [R1, R2, R3, R4, R6, R7]` 로 실패하고, v4 는 추가로 `expected violating_classes 1 [domain.Book] but got 2 [application.service.LoanPolicy, domain.Book]` 로 실패한다. 확인 후 원복했다.
+
+**남은 질문**: R4 를 레이어 내부 순환(패턴 B 계열)으로, R5 를 R1 이 못 잡는 어노테이션용으로 재정의하면 다시 주 지표에 넣을 수 있다. 현재는 미결.

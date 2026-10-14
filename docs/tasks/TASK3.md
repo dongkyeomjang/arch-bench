@@ -34,3 +34,25 @@
 - 파이프라인은 `tests_executed == 7` 과 R1~R7 키 존재를 확인해야 한다(>0 만으로는 부분 기록을 못 거름).
 - 열린 설계 질문(REPORT 7.5): R5 가 R1 에 완전 포함되어 `violating_classes` 에 기여 0, R4 원인 클래스에 피해자 쪽 클래스 포함, R7 은 하위 패키지(`domain.common` 등)를 막지 못함, 중첩/익명 클래스 정규화 여부.
 - 커밋 메시지: 지시(영어)와 CLAUDE.md(한국어 설명) 충돌 → `<emoji> <Type>: <English>` 로 절충.
+
+### Follow-up — 2026-10-15
+
+**Request**: 작업 지시 3 — 주 지표 합집합 범위 변경. `violating_classes_list` 를 R1·R2·R3·R6·R7 의 `classes` 합집합으로, R4·R5 는 `by_rule` 에만 유지. `lending.json` 에 `"primary_rules"` 필드 추가. 음성 검증의 기대 `violating_classes` 재계산·고정. 커밋 1개.
+
+**이전 결정: X → 변경: Y, 사유: Z**
+- 이전 결정: `violating_classes` = 모든 규칙(R1~R7) `classes` 의 합집합.
+- 변경: `violating_classes` = `PRIMARY_RULES`(R1·R2·R3·R6·R7) `classes` 의 합집합. R4·R5 는 `by_rule` 에만 남김. JSON 에 `primary_rules` 로 범위를 선언.
+- 사유:
+  - **R4 과대 집계**: 순환 참여 클래스 전부를 원인으로 잡아, 정방향 의존만 가진 "피해자" 쪽 클래스(v4 의 `application.service.LoanPolicy`)까지 센다(REPORT 7.5 N2). 게다가 패턴 A 의 R4 는 R1 ∪ R2 의 부분집합이라(REPORT 4절), 잘못된 역방향 엣지의 출발 클래스는 이미 R1/R2 원인 클래스로 들어간다. R4 를 합집합에 넣으면 순수하게 피해자 클래스만 더해진다.
+  - **R5 ⊂ R1**: 2차에서 R1 에 `com.fasterxml.jackson..` 이 추가되어 R5 의 4개 어노테이션(@Entity, @Component, @Service, @JsonProperty)이 모두 R1 블랙리스트 패키지에 속한다. R5 원인 클래스(어노테이션 붙은 멤버의 소유 클래스) = 해당 어노테이션 의존의 출발 클래스 ⊆ R1 원인 클래스(REPORT 7.5 N1). 합집합에 기여 0 이므로 정의상 중복을 제거.
+
+**Changes**
+- `ViolationExtractor`: `public static final List<String> PRIMARY_RULES = List.of("R1", "R2", "R3", "R6", "R7")` 추가(근거 javadoc 포함). `report()` 가 `PRIMARY_RULES` 에 속한 규칙의 `classes` 만 합집합에 넣고, `tests_executed` 다음에 `primary_rules` 필드를 기록.
+- `ViolationDetectionTest`: 파라미터에 픽스처별 기대 주 지표 원인 클래스 집합(`primary(...)`) 추가. `report()` 결과의 `primary_rules` == [R1, R2, R3, R6, R7], `violating_classes_list`(상대 이름) == 기대 집합, `violating_classes` == 기대 크기를 assert. `[matrix]` 행에 `violating_classes` 표시.
+  - 재계산 결과: v1=1, v2=1, v3=2, **v4=1 (2 → 1, LoanPolicy 빠짐)**, **v5=3 (= R1 원인 클래스 Book·Loan·Member, 변화 없음)**, v6=2, v7=2, v8=1.
+- `CLAUDE.md` "Measurement JSON", `REPORT.md` 8절에 근거·표 기록.
+
+**Notes**
+- 민감도: `PRIMARY_RULES` 에 R4 를 다시 넣으면 전 픽스처의 `primary_rules` 검사와 v4 의 `violating_classes`(1 → 2) 검사가 실패함을 확인 후 원복.
+- R4·R5 의 규칙 자체(위반 판정, `count`, `classes`)와 7×8 걸림/건수/원인 클래스 칸은 바뀌지 않았다. 바뀐 것은 주 지표 정의뿐.
+- 남은 질문: R5 를 R1 이 못 잡는 어노테이션용으로 재정의할지, R4 를 레이어 내부 순환(패턴 B 계열) 지표로 재정의해 주 지표에 다시 넣을지는 미결.
