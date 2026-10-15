@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,11 @@ public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
     @Override
     public long countActiveLoans(UUID memberId) {
         return loanJpaRepository.countByMemberIdAndReturnedAtIsNull(memberId);
+    }
+
+    @Override
+    public List<Loan> loadLoansOfMember(UUID memberId) {
+        return loanJpaRepository.findByMemberId(memberId).stream().map(loanMapper::toDomain).toList();
     }
 
     @Override

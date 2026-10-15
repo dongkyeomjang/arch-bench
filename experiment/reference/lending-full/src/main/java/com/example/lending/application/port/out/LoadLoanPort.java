@@ -12,6 +12,8 @@ public interface LoadLoanPort {
 
     long countActiveLoans(UUID memberId);
 
+    List<Loan> loadLoansOfMember(UUID memberId);
+
     /**
      * 회원의 반납되지 않은 대출 중 page 번째(0부터) size 개와 전체 건수. 정렬은 대출일 오름차순.
      */
