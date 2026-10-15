@@ -33,6 +33,9 @@ EXP = ROOT / "experiment"
 SCRIPTS = EXP / "scripts"
 SEED = EXP / "seed"
 FAKE_AGENT = EXP / "runner" / "fake_agent.sh"
+HIDDEN_TESTS = EXP / "tests"  # <domain>/turn-NN/*.java, 에이전트에게 보이지 않는 HTTP 수준 기능 테스트
+HIDDEN_TEST_DIR = "src/test/java/com/example/lending/hidden"
+TEST_METHOD_RE = re.compile(r"@Test\s+(?:public\s+)?void\s+(\w+)\s*\(")
 
 LEVELS = ("L0", "L1", "L2", "L3")
 AGENT_TIMEOUT_S = 20 * 60
@@ -415,6 +418,73 @@ def functional_tests(ws: Path, log: Path) -> dict:
     return res
 
 
+def hidden_test_files(domain: str, upto: int) -> list[Path]:
+    """턴 1~upto 의 숨겨진 테스트 파일(누적). 디렉터리가 없거나 비어 있는 턴은 건너뛴다."""
+    files: list[Path] = []
+    for i in range(1, upto + 1):
+        files += sorted((HIDDEN_TESTS / domain / f"turn-{i:02d}").glob("*.java"))
+    return files
+
+
+def hidden_tests(ws: Path, domain: str, upto: int, log: Path) -> dict:
+    """워크스페이스 복사본의 src/test 를 지우고 턴 1~upto 숨겨진 테스트만 넣어 ./gradlew test.
+
+    ft_total 은 테스트 소스의 @Test 메서드 수(정적)라서, 컴파일 실패·컨텍스트 실패로 XML 이 덜 나와도 분모가 같다.
+    통과 = XML 에 failure·error·skipped 없이 나온 테스트. 나머지는 전부 ft_failed_names."""
+    files = hidden_test_files(domain, upto)
+    expected = [f"{f.stem}.{m}" for f in files for m in TEST_METHOD_RE.findall(f.read_text())]
+    res = {"ft_status": None, "ft_total": len(expected), "ft_passed": 0, "ft_failed_names": [],
+           "ft_compile_error": False, "ft_pass": None, "ft_exit": None, "ft_wall_s": None}
+    if not expected:
+        res["ft_status"] = "no_tests"
+        log.write_text(f"no hidden tests for {domain} turn-01..{upto:02d}\n")
+        return res
+    t0 = time.monotonic()
+    with tempfile.TemporaryDirectory(prefix="arch-ft.") as tmp:
+        copy = Path(tmp) / "ws"
+        shutil.copytree(ws, copy, symlinks=True)
+        for d in ("build", ".gradle", ".harness", "src/test"):
+            shutil.rmtree(copy / d, ignore_errors=True)
+        dest = copy / HIDDEN_TEST_DIR
+        dest.mkdir(parents=True)
+        for f in files:
+            shutil.copy2(f, dest / f.name)
+        try:
+            p = run(["./gradlew", "test", "-q", "--console=plain"], cwd=copy, timeout=TEST_TIMEOUT_S)
+            res["ft_exit"] = p.returncode
+            out = p.stdout + p.stderr
+            log.write_text(out[-20000:])
+        except subprocess.TimeoutExpired:
+            res.update(ft_status="timeout", ft_failed_names=expected, ft_pass=0.0,
+                       ft_wall_s=round(time.monotonic() - t0, 2))
+            return res
+        passed: set[str] = set()
+        xmls = list((copy / "build" / "test-results" / "test").glob("TEST-*.xml"))
+        for x in xmls:
+            try:
+                root = ET.parse(x).getroot()
+            except ET.ParseError:
+                continue
+            for tc in root.iter("testcase"):
+                if any(c.tag in ("failure", "error", "skipped") for c in tc):
+                    continue
+                cls = (tc.get("classname") or "").rsplit(".", 1)[-1]
+                passed.add(f"{cls}.{(tc.get('name') or '').split('(')[0]}")
+    res["ft_passed"] = sum(1 for n in expected if n in passed)
+    res["ft_failed_names"] = [n for n in expected if n not in passed]
+    res["ft_pass"] = round(res["ft_passed"] / res["ft_total"], 4)
+    if res["ft_exit"] == 0 and not res["ft_failed_names"]:
+        res["ft_status"] = "passed"
+    elif not xmls and re.search(r"Execution failed for task ':compile(Test)?Java'", out):
+        # 에이전트가 API 를 다르게 만들어도 테스트는 HTTP 만 쓰므로, 테스트 컴파일 실패는 보통 본문 컴파일 실패다
+        res["ft_compile_error"] = True
+        res["ft_status"] = "compile_failed"
+    else:
+        res["ft_status"] = "failed"
+    res["ft_wall_s"] = round(time.monotonic() - t0, 2)
+    return res
+
+
 def hook_summary(log: Path) -> dict:
     counts = {"hook_events": 0, "hook_runs": 0, "hook_blocks": 0, "hook_skips": 0, "hook_limits": 0,
               "hook_compile_failed": 0, "hook_ms_total": 0}
@@ -528,13 +598,16 @@ def main() -> int:
         "grader_sha256": sha256_tree(grader_files, ROOT),
         "runner_sha256": sha256_tree([Path(__file__).resolve(), FAKE_AGENT], EXP / "runner"),
         "tasks_sha256": sha256_tree(turn_files, task_dir),
+        "hidden_tests_sha256": (sha256_tree(hidden_test_files(args.domain, len(turn_files)), HIDDEN_TESTS / args.domain)
+                                if hidden_test_files(args.domain, len(turn_files)) else None),
         "claude_config_dir": str(cfg),
         "turns_planned": len(turn_files), "turns_run": 0,
         "input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
         "cost_usd": 0.0, "agent_wall_s": 0.0, "hook_runs": 0, "hook_blocks": 0, "reviewer_calls": 0,
         "agent_commits_turns": 0, "runner_commits_turns": 0, "any_test_tamper": None, "any_config_tamper": False,
         "any_timeout": False, "final_grade_exit": None, "final_violating_classes": None,
-        "final_tests_status": None, "turns": [],
+        "final_tests_status": None, "ft_pass_by_turn": [], "final_ft_pass": None, "final_ft_total": None,
+        "final_ft_passed": None, "final_ft_compile_error": None, "turns": [],
     }
     write_json(out / "session.json", session)
 
@@ -584,11 +657,12 @@ def main() -> int:
             turn.update(tamper_check(ws, base, args.level))
             # 6) 채점
             turn.update(grade(ws, tdir / "arch.json", tdir / "grade.log"))
-            # 7) 기능 테스트
+            # 7) 숨겨진 기능 테스트(턴 1~i 누적)  8) 에이전트 워크스페이스 자체 테스트
+            turn.update(hidden_tests(ws, args.domain, i, tdir / "ft.log"))
             if not args.skip_tests or i == len(turn_files):
                 turn.update(functional_tests(ws, tdir / "test.log"))
             turn["ended_at"] = now_iso()
-            # 8) 기록
+            # 9) 기록
             write_json(tdir / "turn.json", turn)
 
             session["turns_run"] = i
@@ -609,17 +683,24 @@ def main() -> int:
             session["final_grade_exit"] = turn["grade_exit"]
             session["final_violating_classes"] = turn["violating_classes"]
             session["final_tests_status"] = turn.get("tests_status", session["final_tests_status"])
+            session["ft_pass_by_turn"].append(turn["ft_pass"])
+            session["final_ft_pass"] = turn["ft_pass"]
+            session["final_ft_total"] = turn["ft_total"]
+            session["final_ft_passed"] = turn["ft_passed"]
+            session["final_ft_compile_error"] = turn["ft_compile_error"]
             session["turns"].append({k: turn.get(k) for k in (
                 "turn", "agent_status", "agent_wall_s", "agent_session_id", "input_tokens", "output_tokens",
                 "cache_creation_input_tokens", "cache_read_input_tokens", "cost_usd", "cost_usd_cumulative", "hook_runs", "hook_blocks",
                 "reviewer_calls", "reviewer_verdicts", "escaped_cwd_count", "agent_committed", "runner_committed", "no_change",
                 "test_tamper", "config_tamper", "grade_exit", "violating_classes", "r1_count", "r2_count",
-                "r3_count", "r4_count", "r5_count", "r6_count", "r7_count", "tests_status", "tests_total",
+                "r3_count", "r4_count", "r5_count", "r6_count", "r7_count", "ft_status", "ft_total", "ft_passed", "ft_pass",
+                "ft_compile_error", "ft_failed_names", "tests_status", "tests_total",
                 "tests_failed", "parse_errors")})
             write_json(out / "session.json", session)
             print(f"[{session_id}] {turn_name}: agent={turn['agent_status']} {turn['agent_wall_s']}s "
                   f"committed={turn['agent_committed']} grade={turn['grade_exit']} vc={turn['violating_classes']} "
-                  f"r1={turn['r1_count']} test_tamper={turn['test_tamper']} tests={turn.get('tests_status')} "
+                  f"r1={turn['r1_count']} test_tamper={turn['test_tamper']} ft={turn['ft_passed']}/{turn['ft_total']} "
+                  f"tests={turn.get('tests_status')} "
                   f"cost={turn['cost_usd']}", flush=True)
 
             if turn["agent_status"] == "error":

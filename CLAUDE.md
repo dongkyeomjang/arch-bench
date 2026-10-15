@@ -95,6 +95,8 @@ CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_matrix.py \
 - 계약(입력·출력·종료 코드), 러너 전제, 검증 결과는 `experiment/README.md` 가 정본.
 - `experiment/harness/` 텍스트는 사전 등록 전까지 동결. 바꾸면 TASK 로 기록한다.
 - 러너는 격리 설정 디렉터리 `CLAUDE_CONFIG_DIR`(이 머신: `~/.claude-arch-bench`, 별도 로그인)가 없으면 실행을 거부한다(종료 5). `tasks/_smoke/` 는 러너 검증용이며 실험 과제가 아니다.
+- 과제 `experiment/tasks/lending/turn-NN.md`(에이전트가 받는 프롬프트)에는 함정 표시·아키텍처 용어·구현 방식을 쓰지 않는다. 계약은 `## API` 절의 HTTP 수준만.
+- 숨겨진 기능 테스트 `experiment/tests/lending/turn-NN/` 는 HTTP 만 쓴다(애플리케이션 빈 주입·내부 클래스 참조 금지). 바꾸면 참조 구현 `experiment/reference/lending-full/` 에서 턴별 누적 통과를 다시 확인한다(`experiment/README.md` "도서 대출 과제").
 - 채점기 3개 파일의 주석에는 실험 용어를 쓰지 않는다(L2·L3 워크스페이스로 복사되어 에이전트에게 보인다). 원래 동결 대상이며 TASK5 에서 주석만 한 번 바꿨다.
 - 에이전트 세션 워크스페이스는 **이 저장소 밖**, `/Users/kyeom/Project/arch-bench-ws` 아래에 둔다(`ARCH_WS_ROOT`). Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽기 때문이다.
 - **본 실험은 `run_matrix.py` 로만, fake(`--agent fake`/`agent: fake`)는 별도 루트 `~/Project/arch-bench-ws-fake` 에서만 돌린다.** 본 실험 루트에 잔여물이 있으면 claude 매트릭스가 종료 5 로 거부한다(`experiment/README.md` "운영 원칙").

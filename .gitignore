@@ -24,3 +24,4 @@ build/
 /experiment/smoke-out/
 /experiment/runs/
 /experiment/runner/__pycache__/
+/experiment/scripts/__pycache__/

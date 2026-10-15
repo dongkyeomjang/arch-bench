@@ -1,4 +1,4 @@
-# experiment — 시드 저장소, 하네스 수준 주입, 오버레이 채점기, 세션 러너, 매트릭스 실행기
+# experiment — 시드 저장소, 하네스 수준 주입, 오버레이 채점기, 세션 러너, 매트릭스 실행기, 도서 대출 과제
 
 세션 러너와 러너가 쓰는 부품 세 개, 스모크 검증을 담는다. 채점기 본체(`lending/src/test/.../architecture/*`, R1~R7, `lending.json` 스키마)는 동결 상태다. 이 디렉터리는 채점기를 **복사해서 쓰기만** 하고 수정하지 않는다. (TASK5 에서 동결을 한 번 풀어 채점기 **주석**의 실험 용어만 지웠다. 측정값은 바이트 동일.)
 
@@ -20,14 +20,22 @@ experiment/
     grade.sh
     overlay-arch.sh          # inject(L2·L3)와 grade 가 source 하는 오버레이 함수 (같은 방법을 코드 한 곳으로 보장)
     smoke.sh
+    lloc.py                  # Java 논리 코드 줄 수 (LLOC_ratio 용, 아래 "참조 구현")
   runner/
     run_session.py           # 세션 1개 실행 (아래 "세션 러너")
     run_matrix.py            # 세션 매트릭스 실행 (아래 "매트릭스 실행기")
     matrix.example.json      # 매트릭스 설정 예시 (fake, 12세션)
+    pilot.json               # 파일럿 설정 (L1·L2 × haiku × lending × 5회 = 10세션). 지시 전까지 실행 금지
     fake_agent.sh            # --agent fake 용 결정적 가짜 에이전트 (러너 경로 검증용)
     requirements.txt         # 비어 있음 (표준 라이브러리만)
   tasks/
     _smoke/turn-0{1,2,3}.md  # 러너 검증용 3턴. 실험 과제가 아니다
+    lending/turn-01..15.md   # 도서 대출 15턴 과제 (에이전트가 받는 프롬프트, 아래 "도서 대출 과제")
+  tests/
+    lending/turn-NN/         # 숨겨진 기능 테스트 (HTTP 만). 러너가 세션 밖에서 턴 1~N 누적 실행 → FT_pass
+  reference/
+    lending-full/            # 시드에서 15턴을 헥사고날대로 구현한 참조 구현 (턴별 커밋 15개). 에이전트에게 보이지 않음
+    lloc.json                # 참조 구현 턴별 LLOC (src/main/java, 누적)
   runs/                      # 러너 결과 (git 추적 안 함). 실험 매트릭스에서는 --out 으로 따로 둔다
 ```
 
@@ -138,14 +146,15 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 프롬프트 | 턴 파일 본문. **맨 앞의 HTML 주석 줄**(`<!-- smoke only ... -->` 같은 메타데이터)은 빼고 보낸다 |
 | 에이전트 | `claude -p <prompt> --model <m> --output-format stream-json --verbose --permission-mode bypassPermissions --setting-sources project [--resume <id>]`, `cwd=<ws>`, stdin 없음. 첫 턴은 새 세션, 이후 턴은 **직전 턴 init 이벤트의 `session_id` 로 `--resume`**. 타임아웃 20분(프로세스 그룹 SIGTERM → 30초 뒤 SIGKILL, `agent_status: timeout`, 세션은 계속) |
 | 환경 | 부모 환경에서 `CLAUDECODE`·`CLAUDE_CODE_*`·`CLAUDE_PID`·`CLAUDE_EFFORT`·`CLAUDE_PROJECT_DIR` 를 빼고(러너를 Claude Code 안에서 띄워도 부모 세션 정보가 새지 않게) `DISABLE_AUTOUPDATER=1` 을 더한다 |
-| 턴 단계 | ① `.harness/retry-count` 삭제(남은 `hook-log.jsonl` 이 있으면 `hook-log.pre-turn.jsonl` 로 치움) ② 에이전트 실행 → `stream.jsonl`·`stderr.txt`, 끝나면 `.harness/hook-log.jsonl` 을 `turn-NN/hook-log.jsonl` 로 **이동**(없으면 빈 파일) ③ 스트림 파싱 ④ 커밋 확인 ⑤ tamper ⑥ `grade.sh <ws> turn-NN/arch.json` ⑦ 복사본에서 `./gradlew test -q` ⑧ `turn-NN/turn.json` |
+| 턴 단계 | ① `.harness/retry-count` 삭제(남은 `hook-log.jsonl` 이 있으면 `hook-log.pre-turn.jsonl` 로 치움) ② 에이전트 실행 → `stream.jsonl`·`stderr.txt`, 끝나면 `.harness/hook-log.jsonl` 을 `turn-NN/hook-log.jsonl` 로 **이동**(없으면 빈 파일) ③ 스트림 파싱 ④ 커밋 확인 ⑤ tamper ⑥ `grade.sh <ws> turn-NN/arch.json` ⑦ 숨겨진 기능 테스트(턴 1~N 누적, `turn-NN/ft.log`) ⑧ 복사본에서 에이전트 자신의 테스트 `./gradlew test -q` ⑨ `turn-NN/turn.json` |
 | 커밋 확인 | 턴 전후 `HEAD` 가 같으면 `agent_committed: false`. 작업 트리가 더러우면(에이전트가 커밋 안 했거나, 커밋 뒤에 남긴 변경) 러너가 `git add -A && git commit -m "Save work in progress"` (`runner_committed: true`). 메시지에 턴 번호를 넣지 않는다(에이전트의 `git log` 에 보인다, 전 수준 동일). 둘 다 아니면 `no_change: true`. 그래서 턴 끝 상태 = `HEAD` 다 |
 | tamper | `git diff --name-only <base_commit> HEAD -- src/test/java/com/example/lending/architecture/` 가 비어 있지 않으면 `test_tamper: true`(L0·L1 은 `null`, 파일 목록만 기록). `.claude/ CLAUDE.md build.gradle.kts gradle/arch.gradle.kts` 중 변경 파일이 있으면 `config_tamper: true` + `config_tamper_files`(모든 수준에서 계산. **`build.gradle.kts` 는 정상적인 의존성 추가로도 바뀌므로** 분석 시 파일 목록으로 거른다) |
 | 채점 | `grade_exit`(0/1/3), `violating_classes`, `r1_count`~`r7_count`. 3(컴파일 실패)이어도 다음 턴 진행 |
+| 숨겨진 기능 테스트 (TASK7) | 매 턴. 워크스페이스 복사본에서 `build`·`.gradle`·`.harness`·**`src/test` 전체**를 지우고 `experiment/tests/<domain>/turn-01..turn-NN/*.java` 를 `src/test/java/com/example/lending/hidden/` 에 복사 → `./gradlew test -q`. `ft_total` = 복사한 소스의 `@Test` 메서드 수(정적으로 셈 — 컴파일 실패·컨텍스트 실패로 XML 이 덜 나와도 분모가 같다), `ft_passed` = JUnit XML 에서 failure·error·skipped 없이 나온 테스트 수, `ft_failed_names` = 나머지 전부(`TurnNNTest.메서드`), `ft_pass` = `ft_passed/ft_total`. `ft_status` ∈ `passed`·`failed`·`compile_failed`(XML 없음 + `compileJava`/`compileTestJava` 실패, `ft_compile_error: true`)·`timeout`·`no_tests`(테스트 디렉터리 없음, 예: `_smoke` → `ft_total: 0`, `ft_pass: null`). 테스트는 HTTP 만 쓰므로 `compile_failed` 는 보통 에이전트의 본문 코드가 컴파일되지 않는 경우다. `--skip-tests` 와 무관하게 매 턴 돈다 |
 | 기능 테스트 | 워크스페이스 복사본(`build`·`.gradle`·`.harness` 제거)에서 `./gradlew test -q`, `build/test-results/test/*.xml` 로 건수. `tests_status` ∈ `passed`·`failed`·`compile_failed`·`timeout`. 기본은 턴마다, `--skip-tests` 면 마지막 턴만 |
 | 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1 |
 | 세션 `status` | `running`(진행 중, 러너가 강제 종료되면 이 값으로 남는다) · `completed`(종료 0) · `failed`(종료 1). TASK6 Follow-up 전에는 `failed` 대신 `aborted` 였다 |
-| 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,test.log}`. 워크스페이스는 지우지 않는다 |
+| 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,ft.log,test.log}`. `session.json` 에 `ft_pass_by_turn`(턴별 `ft_pass` 배열), `final_ft_pass`·`final_ft_total`·`final_ft_passed`·`final_ft_compile_error`, `hidden_tests_sha256`. 워크스페이스는 지우지 않는다 |
 | 종료 코드 | 0 전 턴 완료, 1 중단, 2 인자 오류(argparse·턴 파일 없음), 4 덮어쓰기 거부, 5 시작 전 검사 실패 |
 
 ### 스트림 파싱 (`turn.json`)
@@ -472,6 +481,77 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 | 3 | `_smoke-L2-sonnet-r1/session.json` 을 `status: failed` 로 고친 뒤 `--resume` | 그 세션만 다시 실행(completed 1, skipped 11). 옛 결과는 `_smoke-L2-sonnet-r1_failed-<ts>`, 옛 워크스페이스는 `<token>_failed-<ts>`, 새 토큰이 `workspace-index.jsonl` 에 추가. `--resume` 없이 재실행하면 **종료 4** |
 | 4 | `max_cost_usd: 0.01` | fake 비용 0: 12세션 모두 실행, 가드 발동 없음. `FAKE_AGENT_COST_USD=0.005`(턴당, 세션 0.015): 첫 세션 종료 시 0.015 > 0.01 → 새 세션 시작 중단, 이미 돌던 1세션은 끝까지 → **2세션 후 멈춤, 종료 3**, 사유가 `stop_reason` 에 기록 |
 | 5 | `agent: claude`, haiku, L1·L2, `_smoke`, 병렬 2, `max_cost_usd: 0.15` | 종료 0, 157.7초. 두 세션 모두 19:34:20 시작(병렬), 19:36:53·19:36:58 종료, 각 3턴 `completed`, `agent_session_id_consistent=true`, 위반 0, 기능 테스트 `passed`(12·11개). 훅 로그는 각 워크스페이스에 따로 쌓여 턴별로 옮겨짐: L1 0행(훅 없음), L2 14행(`hook_runs` 1·1·1). 비용 L1 $0.0295, L2 $0.0314, 합 **$0.0608**(`matrix-status.json` `cost_usd` 일치). 이 실행에서 escaped_cwd 오탐을 발견해 고쳤다(위 러너 검증 7) |
+
+## 도서 대출 과제 `tasks/lending/` · 숨겨진 기능 테스트 `tests/lending/` · 참조 구현 `reference/`
+
+### 턴 파일
+
+`tasks/lending/turn-01.md` ~ `turn-15.md`. 각 파일 = 요청 본문(지시서 원문 그대로) + `## API` 절(HTTP 계약: 경로·상태 코드·JSON 필드, 짧은 예시). 공통 약속(JSON, UUID 문자열 ID, `YYYY-MM-DD` 날짜, 거절 = `409` + `{"error": "<코드>"}`, 없는 ID = `404`, 기존 `POST /books`·`POST /loans` 유지)은 턴 1 API 절 앞에 한 번만 둔다. **어느 턴이 함정인지(5·8·10·12·14)는 턴 파일에 쓰지 않는다** — 함정의 의도와 참조 풀이는 TASK7.md 와 참조 구현 커밋 메시지에만 있다. 구현 방식·클래스·패키지는 언급하지 않는다(턴 12 본문의 `BookJpaEntity` 등은 시드에 실존하는 식별자). 아키텍처 용어 grep(`레이어|포트|어댑터|도메인|헥사고날|유스케이스|컨트롤러|서비스 클래스`, 대소문자 무시) 0건.
+
+### 숨겨진 기능 테스트
+
+- 턴마다 `tests/lending/turn-NN/TurnNNTest.java` 1개(턴당 2~4개 테스트, 성공 경로 1개 + 거절 경로 전부), 패키지 `com.example.lending.hidden`. 턴 12 는 `.gitkeep` 만(회귀는 누적 실행으로 성립). 공용 HTTP 도우미 `turn-01/Api.java`(러너가 turn-01 부터 누적 복사하므로 항상 함께 있다). 합계 44개.
+- `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `TestRestTemplate`. **HTTP 만 쓴다**: 애플리케이션 빈을 `@Autowired` 하지 않고(주입하는 것은 테스트 인프라인 `TestRestTemplate` 뿐), 응답은 테스트가 직접 만든 `ObjectMapper` 로 읽는다. 내부 클래스명·패키지에 의존하지 않으므로 에이전트가 무엇을 리팩터링해도 컴파일된다. `@SpringBootApplication` 을 `com.example.lending` 위쪽에서 찾으므로 루트 패키지만 유지되면 된다.
+- 격리: 같은 컨텍스트(H2)를 공유하므로 `@DirtiesContext` 대신 **테스트마다 자기 데이터를 API 로 만든다**(무작위 제목·이름, 새 회원). 집계가 전역인 턴 15 는 다른 테스트가 쓰지 않는 달(2024-02, 2023-07)을 쓴다.
+- 날짜: 턴 4 이후 테스트는 `loanedAt`/`returnedAt` 을 항상 보낸다(과거 날짜만 — 미래 날짜를 거절하는 구현도 공정하게 통과). 턴 1~3 테스트는 날짜를 보내지 않고 날짜 값을 assert 하지 않는다. 연체료를 재는 테스트의 기한은 턴 8 의 주말 규칙에 걸리지 않게 평일로 골랐다(턴 8 테스트만 주말 기한).
+- 본문 없는 POST(반납·폐기·정지)도 `{}` 를 보낸다: 본문을 받지 않는 구현과 (턴 4 이후) 본문을 필수로 받는 구현 둘 다 통과한다.
+- "없는 ID → 404" 테스트는 먼저 같은 엔드포인트를 정상 ID 로 성공시킨다. 엔드포인트가 아예 없어도 Spring 기본 응답이 404 라서, 그대로 두면 아무것도 안 한 에이전트가 점수를 얻기 때문이다.
+- 비교 기준(턴 4 의 overdueDays 등)은 API 절에 적힌 계약만 본다. 턴 14 는 대출·반납 기록을 대출 ID 와 책 ID 두 대상으로 조회해 합친 결과에서 `LOAN`·`RETURN` 이 있는지만 본다(계약은 대출 ID 지만 대상 선택을 엄격히 채점하지 않는다).
+
+### 참조 구현 `reference/lending-full/`
+
+시드에서 출발해 15턴을 헥사고날 규칙대로 구현했다. 에이전트에게 보이지 않으며(저장소 밖 워크스페이스로 복사되지 않는다) 숨겨진 테스트의 정답 확인과 `LLOC_ratio` 분모로 쓴다. 독립 Gradle 프로젝트(시드와 같은 빌드 파일·wrapper)라 그 디렉터리에서 `./gradlew build` 가 된다. arch-bench 저장소의 **턴별 커밋 15개**(`git log --oneline -- experiment/reference/lending-full`, 제목 `참조 구현 turn-NN`)로 턴별 상태를 복원한다. 함정 턴(5·8·10·12·14) 커밋 본문에 선택한 설계와 이유를 적었다 — 루브릭 교정 라운드의 기준 예시.
+
+LLOC(`scripts/lloc.py`): `src/main/java` 아래 `*.java` 의 줄 중 빈 줄, 주석 줄(앞 공백을 뗀 뒤 `//`·`/*`·`*`·`*/` 로 시작), `}` 단독 줄을 뺀 수. 문법을 해석하지 않는 근사이며 같은 규칙으로 잰 값끼리 비율로만 쓴다. `lloc.json` 은 턴별 상태의 **누적** 크기(`turn-00` = 시드).
+
+### 검증 결과 (2026-10-15)
+
+- 참조 구현 최종: `grade.sh` → `tests_executed 7`, `violating_classes 0`(R1~R7 모두 0). 함정 턴 5·10·12·14 직후에도 각각 0. 참조 구현 자체 `./gradlew build` 통과(시드의 통합 테스트는 턴 2 에서 회원 등록 후 대출하도록 고쳤다).
+- 아래 "누적" = 턴 N 커밋 상태에 숨겨진 테스트 턴 1~N 을 러너와 같은 함수(`run_session.hidden_tests`)로 돌린 결과. "직전 상태" = 턴 N 테스트(와 도우미)만 턴 N−1 상태(턴 1 은 시드)에 돌린 결과 — 테스트가 실제로 그 턴의 기능을 재는지 확인. 직전 상태에서 통과하는 것은 턴 8 의 `dueAt` 불변 확인 하나뿐이다(이전 턴에도 참이어야 하는 회귀 방지 테스트라 의도대로).
+
+| 턴 | 누적 통과 | 직전 상태 통과 | LLOC |
+| --- | --- | --- | --- |
+| 00 | — | — | 373 |
+| 01 | 4/4 | 0/4 | 530 |
+| 02 | 6/6 | 0/2 | 561 |
+| 03 | 10/10 | 0/4 | 666 |
+| 04 | 14/14 | 0/4 | 685 |
+| 05 | 17/17 | 0/3 | 786 |
+| 06 | 19/19 | 0/2 | 822 |
+| 07 | 23/23 | 0/4 | 871 |
+| 08 | 27/27 | 1/4 (`due_date_in_responses_is_not_moved`) | 877 |
+| 09 | 31/31 | 0/4 | 1185 |
+| 10 | 34/34 | 0/3 | 1301 |
+| 11 | 37/37 | 0/3 | 1369 |
+| 12 | 37/37 | — (테스트 없음) | 1314 |
+| 13 | 39/39 | 0/2 | 1379 |
+| 14 | 42/42 | 0/3 | 1545 |
+| 15 | 44/44 | 0/2 | 1624 |
+
+- `--agent fake --domain lending --level L2 --max-turns 3`: 턴 1 `ft_total 4, ft_passed 0`, `ft_failed_names` 에 `Turn01Test` 4개(fake 턴 1 은 회원 API 를 만들지 않는다). 턴 2·3 은 fake 가 `Book` 에 `@Entity` 를 붙여 컨텍스트가 뜨지 않아 0/6, 0/10. `session.json` 의 `ft_pass_by_turn = [0.0, 0.0, 0.0]`.
+- 컴파일 실패: 참조 구현 복사본에 컴파일 오류를 넣고 턴 1~2 → `ft_status compile_failed`, `ft_compile_error true`, `ft_passed 0/6`. `_smoke`(테스트 없음) → `ft_status no_tests`, `ft_total 0`, `ft_pass null`.
+- 숨겨진 테스트 한 번(44개)은 데몬이 떠 있을 때 약 5초(Spring 컨텍스트 1회 + 컴파일).
+
+### 파일럿 `runner/pilot.json` (실행하지 않음)
+
+L1·L2 × haiku × lending × 5회 = 10세션, 병렬 2, `max_cost_usd 8`. **실행은 지시가 있을 때까지 하지 않는다.** 세션당 예상 비용 `$0.5` 는 `_smoke` 3턴 haiku 실측($0.03~0.04)을 15턴·누적 맥락으로 늘려 잡은 어림값이다(검증 안 됨). `--dry-run` 출력(2회 실행 동일, md5 `6454e2eda92c405f121fb3d7c72b638c`):
+
+```
+# 10 sessions, shuffle_seed=20261215, agent=claude, parallel=2
+   1  lending-L2-haiku-r4              est_usd=0.5
+   2  lending-L1-haiku-r1              est_usd=0.5
+   3  lending-L1-haiku-r4              est_usd=0.5
+   4  lending-L2-haiku-r2              est_usd=0.5
+   5  lending-L2-haiku-r5              est_usd=0.5
+   6  lending-L1-haiku-r5              est_usd=0.5
+   7  lending-L1-haiku-r3              est_usd=0.5
+   8  lending-L2-haiku-r3              est_usd=0.5
+   9  lending-L1-haiku-r2              est_usd=0.5
+  10  lending-L2-haiku-r1              est_usd=0.5
+# estimated cost: $5.00; max_cost_usd=8
+```
+
+턴마다 채점(`grade.sh`)·숨겨진 테스트·에이전트 자신의 테스트를 각각 Gradle 로 돌리므로 에이전트 시간 외에 턴당 수십 초가 더 든다. `run_matrix.py` 는 `run_session.py` 에 `--skip-tests` 를 넘기지 않는다(에이전트 자신의 테스트는 매 턴 돈다).
 
 ## L1 아키텍처 산문 ↔ R1~R7 확정 문장 대응표
 
