@@ -144,6 +144,7 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 채점 | `grade_exit`(0/1/3), `violating_classes`, `r1_count`~`r7_count`. 3(컴파일 실패)이어도 다음 턴 진행 |
 | 기능 테스트 | 워크스페이스 복사본(`build`·`.gradle`·`.harness` 제거)에서 `./gradlew test -q`, `build/test-results/test/*.xml` 로 건수. `tests_status` ∈ `passed`·`failed`·`compile_failed`·`timeout`. 기본은 턴마다, `--skip-tests` 면 마지막 턴만 |
 | 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1 |
+| 세션 `status` | `running`(진행 중, 러너가 강제 종료되면 이 값으로 남는다) · `completed`(종료 0) · `failed`(종료 1). TASK6 Follow-up 전에는 `failed` 대신 `aborted` 였다 |
 | 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,test.log}`. 워크스페이스는 지우지 않는다 |
 | 종료 코드 | 0 전 턴 완료, 1 중단, 2 인자 오류(argparse·턴 파일 없음), 4 덮어쓰기 거부, 5 시작 전 검사 실패 |
 
@@ -426,10 +427,10 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 | --- | --- |
 | 전개·순서 | levels × models × domains × reps 를 세션 ID 로 정렬한 뒤 `random.Random(shuffle_seed).shuffle`. 같은 조건이 연달아 돌면 API 상태·시간대 효과가 조건과 섞이므로 무작위로 섞고, 시드를 고정해 재현한다(설정의 나열 순서와 무관) |
 | 실행 | `parallel` 개의 워커 스레드가 각자 `run_session.py` 를 subprocess 로 호출(세션 = 프로세스 1개). 세션 stdout/stderr 는 실행 중 `$OUT_ROOT/.matrix-logs/<id>.log` 에 쓰고 끝나면 `$OUT_ROOT/<id>/runner.log` 로 옮긴다(run_session 은 결과 디렉터리가 이미 있으면 거부하므로) |
-| 세션 상태 | `completed` = `run_session` 종료 0 이고 `session.json` 의 `status: completed`. 그 밖(종료 1·4·5, `aborted`, `session.json` 없음)은 모두 `failed` |
+| 세션 상태 | `completed` = `run_session` 종료 0 이고 `session.json` 의 `status: completed`. 그 밖(종료 1·4·5, `session.json` 의 `failed`·`running`, `session.json` 없음)은 모두 `failed` |
 | `--resume` | `session.json` 이 `completed` 면 `skipped`(비용은 합산에 포함). 그 밖의 흔적이 있으면 결과 디렉터리를 `<id>_failed-<ts>`, 워크스페이스 토큰 디렉터리를 `<token>_failed-<ts>` 로 옮기고 다시 돌린다. `matrix-status.json` 의 해당 세션에 `previous_attempt` |
 | 비용 가드 | 세션이 끝날 때마다 `cost_usd` 합(이번 실행의 completed·failed + resume 의 skipped)이 `max_cost_usd` 를 **넘으면** 새 세션을 시작하지 않는다. 돌고 있는 세션은 끝까지 돈다. 사유는 `matrix-status.json` 의 `stop_reason`, **종료 3**. 실패 세션의 비용도 실제로 쓴 돈이라 합산한다 |
-| 시작 전 검사 | `run_session` 과 같은 검사(상위 `CLAUDE.md` 누출, `CLAUDE_CONFIG_DIR`)를 매트릭스 시작 전에 한 번 더 한다(**종료 5**). `CLAUDE_CONFIG_DIR` 는 전 세션 공통 하나(로그인 공유) |
+| 시작 전 검사 | `run_session` 과 같은 검사(상위 `CLAUDE.md` 누출, `CLAUDE_CONFIG_DIR`)를 매트릭스 시작 전에 한 번 더 한다(**종료 5**). `CLAUDE_CONFIG_DIR` 는 전 세션 공통 하나(로그인 공유). **`agent: claude` 면** `--ws-root` 의 디렉터리가 모두 이 `--out` 의 `workspace-index.jsonl` 토큰(또는 `<token>_failed-<ts>`)이어야 한다. 하나라도 아니면 거부(**종료 5**) — 다른 실행·옛 형식 잔여물은 에이전트가 `ls ../..` 로 보기 때문이다. 새 매트릭스는 빈 `--ws-root` 로 시작하고, 같은 `--out` 으로 `--resume` 하면 통과한다. 파일(`.DS_Store` 등)은 보지 않는다. `agent: fake` 는 검사하지 않는다 |
 | 종료 코드 | 0 전 세션 completed(skipped 포함), 1 실패 세션 있음 또는 Ctrl-C, 2 설정 오류, 3 비용 가드로 멈춤, 4 결과 디렉터리 존재(`--resume` 없이), 5 시작 전 검사 실패 |
 
 ### `matrix-status.json`
@@ -646,4 +647,4 @@ TASK4 에서 "결정 필요"로 남긴 1~3 은 TASK5 에서 결정·반영했다
 3. ~~훅이 Edit/Write 에만 반응한다~~ → **해결(TASK5 결정 3)**: matcher 에 `Bash` 추가 + 내용 변경 감지. 실세션(`_smoke-L2-haiku-r1` 턴 1)에서 Haiku 가 `src/main` 파일을 Bash heredoc 으로 써서 훅이 Bash 이벤트로 발화했다 — 이전 매처였다면 그 턴에 훅이 한 번도 돌지 않았다. 남은 것: 훅 설정 자체 수정(`.claude/settings.json`, `arch-check.sh`)이나 `.claude/` 삭제는 막지 않고 러너의 **Config_tamper** 로 집계한다. 훅은 PostToolUse 라 서브에이전트(L3 리뷰어)의 Bash 도 발화시킬 수 있다(리뷰어는 편집 권한이 없어 내용 변경이 없으면 skip).
 4. ~~같은 `$ARCH_WS_ROOT` 아래의 다른 세션 워크스페이스가 `ls ..` 로 보인다~~ → **해결(TASK6)**: `$ARCH_WS_ROOT/<무작위 토큰>/lending`. `ls ../..` 로 형제 토큰 디렉터리는 보이고 그 안을 읽을 수도 있지만(차단하지 않음) 경로에 조건이 없다. 단, 형제 워크스페이스 **내용**(예: L2·L3 의 `.claude/`, `CLAUDE.md`)을 읽으면 다른 수준의 하네스를 볼 수 있다 — `escaped_cwd_count` 로 측정해 분석에서 거른다. `--resume` 으로 옮긴 실패 워크스페이스는 `<token>_failed-<ts>` 로 보인다.
 5. 서브에이전트 도구 이름(`Agent`)과 백그라운드 실행 형태는 Claude Code 버전에 따라 바뀔 수 있다. 러너는 `Task`·`Agent` 둘 다 세고 `tool_result`·`task_notification` 둘 다 읽지만, 버전을 올리면 `reviewer_verdicts` 에 `UNPARSED` 가 없는지 확인할 것. `session.json` 의 `claude_code_version` 으로 세션별 버전을 추적한다.
-6. `$ARCH_WS_ROOT` 에는 TASK5 이전 형식(`_smoke-L2-haiku-r1` 처럼 조건이 들어간 이름)의 검증용 워크스페이스와 TASK6 검증 토큰 디렉터리가 남아 있다. `ls ../..` 로 보이므로 **본 실험 매트릭스 전에 `$ARCH_WS_ROOT` 를 비우거나 새 루트를 쓸 것**.
+6. ~~`$ARCH_WS_ROOT` 에 검증용 워크스페이스 잔여물이 남아 있다~~ → **해결(TASK6 Follow-up)**: 비웠고, `run_matrix.py`(`agent: claude`)가 `workspace-index.jsonl` 에 없는 디렉터리가 있으면 실행을 거부한다(종료 5). `run_session.py` 를 단독으로 쓸 때는 이 검사가 없다.

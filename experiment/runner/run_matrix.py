@@ -5,7 +5,8 @@
   run_matrix.py --config matrix.json --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
 
 종료 코드: 0 전 세션 completed, 1 실패 세션 있음, 2 설정 오류, 3 비용 가드로 멈춤,
-          4 결과 디렉터리가 이미 있음(--resume 없이), 5 시작 전 검사 실패(run_session 과 같은 검사)
+          4 결과 디렉터리가 이미 있음(--resume 없이), 5 시작 전 검사 실패(run_session 과 같은 검사,
+          agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물)
 계약 전문은 experiment/README.md "매트릭스 실행기" 절.
 """
 from __future__ import annotations
@@ -79,7 +80,7 @@ class Matrix:
 
     # ------------------------------------------------------------ 재개
     def prepare_resume(self) -> None:
-        """completed 는 건너뛰고, 그 밖의 흔적(failed·aborted·running·session.json 없음)은 _failed-<ts> 로 옮겨 다시 돌린다."""
+        """completed 는 건너뛰고, 그 밖의 흔적(failed·running·session.json 없음)은 _failed-<ts> 로 옮겨 다시 돌린다."""
         ts = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         for s in list(self.queue):
             sid = s["session_id"]
@@ -187,7 +188,7 @@ class Matrix:
         try:
             for t in threads:
                 t.join()
-        except KeyboardInterrupt:  # 자식 run_session 도 같은 프로세스 그룹이라 SIGINT 를 받아 aborted 로 끝난다
+        except KeyboardInterrupt:  # 자식 run_session 도 같은 프로세스 그룹이라 SIGINT 를 받아 failed 로 끝난다
             with self.lock:
                 self.stop_reason = self.stop_reason or "interrupted"
             for t in threads:
@@ -199,6 +200,23 @@ class Matrix:
             print(f"[matrix] stopped: {self.stop_reason}", file=sys.stderr)
             return 3 if self.stop_reason.startswith("cost guard") else 1
         return 1 if any(v["status"] == "failed" for v in self.state.values()) else 0
+
+
+def precheck_ws_leftovers(ws_root: Path, out_root: Path) -> None:
+    """ws_root 의 디렉터리는 모두 이 결과 루트의 workspace-index.jsonl 에 있는 토큰이어야 한다(`<token>_failed-<ts>` 포함).
+    다른 실행·옛 형식(조건이 든 이름)의 잔여물은 에이전트가 ls ../.. 로 볼 수 있으므로 본 실행 전에 막는다."""
+    index = out_root / "workspace-index.jsonl"
+    known = set()
+    if index.exists():
+        for line in index.read_text().splitlines():
+            try:
+                known.add(json.loads(line)["token"])
+            except (json.JSONDecodeError, KeyError, TypeError):
+                raise rs.PrecheckError(f"{index} has a malformed line: {line[:80]!r}") from None
+    stray = sorted(d.name for d in ws_root.iterdir() if d.is_dir() and d.name.split("_failed-")[0] not in known)
+    if stray:
+        raise rs.PrecheckError(f"{len(stray)} dirs in {ws_root} are not in {index} (e.g. {', '.join(stray[:5])}); "
+                               f"empty --ws-root or use a new one")
 
 
 def dry_run(cfg: dict, sessions: list[dict]) -> None:
@@ -242,8 +260,10 @@ def main() -> int:
     try:  # 세션마다 run_session 이 다시 검사하지만, 매트릭스를 시작하기 전에 한 번 막는다
         rs.precheck_ws_root(ws_root)
         rs.precheck_config_dir()
-        if cfg["agent"] == "claude" and shutil.which("claude") is None:
-            raise rs.PrecheckError("claude CLI not found on PATH")
+        if cfg["agent"] == "claude":
+            if shutil.which("claude") is None:
+                raise rs.PrecheckError("claude CLI not found on PATH")
+            precheck_ws_leftovers(ws_root, out_root)
     except rs.PrecheckError as e:
         print(f"run_matrix: precheck failed: {e}", file=sys.stderr)
         return 5

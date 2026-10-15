@@ -635,7 +635,7 @@ def main() -> int:
 
     session["agent_session_id"] = session_ids[0] if session_ids else None
     session["agent_session_id_consistent"] = (len(set(session_ids)) == 1) if session_ids else None
-    session["status"] = "completed" if exit_code == 0 else "aborted"
+    session["status"] = "completed" if exit_code == 0 else "failed"  # 상태는 running·completed·failed 셋뿐
     session["exit_code"] = exit_code
     session["ended_at"] = now_iso()
     session["wall_s"] = round(time.monotonic() - t_session, 2)

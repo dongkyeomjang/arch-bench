@@ -98,3 +98,44 @@
   - 현재 `$ARCH_WS_ROOT` 에는 TASK5 이전 형식(조건이 들어간 이름)의 검증 워크스페이스가 남아 있다. 본 실험 전에 비워야 한다(README 알려진 한계 6).
 - **실호출 비용:** 합계 $0.0608(haiku L1·L2 병렬 3턴). 지시 한도 $0.2 이내다.
 - **verification 출력 위치:** 세션 결과는 scratchpad 에 두고 커밋하지 않았다. 숫자는 README 검증 표에 남겼다.
+
+### Follow-up — 2026-10-15
+
+**Request**: 다음 세 가지를 하고 TASK6 Follow-up 으로 기록한다.
+- `~/Project/arch-bench-ws` 를 비운다(`experiment/runs/` 는 둔다).
+- `run_matrix.py` 에 잔여물 사전 검사를 추가한다(agent=claude 일 때 `workspace-index.jsonl` 에 없는 디렉터리가 있으면 종료 5).
+- `run_session.py` 의 실패 상태 이름을 `aborted` 에서 `failed` 로 통일한다.
+
+**Changes**
+- **워크스페이스 루트 정리**
+  - `/Users/kyeom/Project/arch-bench-ws` 아래 49개 항목(252MB)을 지웠다. 모두 TASK5·TASK6 검증에서 생긴 것이다.
+    - TASK5 형식 이름 `_smoke-*` 5개
+    - 토큰 디렉터리 42개
+    - `_failed` 디렉터리 1개
+    - `smoke-live.*` 1개
+  - 아래 실패 상태 검증에서 생긴 1개도 다시 지웠다. 지금은 비어 있다.
+- **잔여물 사전 검사 (`run_matrix.py`, `precheck_ws_leftovers`)**
+  - `agent: claude` 일 때 `--ws-root` 직속 디렉터리마다 이름(`_failed-` 앞부분)이 `$OUT_ROOT/workspace-index.jsonl` 의 토큰인지 본다. 하나라도 아니면 `PrecheckError` 로 종료 5 를 낸다.
+  - 인덱스 줄이 깨져 있어도 종료 5 다.
+  - 파일은 보지 않는다(`.DS_Store`).
+  - 기준을 "이 `--out` 의 인덱스"로 잡았다. 같은 매트릭스를 `--resume` 하면 통과하고, 다른 실행이나 옛 형식의 잔여물은 거부된다.
+  - `agent: fake` 는 검사하지 않는다. fake 검증이 실험 루트를 쓰는 일을 막지는 않으므로, fake 를 돌린 뒤에는 루트를 비워야 claude 실행이 통과한다.
+- **세션 상태 이름 (`run_session.py`)**
+  - `session["status"]` 는 이제 `running`·`completed`·`failed` 셋뿐이다(이전 결정: 실패 시 `aborted` → 변경: `failed`, 사유: 매트릭스의 `failed` 와 이름이 둘이면 분석 코드에서 실수가 난다).
+  - `run_matrix.py` 의 주석과 README 의 세션 상태 표를 맞췄다.
+  - TASK6 본문 Notes 의 "`completed`·`aborted` 만 쓴다"는 이 변경 전 서술이다.
+- **문서**
+  - README 의 매트릭스 "시작 전 검사" 행에 잔여물 검사를 적었다.
+  - 러너 표에 "세션 `status`" 행을 추가했다.
+  - 알려진 한계 6 은 해결로 표시했다.
+
+**검증**
+- **잔여물 검사 함수:** 빈 루트는 통과했다.
+  - 디렉터리 2개, 인덱스 없음 → 거부
+  - 두 토큰을 인덱스에 넣음(`bbbbbbbbbbbb_failed-...` 포함) → 통과
+  - 옛 형식 `_smoke-L2-haiku-r1` 추가 → 거부
+- **CLI:** `agent: claude` 설정으로 잔여물이 있는 루트를 주면 세션을 하나도 시작하지 않고 종료 5 로 끝났다. 비용은 0 이다.
+- **실패 상태:** PATH 앞에 항상 실패하는 `jq` 를 둬서 fake 에이전트를 실패시켰다. `session.json` 이 `{"status": "failed", "exit_code": 1}` 로 기록됐다.
+
+**Notes**
+- `run_session.py` 를 단독으로 실행할 때는 잔여물 검사가 없다. 본 실험은 `run_matrix.py` 로만 돌린다.
