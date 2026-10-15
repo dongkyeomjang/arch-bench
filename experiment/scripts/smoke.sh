@@ -109,6 +109,11 @@ check 3 "L2↔L3 의 .claude/settings.json·hooks 동일" "cmp" \
     sh -c "cmp -s ws-L2/.claude/settings.json ws-L3/.claude/settings.json && cmp -s ws-L2/.claude/hooks/arch-check.sh ws-L3/.claude/hooks/arch-check.sh"
 check 3 "L2 arch 테스트 3개 = arch-bench 원본 (cmp)" "cmp 3건" \
     sh -c "for f in $ARCH_TEST_FILES; do cmp -s '$ROOT/lending/$ARCH_TEST_REL/'\$f ws-L2/$ARCH_TEST_REL/\$f || exit 1; done"
+# git 이력: 네 수준 모두 커밋 1개, 메시지 "Initial commit" (하네스 수준이 git log 로 드러나지 않게)
+for n in 0 1 2 3; do (cd "ws-L$n" && git log --format=%s) >"$OUT/gitlog-L$n.txt"; done
+logs="$(for n in 0 1 2 3; do printf 'L%s=%s;' "$n" "$(tr '\n' '|' <"$OUT/gitlog-L$n.txt")"; done)"
+check 3 "git log --format=%s 가 네 수준에서 동일 (커밋 1개, \"Initial commit\")" "$logs" \
+    sh -c "for n in 0 1 2 3; do [ \"\$(cat '$OUT/gitlog-L'\$n.txt)\" = 'Initial commit' ] || exit 1; done"
 
 # ---------------------------------------------------------------- 4. 채점기 독립성 (L0 에 ArchUnit 없음)
 add_entity_violation ws-L0
@@ -145,48 +150,76 @@ check 5 "채점 후에도 워크스페이스의 변조 파일은 그대로(원�
 (cd ws-L2 && git checkout -q -- .)
 
 # ---------------------------------------------------------------- 6. 훅 동작
+# 훅은 지난 검사 이후 src/main/java 내용이 바뀌었을 때만 Gradle 을 돌린다. 매 회차 내용을 조금씩 바꿔(주석 한 줄) 새 상태를 만든다.
 HOOK=ws-L2/.claude/hooks/arch-check.sh
-hook() { # hook <file_path> → $hook_exit, $hook_err, $hook_ms
+hook_run() { # hook_run <stdin json> → $hook_exit, $hook_err, $hook_ms, $hook_action
     local t0 t1
     t0=$(ms)
-    printf '{"tool_input":{"file_path":"%s"}}' "$1" | CLAUDE_PROJECT_DIR= bash "$HOOK" 2>"$OUT/hook-stderr.txt"
+    printf '%s' "$1" | CLAUDE_PROJECT_DIR= bash "$HOOK" 2>"$OUT/hook-stderr.txt"
     hook_exit=$?
     t1=$(ms)
     hook_ms=$((t1 - t0))
     hook_err="$(cat "$OUT/hook-stderr.txt")"
+    hook_action=$(tail -n 1 ws-L2/.harness/hook-log.jsonl | jq -r .action)
 }
+hook() { hook_run "$(jq -cn --arg f "$1" '{tool_name: "Edit", tool_input: {file_path: $f}}')"; }    # 편집 도구 이벤트
+hook_bash() { hook_run "$(jq -cn --arg c "$1" '{tool_name: "Bash", tool_input: {command: $c}}')"; } # Bash 도구 이벤트
+touch_book() { printf '// %s\n' "$1" >>"ws-L2/$BOOK"; }
 rm -rf ws-L2/.harness
-hook "$BOOK" # 데몬 워밍업 겸 위반 없는 상태
-check 6 "위반 없음 → exit 0" "exit=$hook_exit ${hook_ms}ms" test "$hook_exit" -eq 0
+touch_book warmup # 위반 없는 변경 (데몬 워밍업 겸)
+hook "$BOOK"
+check 6 "위반 없는 변경 → Gradle 실행, exit 0 (pass)" "exit=$hook_exit action=$hook_action ${hook_ms}ms" test "$hook_exit" -eq 0 -a "$hook_action" = pass
 add_entity_violation ws-L2
 for i in 1 2 3; do
-    if [ "$i" -eq 1 ]; then p="$EXP/ws-L2/$BOOK"; else p="$BOOK"; fi # 1회차는 Claude Code 처럼 절대 경로
+    if [ "$i" -eq 1 ]; then p="$EXP/ws-L2/$BOOK"; else p="$BOOK"; touch_book "round $i"; fi # 1회차는 Claude Code 처럼 절대 경로
     hook "$p"
     cp "$OUT/hook-stderr.txt" "$OUT/hook-stderr-$i.txt"
     check 6 "위반 있음, ${i}회차 → exit 2 + stderr 에 R1(domain-no-outward-deps)" \
         "exit=$hook_exit ${hook_ms}ms retry-count=$(cat ws-L2/.harness/retry-count)" \
         sh -c "[ $hook_exit -eq 2 ] && grep -q 'R1 domain-no-outward-deps' '$OUT/hook-stderr-$i.txt'"
+    if [ "$i" -eq 1 ]; then
+        hook "$BOOK"
+        check 6 "같은 내용으로 다시 호출 → Gradle 미실행 exit 0 (변경 감지, 횟수 미증가)" \
+            "exit=$hook_exit action=$hook_action ${hook_ms}ms retry-count=$(cat ws-L2/.harness/retry-count)" \
+            test "$hook_exit" -eq 0 -a "$hook_action" = skip -a "$(cat ws-L2/.harness/retry-count)" = 1
+    fi
 done
+touch_book "round 4"
 hook "$BOOK"
 check 6 "4회차 → 상한 도달, exit 0 + 'limit reached' 한 줄" "exit=$hook_exit stderr=\"$hook_err\"" \
     test "$hook_exit" -eq 0 -a "$hook_err" = "architecture check still failing; limit reached"
 rm -f ws-L2/.harness/retry-count
 hook "$BOOK"
-check 6 "retry-count 삭제(러너의 턴 시작) 후 → 다시 exit 2" "exit=$hook_exit" test "$hook_exit" -eq 2
+check 6 "retry-count 삭제(러너의 턴 시작) 후 → 다시 exit 2 (상한 때 검사 안 한 내용이라 재검사)" "exit=$hook_exit" test "$hook_exit" -eq 2
 fail_ms=$(jq -s '[.[] | select(.action=="fail") | .elapsed_ms] | "min=\(min) max=\(max) n=\(length)"' -r ws-L2/.harness/hook-log.jsonl)
 pass_ms=$(jq -s '[.[] | select(.action=="pass") | .elapsed_ms] | "\(.)"' -r ws-L2/.harness/hook-log.jsonl)
-record 6 "훅 소요 시간 (hook-log.jsonl, 데몬 워밍 후)" PASS "fail: $fail_ms / pass: $pass_ms ms"
+skip_ms=$(jq -s '[.[] | select(.action=="skip") | .elapsed_ms] | "\(.)"' -r ws-L2/.harness/hook-log.jsonl)
+record 6 "훅 소요 시간 (hook-log.jsonl, 데몬 워밍 후)" PASS "fail: $fail_ms / pass: $pass_ms / skip: $skip_ms ms"
 cp ws-L2/.harness/hook-log.jsonl "$OUT/hook-log-step6.jsonl"
 
-# ---------------------------------------------------------------- 7. 훅 무반응 (src/main/java 밖)
-rm -rf ws-L2/.harness
+# ---------------------------------------------------------------- 7. 변경 없으면 무반응 (편집·Bash 도구 공통)
+(cd ws-L2 && git checkout -q -- . && rm -rf .harness)
 for p in "src/test/java/com/example/lending/LendingIntegrationTest.java" "$EXP/ws-L2/build.gradle.kts"; do
     hook "$p"
-    logged=$(tail -n 1 ws-L2/.harness/hook-log.jsonl)
-    check 7 "$(basename "$p") → Gradle 미실행 exit 0, < 1초" "exit=$hook_exit wall=${hook_ms}ms log=$logged" \
-        sh -c "[ $hook_exit -eq 0 ] && [ $hook_ms -lt 1000 ] && echo '$logged' | grep -q '\"action\":\"skip\"'"
+    check 7 "Edit $(basename "$p") (src/main 변경 없음) → Gradle 미실행 exit 0, < 1초" "exit=$hook_exit wall=${hook_ms}ms action=$hook_action" \
+        sh -c "[ $hook_exit -eq 0 ] && [ $hook_ms -lt 1000 ] && [ '$hook_action' = skip ]"
 done
-(cd ws-L2 && git checkout -q -- . && rm -rf .harness build .gradle)
+hook_bash "ls src"
+check 7 "Bash, src/main 변경 없음 → Gradle 미실행 exit 0, < 1초" "exit=$hook_exit wall=${hook_ms}ms action=$hook_action" \
+    sh -c "[ $hook_exit -eq 0 ] && [ $hook_ms -lt 1000 ] && [ '$hook_action' = skip ]"
+add_entity_violation ws-L2 # 에이전트가 Bash(sed 등)로 src/main 을 바꾼 상황
+hook_bash "sed -i '' 's/x/y/' $BOOK"
+check 7 "Bash, src/main 변경 있음(위반) → 발화: Gradle 실행, exit 2" "exit=$hook_exit wall=${hook_ms}ms action=$hook_action" \
+    sh -c "[ $hook_exit -eq 2 ] && [ '$hook_action' = fail ] && grep -q 'R1 domain-no-outward-deps' '$OUT/hook-stderr.txt'"
+hook_bash "git status"
+check 7 "Bash, 같은 변경으로 두 번째 호출 → 미발화 exit 0, < 1초 (변경 감지)" "exit=$hook_exit wall=${hook_ms}ms action=$hook_action" \
+    sh -c "[ $hook_exit -eq 0 ] && [ $hook_ms -lt 1000 ] && [ '$hook_action' = skip ]"
+(cd ws-L2 && git -c user.name=smoke -c user.email=smoke@example.com -c commit.gpgsign=false commit -qam "smoke")
+hook_bash "git commit"
+check 7 "Bash, 커밋만 함(내용 동일) → 미발화 exit 0" "exit=$hook_exit action=$hook_action" \
+    sh -c "[ $hook_exit -eq 0 ] && [ '$hook_action' = skip ]"
+cp ws-L2/.harness/hook-log.jsonl "$OUT/hook-log-step7.jsonl"
+(cd ws-L2 && git reset -q --hard HEAD~1 && rm -rf .harness build .gradle)
 
 # ---------------------------------------------------------------- 8. (선택) Claude Code 실호출
 if [ "${SMOKE_LIVE:-0}" = 1 ] && command -v claude >/dev/null; then
@@ -216,7 +249,7 @@ if [ "${SMOKE_LIVE:-0}" = 1 ] && command -v claude >/dev/null; then
         >"$OUT/step8-stream.jsonl" 2>"$OUT/step8-stderr.txt"
     echo "step8 exit=$? workspace=$live"
     cp "$live/.harness/hook-log.jsonl" "$OUT/step8-hook-log.jsonl" 2>/dev/null
-    # 기준(harness L2 커밋) 대비 커밋된 변경 + 커밋되지 않은 변경
+    # 기준("Initial commit") 대비 커밋된 변경 + 커밋되지 않은 변경
     (cd "$live" && git log --oneline && git status --short && git diff "$base") >"$OUT/step8-git.txt" 2>&1
     "$S/grade.sh" "$live" "$OUT/out-step8.json" >"$OUT/step8-grade.log" 2>&1
     echo "step8 grade exit=$? $(jq -c '{violating_classes, R1: .by_rule.R1.count}' "$OUT/out-step8.json" 2>/dev/null)"

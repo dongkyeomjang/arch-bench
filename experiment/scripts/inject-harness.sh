@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 시드 복사본(workspace)에 하네스 수준 L0~L3 를 덧씌우고 "harness <level>" 로 커밋한다.
+# 시드 복사본(workspace)에 하네스 수준 L0~L3 를 덧씌우고, git 이력을 새로 만들어 "Initial commit" 하나로 커밋한다.
+# 시드의 "seed" 커밋은 지운다: 네 수준 모두 git log 에 같은 메시지의 커밋 1개만 보이게 하기 위함.
 # 사용: experiment/scripts/inject-harness.sh <L0|L1|L2|L3> <workspace>
 # 종료 코드: 0 성공, 1 복사·커밋 실패, 2 미지원 수준(또는 인자 오류)
 set -uo pipefail
@@ -44,6 +45,10 @@ if grep -nE "$COMMON_FORBIDDEN_KO" "$HARNESS/common/CLAUDE.md" >&2 \
     fail "common/CLAUDE.md mentions architecture terms (see lines above)"
 fi
 
+# 시드 이력을 버리고 새 저장소로 시작한다 (exclude 설정보다 먼저)
+rm -rf "$ws/.git" || fail "remove seed .git"
+(cd "$ws" && git init -q -b main) || fail "git init"
+
 # L0: 공통 CLAUDE.md
 cp "$HARNESS/common/CLAUDE.md" "$ws/CLAUDE.md" || fail "copy common/CLAUDE.md"
 
@@ -74,5 +79,5 @@ fi
     cd "$ws" || exit 1
     export GIT_AUTHOR_NAME=seed GIT_AUTHOR_EMAIL=seed@example.com GIT_COMMITTER_NAME=seed GIT_COMMITTER_EMAIL=seed@example.com
     export GIT_AUTHOR_DATE="2026-01-01T00:00:00Z" GIT_COMMITTER_DATE="2026-01-01T00:00:00Z"
-    git add -A && git -c commit.gpgsign=false commit -q -m "harness $level"
+    git add -A && git -c commit.gpgsign=false commit -q -m "Initial commit"
 ) || fail "git commit"

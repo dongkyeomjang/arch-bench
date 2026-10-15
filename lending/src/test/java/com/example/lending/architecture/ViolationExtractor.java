@@ -16,7 +16,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * 규칙 평가 결과에서 위반의 원인 클래스(FQN)를 뽑고, 측정 JSON 구조를 만든다.
+ * 규칙 평가 결과에서 위반의 원인 클래스(FQN)를 뽑고, 결과 리포트(lending.json) 구조를 만든다.
  * 실패 리포트 문자열을 파싱하지 않고 ArchUnit 위반 객체의 타입으로 판단한다.
  *
  * <ul>
@@ -67,14 +67,15 @@ public final class ViolationExtractor {
     }
 
     /**
-     * 주 지표(violating_classes) 합집합에 들어가는 규칙. R4·R5는 by_rule에만 남긴다.
-     * R4: 순환의 정상 방향 쪽 클래스(예: v4의 LoanPolicy)까지 원인으로 잡아 과대 집계한다. 패턴 A에서 R4는 R1 ∪ R2에 포함된다.
+     * violating_classes 합집합에 들어가는 규칙. R4·R5는 by_rule에만 남긴다.
+     * R4: 순환의 정상 방향 쪽 클래스(예: domain을 정방향으로 참조하는 application 클래스)까지 원인으로 잡는다.
+     * 최상위 패키지 슬라이스에서 R4 순환의 잘못된 엣지는 R1 또는 R2에 이미 잡힌다.
      * R5: 4개 어노테이션이 모두 R1 블랙리스트 패키지라서 원인 클래스가 항상 R1의 부분집합이다(R5 ⊂ R1).
      */
     public static final List<String> PRIMARY_RULES = List.of("R1", "R2", "R3", "R6", "R7");
 
     /**
-     * 측정 JSON 구조. {@code resultsByRuleId}는 실행된 규칙만 규칙 순서대로 담는다
+     * 결과 리포트 구조. {@code resultsByRuleId}는 실행된 규칙만 규칙 순서대로 담는다
      * (실행되지 않은 규칙을 0으로 기록하지 않기 위해). tests_executed = 실행된 규칙 테스트 수.
      */
     public static Map<String, Object> report(Map<String, EvaluationResult> resultsByRuleId) {

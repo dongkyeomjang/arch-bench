@@ -83,13 +83,17 @@ TASK 번호는 **작업 종료 시점**에 확정한다. 시작 시점엔 "다�
 
 ```bash
 experiment/scripts/materialize-seed.sh                  # lending → experiment/seed/ (독립 Gradle 프로젝트 + git "seed")
-experiment/scripts/inject-harness.sh <L0|L1|L2|L3> <ws>  # 시드 복사본에 하네스 수준 주입 + "harness <level>" 커밋
+experiment/scripts/inject-harness.sh <L0|L1|L2|L3> <ws>  # 시드 복사본에 하네스 수준 주입 + git 새로 init, "Initial commit" 1개
 experiment/scripts/grade.sh <ws> <out.json>             # 오버레이 채점 (원본 ArchUnit 덮어쓰기 → lending.json)
 experiment/scripts/smoke.sh                             # 1~7단계 검증 (SMOKE_LIVE=1 이면 8단계 Claude Code 실호출)
+CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_session.py \
+  --level L2 --model haiku --domain _smoke --rep 1 --ws-root $ARCH_WS_ROOT --out experiment/runs [--agent fake]
 ```
 
 - 계약(입력·출력·종료 코드), 러너 전제, 검증 결과는 `experiment/README.md` 가 정본.
 - `experiment/harness/` 텍스트는 사전 등록 전까지 동결. 바꾸면 TASK 로 기록한다.
+- 러너는 격리 설정 디렉터리 `CLAUDE_CONFIG_DIR`(이 머신: `~/.claude-arch-bench`, 별도 로그인)가 없으면 실행을 거부한다(종료 5). `tasks/_smoke/` 는 러너 검증용이며 실험 과제가 아니다.
+- 채점기 3개 파일의 주석에는 실험 용어를 쓰지 않는다(L2·L3 워크스페이스로 복사되어 에이전트에게 보인다). 원래 동결 대상이며 TASK5 에서 주석만 한 번 바꿨다.
 - 에이전트 세션 워크스페이스는 **이 저장소 밖**, `/Users/kyeom/Project/arch-bench-ws` 아래에 둔다(`ARCH_WS_ROOT`). Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽기 때문이다.
 
 ## Architecture

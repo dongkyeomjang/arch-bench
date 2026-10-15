@@ -22,10 +22,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 /**
- * 헥사고날 아키텍처 규칙 R1~R7. 양성(lending)·음성(violation-fixtures) 검증이 같은 규칙 객체를 쓰도록
- * 기준 패키지를 인자로 받는다. 번호(id)는 실험 결과 JSON의 키다.
+ * 이 프로젝트의 헥사고날 아키텍처 규칙 R1~R7. 기준 패키지를 인자로 받는다.
+ * 번호(id)와 이름은 build/arch/lending.json 의 키로 쓰인다.
  *
- * <p>모든 규칙은 allowEmptyShould(true): 축소 픽스처처럼 특정 레이어가 없는 저장소에서
+ * <p>모든 규칙은 allowEmptyShould(true): 특정 레이어가 아직 없는 코드베이스에서
  * "검사 대상 없음"이 위반 1건으로 집계되지 않게 한다. 기준 패키지 오타 방어는 각 테스트가 import 결과를 직접 확인한다.
  */
 public final class HexagonalRules {
@@ -51,7 +51,7 @@ public final class HexagonalRules {
         String port = basePackage + ".application.port..";
         String portOut = basePackage + ".application.port.out..";
 
-        // jakarta.validation.., com.fasterxml.jackson..: 2차 변경에서 추가 (실험 설계자 결정 — 도메인에 validation/Jackson 금지)
+        // 도메인은 Bean Validation(jakarta.validation..)과 Jackson(com.fasterxml.jackson..)도 쓰지 않는다
         String r1Reason = "domain은 ..application.., ..adapter.., org.springframework.., jakarta.persistence.., "
                 + "jakarta.validation.., com.fasterxml.jackson..을 의존하지 않는다";
         ArchRule r1 = noClasses().that().resideInAPackage(domain)
@@ -77,7 +77,7 @@ public final class HexagonalRules {
                         .because(r3Reason)
                         .allowEmptyShould(true));
 
-        // 패턴 A: domain / application / adapter 3개 슬라이스. 패턴 비교는 REPORT.md 단계 4 참조
+        // 최상위 패키지 단위 슬라이스: domain / application / adapter
         ArchRule r4 = slices().matching(basePackage + ".(*)..")
                 .should().beFreeOfCycles()
                 .because("레이어 간 순환 의존이 없다")

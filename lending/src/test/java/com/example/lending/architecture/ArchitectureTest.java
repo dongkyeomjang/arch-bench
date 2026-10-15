@@ -22,9 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 양성 검증: 올바른 참조 구현(lending)에서 R1~R7이 모두 통과해야 한다. 규칙당 테스트 1개.
+ * 이 프로젝트의 아키텍처 규칙 R1~R7을 검사한다. 규칙당 테스트 1개.
  * 각 테스트는 실패 여부와 관계없이, 지금까지 실행된 규칙 결과로 build/arch/lending.json을 다시 쓴 뒤 assert한다.
- * 따라서 tests_executed는 실제로 실행된 규칙 테스트 수이며, 파이프라인은 이 값이 규칙 수(7)와 같을 때만 측정값으로 쓴다.
+ * 따라서 tests_executed는 실제로 실행된 규칙 테스트 수이며, 규칙 수(7)와 같을 때 모든 규칙이 검사된 것이다.
  *
  * <p>@Tag만으로는 ArchUnit JUnit5 엔진 테스트가 태그 필터되지 않으므로 @ArchTag를 반드시 함께 단다.
  */

@@ -22,3 +22,5 @@ build/
 /experiment/ws-*/
 /experiment/out-*.json
 /experiment/smoke-out/
+/experiment/runs/
+/experiment/runner/__pycache__/
