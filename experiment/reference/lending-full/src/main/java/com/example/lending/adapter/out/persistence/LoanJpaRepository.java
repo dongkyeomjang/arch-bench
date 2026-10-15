@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface LoanJpaRepository extends JpaRepository<LoanJpaEntity, UUID> {
 
-    long countByMemberId(UUID memberId);
+    long countByMemberIdAndReturnedAtIsNull(UUID memberId);
 }

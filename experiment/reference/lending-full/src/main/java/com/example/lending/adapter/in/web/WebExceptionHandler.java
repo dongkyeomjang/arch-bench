@@ -1,6 +1,7 @@
 package com.example.lending.adapter.in.web;
 
 import com.example.lending.domain.BookNotFoundException;
+import com.example.lending.domain.LoanNotFoundException;
 import com.example.lending.domain.MemberNotFoundException;
 import com.example.lending.domain.RuleViolationException;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,7 @@ public class WebExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler({BookNotFoundException.class, MemberNotFoundException.class})
+    @ExceptionHandler({BookNotFoundException.class, MemberNotFoundException.class, LoanNotFoundException.class})
     public ProblemDetail handleNotFound(RuntimeException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }

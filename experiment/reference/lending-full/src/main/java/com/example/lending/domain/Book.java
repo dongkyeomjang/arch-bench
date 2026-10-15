@@ -36,6 +36,10 @@ public class Book {
         return loan;
     }
 
+    public void receiveReturn() {
+        status = BookStatus.AVAILABLE;
+    }
+
     public UUID getId() {
         return id;
     }

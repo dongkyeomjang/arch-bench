@@ -27,15 +27,19 @@ public class LoanJpaEntity {
     @Column(nullable = false)
     private LocalDate dueAt;
 
+    private LocalDate returnedAt;
+
     protected LoanJpaEntity() {
     }
 
-    public LoanJpaEntity(UUID id, UUID bookId, UUID memberId, LocalDate loanedAt, LocalDate dueAt) {
+    public LoanJpaEntity(UUID id, UUID bookId, UUID memberId, LocalDate loanedAt, LocalDate dueAt,
+                         LocalDate returnedAt) {
         this.id = id;
         this.bookId = bookId;
         this.memberId = memberId;
         this.loanedAt = loanedAt;
         this.dueAt = dueAt;
+        this.returnedAt = returnedAt;
     }
 
     public UUID getId() {
@@ -56,5 +60,9 @@ public class LoanJpaEntity {
 
     public LocalDate getDueAt() {
         return dueAt;
+    }
+
+    public LocalDate getReturnedAt() {
+        return returnedAt;
     }
 }
