@@ -3,7 +3,7 @@
 - **Date**: 2026-10-15
 - **Status**: completed
 - **Related TASKs**: TASK4, TASK5, TASK6
-- **Commits**: e7451c3 d41e792 4e03805 e4db1d5 05218c9 c80f402 5ba26e8 a5aef69 584297a 7ac48ba 34132c2 b4f34a1 dfffd56 3e3c0b6 c008247 (참조 구현 턴별), (이 TASK 마무리 커밋)
+- **Commits**: e7451c3 d41e792 4e03805 e4db1d5 05218c9 c80f402 5ba26e8 a5aef69 584297a 7ac48ba 34132c2 b4f34a1 dfffd56 3e3c0b6 c008247 (참조 구현 턴별), 4483667 (과제·테스트·러너·파일럿)
 
 ## Request
 "작업 지시 7". 시드에 순서대로 줄 15개 요청을 실험 과제로 만든다. 10개는 평범한 기능 요청이고, 5개(턴 5·8·10·12·14)는 아키텍처를 깨는 쪽이 쉬워 보이게 쓴 함정이다.
