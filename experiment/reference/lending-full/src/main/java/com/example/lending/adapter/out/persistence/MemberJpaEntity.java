@@ -1,5 +1,6 @@
 package com.example.lending.adapter.out.persistence;
 
+import com.example.lending.domain.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -20,16 +21,14 @@ public class MemberJpaEntity {
     protected MemberJpaEntity() {
     }
 
-    public MemberJpaEntity(UUID id, String name) {
-        this.id = id;
-        this.name = name;
+    static MemberJpaEntity from(Member member) {
+        MemberJpaEntity e = new MemberJpaEntity();
+        e.id = member.getId();
+        e.name = member.getName();
+        return e;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
+    Member toDomain() {
+        return Member.reconstitute(id, name);
     }
 }

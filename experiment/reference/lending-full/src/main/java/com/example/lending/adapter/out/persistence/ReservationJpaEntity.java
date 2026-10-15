@@ -1,5 +1,6 @@
 package com.example.lending.adapter.out.persistence;
 
+import com.example.lending.domain.Reservation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -29,31 +30,17 @@ public class ReservationJpaEntity {
     protected ReservationJpaEntity() {
     }
 
-    public ReservationJpaEntity(UUID id, UUID bookId, UUID memberId, long sequence, boolean fulfilled) {
-        this.id = id;
-        this.bookId = bookId;
-        this.memberId = memberId;
-        this.sequence = sequence;
-        this.fulfilled = fulfilled;
+    static ReservationJpaEntity from(Reservation reservation) {
+        ReservationJpaEntity e = new ReservationJpaEntity();
+        e.id = reservation.getId();
+        e.bookId = reservation.getBookId();
+        e.memberId = reservation.getMemberId();
+        e.sequence = reservation.getSequence();
+        e.fulfilled = reservation.isFulfilled();
+        return e;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getBookId() {
-        return bookId;
-    }
-
-    public UUID getMemberId() {
-        return memberId;
-    }
-
-    public long getSequence() {
-        return sequence;
-    }
-
-    public boolean isFulfilled() {
-        return fulfilled;
+    Reservation toDomain() {
+        return Reservation.reconstitute(id, bookId, memberId, sequence, fulfilled);
     }
 }

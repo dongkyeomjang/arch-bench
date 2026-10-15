@@ -12,7 +12,6 @@ import java.util.UUID;
 public class ReservationPersistenceAdapter implements LoadReservationPort, SaveReservationPort {
 
     private final ReservationJpaRepository reservationJpaRepository;
-    private final ReservationMapper reservationMapper = new ReservationMapper();
 
     public ReservationPersistenceAdapter(ReservationJpaRepository reservationJpaRepository) {
         this.reservationJpaRepository = reservationJpaRepository;
@@ -21,12 +20,12 @@ public class ReservationPersistenceAdapter implements LoadReservationPort, SaveR
     @Override
     public List<Reservation> loadWaitingReservations(UUID bookId) {
         return reservationJpaRepository.findByBookIdAndFulfilledFalse(bookId).stream()
-                .map(reservationMapper::toDomain)
+                .map(ReservationJpaEntity::toDomain)
                 .toList();
     }
 
     @Override
     public void saveReservation(Reservation reservation) {
-        reservationJpaRepository.save(reservationMapper.toEntity(reservation));
+        reservationJpaRepository.save(ReservationJpaEntity.from(reservation));
     }
 }

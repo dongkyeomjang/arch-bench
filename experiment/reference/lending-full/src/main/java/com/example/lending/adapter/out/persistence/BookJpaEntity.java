@@ -1,5 +1,7 @@
 package com.example.lending.adapter.out.persistence;
 
+import com.example.lending.domain.Book;
+import com.example.lending.domain.BookStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -23,21 +25,15 @@ public class BookJpaEntity {
     protected BookJpaEntity() {
     }
 
-    public BookJpaEntity(UUID id, String title, String status) {
-        this.id = id;
-        this.title = title;
-        this.status = status;
+    static BookJpaEntity from(Book book) {
+        BookJpaEntity e = new BookJpaEntity();
+        e.id = book.getId();
+        e.title = book.getTitle();
+        e.status = book.getStatus().name();
+        return e;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getStatus() {
-        return status;
+    Book toDomain() {
+        return Book.reconstitute(id, title, BookStatus.valueOf(status));
     }
 }

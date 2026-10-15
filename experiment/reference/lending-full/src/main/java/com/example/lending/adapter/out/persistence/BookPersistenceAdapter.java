@@ -14,7 +14,6 @@ import java.util.UUID;
 public class BookPersistenceAdapter implements LoadBookPort, SaveBookPort {
 
     private final BookJpaRepository bookJpaRepository;
-    private final BookMapper bookMapper = new BookMapper();
 
     public BookPersistenceAdapter(BookJpaRepository bookJpaRepository) {
         this.bookJpaRepository = bookJpaRepository;
@@ -22,21 +21,21 @@ public class BookPersistenceAdapter implements LoadBookPort, SaveBookPort {
 
     @Override
     public Optional<Book> loadBook(UUID bookId) {
-        return bookJpaRepository.findById(bookId).map(bookMapper::toDomain);
+        return bookJpaRepository.findById(bookId).map(BookJpaEntity::toDomain);
     }
 
     @Override
     public List<Book> loadBooks(Collection<UUID> bookIds) {
-        return bookJpaRepository.findAllById(bookIds).stream().map(bookMapper::toDomain).toList();
+        return bookJpaRepository.findAllById(bookIds).stream().map(BookJpaEntity::toDomain).toList();
     }
 
     @Override
     public List<Book> searchBooksByTitle(String keyword) {
-        return bookJpaRepository.findByTitleContainingIgnoreCase(keyword).stream().map(bookMapper::toDomain).toList();
+        return bookJpaRepository.findByTitleContainingIgnoreCase(keyword).stream().map(BookJpaEntity::toDomain).toList();
     }
 
     @Override
     public void saveBook(Book book) {
-        bookJpaRepository.save(bookMapper.toEntity(book));
+        bookJpaRepository.save(BookJpaEntity.from(book));
     }
 }

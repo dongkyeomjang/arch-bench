@@ -17,7 +17,6 @@ import java.util.UUID;
 public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
 
     private final LoanJpaRepository loanJpaRepository;
-    private final LoanMapper loanMapper = new LoanMapper();
 
     public LoanPersistenceAdapter(LoanJpaRepository loanJpaRepository) {
         this.loanJpaRepository = loanJpaRepository;
@@ -25,7 +24,7 @@ public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
 
     @Override
     public Optional<Loan> loadLoan(UUID loanId) {
-        return loanJpaRepository.findById(loanId).map(loanMapper::toDomain);
+        return loanJpaRepository.findById(loanId).map(LoanJpaEntity::toDomain);
     }
 
     @Override
@@ -35,7 +34,7 @@ public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
 
     @Override
     public List<Loan> loadLoansOfMember(UUID memberId) {
-        return loanJpaRepository.findByMemberId(memberId).stream().map(loanMapper::toDomain).toList();
+        return loanJpaRepository.findByMemberId(memberId).stream().map(LoanJpaEntity::toDomain).toList();
     }
 
     @Override
@@ -43,11 +42,11 @@ public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
         // Spring Data 의 Page/Pageable 은 이 어댑터 안에서만 쓰고, 포트 밖으로는 LoanSlice 로 내보낸다
         Page<LoanJpaEntity> result = loanJpaRepository.findByMemberIdAndReturnedAtIsNull(
                 memberId, PageRequest.of(page, size, Sort.by("loanedAt", "id")));
-        return new LoanSlice(result.map(loanMapper::toDomain).getContent(), result.getTotalElements());
+        return new LoanSlice(result.map(LoanJpaEntity::toDomain).getContent(), result.getTotalElements());
     }
 
     @Override
     public void saveLoan(Loan loan) {
-        loanJpaRepository.save(loanMapper.toEntity(loan));
+        loanJpaRepository.save(LoanJpaEntity.from(loan));
     }
 }

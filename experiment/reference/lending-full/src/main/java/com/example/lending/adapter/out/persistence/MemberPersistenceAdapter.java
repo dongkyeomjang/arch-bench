@@ -12,7 +12,6 @@ import java.util.UUID;
 public class MemberPersistenceAdapter implements LoadMemberPort, SaveMemberPort {
 
     private final MemberJpaRepository memberJpaRepository;
-    private final MemberMapper memberMapper = new MemberMapper();
 
     public MemberPersistenceAdapter(MemberJpaRepository memberJpaRepository) {
         this.memberJpaRepository = memberJpaRepository;
@@ -20,11 +19,11 @@ public class MemberPersistenceAdapter implements LoadMemberPort, SaveMemberPort 
 
     @Override
     public Optional<Member> loadMember(UUID memberId) {
-        return memberJpaRepository.findById(memberId).map(memberMapper::toDomain);
+        return memberJpaRepository.findById(memberId).map(MemberJpaEntity::toDomain);
     }
 
     @Override
     public void saveMember(Member member) {
-        memberJpaRepository.save(memberMapper.toEntity(member));
+        memberJpaRepository.save(MemberJpaEntity.from(member));
     }
 }
