@@ -1,12 +1,14 @@
 package com.example.lending.domain;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.UUID;
 
 public class Loan {
 
     static final int LOAN_PERIOD_DAYS = 14;
+    static final long LATE_FEE_PER_DAY = 100;
 
     private final UUID id;
     private final UUID bookId;
@@ -50,6 +52,21 @@ public class Loan {
 
     public boolean isReturned() {
         return returnedAt != null;
+    }
+
+    public long overdueDays() {
+        requireReturned();
+        return Math.max(0, ChronoUnit.DAYS.between(dueAt, returnedAt));
+    }
+
+    public long lateFee() {
+        return overdueDays() * LATE_FEE_PER_DAY;
+    }
+
+    private void requireReturned() {
+        if (!isReturned()) {
+            throw new IllegalStateException("loan is not returned yet: " + id);
+        }
     }
 
     public boolean isOverdue(LocalDate today) {

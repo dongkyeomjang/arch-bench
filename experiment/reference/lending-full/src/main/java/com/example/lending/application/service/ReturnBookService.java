@@ -35,7 +35,7 @@ public class ReturnBookService implements ReturnBookUseCase {
     public Loan returnBook(ReturnBookCommand command) {
         Loan loan = loadLoanPort.loadLoan(command.loanId())
                 .orElseThrow(() -> new LoanNotFoundException(command.loanId()));
-        loan.returnOn(LocalDate.now());
+        loan.returnOn(command.returnedAt() != null ? command.returnedAt() : LocalDate.now());
         Book book = loadBookPort.loadBook(loan.getBookId())
                 .orElseThrow(() -> new BookNotFoundException(loan.getBookId()));
         book.receiveReturn();

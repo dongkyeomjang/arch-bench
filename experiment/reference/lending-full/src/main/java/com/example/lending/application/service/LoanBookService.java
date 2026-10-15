@@ -42,7 +42,7 @@ public class LoanBookService implements LoanBookUseCase {
         member.ensureCanBorrow(loadLoanPort.countActiveLoans(member.getId()));
         Book book = loadBookPort.loadBook(command.bookId())
                 .orElseThrow(() -> new BookNotFoundException(command.bookId()));
-        Loan loan = book.loanTo(command.memberId(), LocalDate.now());
+        Loan loan = book.loanTo(member.getId(), command.loanedAt() != null ? command.loanedAt() : LocalDate.now());
         saveBookPort.saveBook(book);
         saveLoanPort.saveLoan(loan);
         return loan;

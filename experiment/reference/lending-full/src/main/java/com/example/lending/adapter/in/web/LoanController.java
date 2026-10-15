@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -30,12 +31,14 @@ public class LoanController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LoanResponse loanBook(@RequestBody LoanRequest request) {
-        Loan loan = loanBookUseCase.loanBook(new LoanBookCommand(request.bookId(), request.memberId()));
+        Loan loan = loanBookUseCase.loanBook(new LoanBookCommand(request.bookId(), request.memberId(), request.loanedAt()));
         return LoanResponse.from(loan);
     }
 
     @PostMapping("/{loanId}/return")
-    public ReturnResponse returnBook(@PathVariable UUID loanId) {
-        return ReturnResponse.from(returnBookUseCase.returnBook(new ReturnBookCommand(loanId)));
+    public ReturnResponse returnBook(@PathVariable UUID loanId,
+                                     @RequestBody(required = false) ReturnRequest request) {
+        LocalDate returnedAt = request != null ? request.returnedAt() : null;
+        return ReturnResponse.from(returnBookUseCase.returnBook(new ReturnBookCommand(loanId, returnedAt)));
     }
 }
