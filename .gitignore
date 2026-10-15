@@ -16,3 +16,9 @@ build/
 
 # OS
 .DS_Store
+
+# experiment 생성물 (materialize-seed.sh, smoke.sh)
+/experiment/seed/
+/experiment/ws-*/
+/experiment/out-*.json
+/experiment/smoke-out/

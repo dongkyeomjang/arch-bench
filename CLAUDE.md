@@ -79,6 +79,19 @@ TASK 번호는 **작업 종료 시점**에 확정한다. 시작 시점엔 "다�
 - `archTest` 가드: 모듈별로 실행된 arch 테스트가 0개면 `GradleException` 으로 실패한다 (`executed N arch tests` 로그 확인)
 - `test` 태스크는 `arch`, `investigation` 태그를 제외한다. 아키텍처 측정은 반드시 `archTest` 로 돌린다
 
+## Experiment Harness (`experiment/`)
+
+```bash
+experiment/scripts/materialize-seed.sh                  # lending → experiment/seed/ (독립 Gradle 프로젝트 + git "seed")
+experiment/scripts/inject-harness.sh <L0|L1|L2|L3> <ws>  # 시드 복사본에 하네스 수준 주입 + "harness <level>" 커밋
+experiment/scripts/grade.sh <ws> <out.json>             # 오버레이 채점 (원본 ArchUnit 덮어쓰기 → lending.json)
+experiment/scripts/smoke.sh                             # 1~7단계 검증 (SMOKE_LIVE=1 이면 8단계 Claude Code 실호출)
+```
+
+- 계약(입력·출력·종료 코드), 러너 전제, 검증 결과는 `experiment/README.md` 가 정본.
+- `experiment/harness/` 텍스트는 사전 등록 전까지 동결. 바꾸면 TASK 로 기록한다.
+- 에이전트 세션 워크스페이스는 **이 저장소 밖**에 둔다 (Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽는다).
+
 ## Architecture
 
 이 저장소는 실험의 **초기 저장소**(`lending`)이자 **채점기**(ArchUnit 규칙 R1~R6)다. 규칙의 정밀도가 최우선이다 — 잡아야 할 것을 못 잡거나 잡지 말아야 할 것을 잡으면 실험 전체가 오염된다. 설계 결정과 근거는 `REPORT.md` 에 있다.
