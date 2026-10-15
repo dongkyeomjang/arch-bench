@@ -1,0 +1,5 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":46,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/Loan.java","tool":"Edit","elapsed_ms":1765,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/test/java/com/example/lending/domain/LoanLateFeeTest.java","tool":"Edit","elapsed_ms":43,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":40,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":40,"exit_code":0,"action":"skip"}

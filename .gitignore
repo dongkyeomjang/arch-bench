@@ -22,6 +22,8 @@ build/
 /experiment/ws-*/
 /experiment/out-*.json
 /experiment/smoke-out/
-/experiment/runs/
+/experiment/runs/*
+!/experiment/runs/pilot/
+!/experiment/runs/pilot-report.md
 /experiment/runner/__pycache__/
 /experiment/scripts/__pycache__/

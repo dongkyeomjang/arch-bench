@@ -9,3 +9,4 @@
 | TASK5 | 2026-10-15 | completed | TASK4 열린 결정 반영(채점기 주석 실험 용어 제거·측정값 바이트 동일, 단일 "Initial commit", 훅 매처 Bash + src/main 내용 변경 감지) + 세션 러너 run_session.py·fake_agent·_smoke 3턴, fake/haiku 실호출 검증 | [상세](./TASK5.md) |
 | TASK6 | 2026-10-15 | completed | 워크스페이스 누설 차단(무작위 토큰 경로·workspace-index.jsonl·escaped_cwd_count 측정·러너 커밋 "Save work in progress") + 매트릭스 실행기 run_matrix.py(시드 고정 셔플·병렬·--resume·비용 가드·matrix-status.json), fake 12세션·haiku 병렬 실호출 검증 (Follow-up 2026-10-15: ws 루트 비움, 잔여물 사전 검사, 실패 상태 aborted→failed) | [상세](./TASK6.md) |
 | TASK7 | 2026-10-15 | completed | 도서 대출 15턴 과제 파일(API 계약 절, 함정 5개 비표시) + HTTP 수준 숨겨진 기능 테스트 44개 + 헥사고날 참조 구현(턴별 커밋 15개, 위반 0, lloc.json) + 러너 FT_pass 누적 측정(ft_*) + 파일럿 설정(pilot.json, 미실행) | [상세](./TASK7.md) |
+| TASK8 | 2026-10-15 | in-progress | 파일럿 1차 2세션 실행(L1 $0.87 완주·L2 $1.10 에서 중단, 위반 0·FT 100%, 함정 10건 복종 0) + summarize.py + pilot-report.md(설계자 질문·300세션 예산 재산정) + matrix skip_agent_tests. 세션당 $1 초과로 2차 8세션은 설계자 결정 대기 | [상세](./TASK8.md) |

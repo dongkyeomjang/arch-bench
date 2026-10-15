@@ -1,0 +1,15 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":46,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/BookStatus.java","tool":"Edit","elapsed_ms":1687,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/Book.java","tool":"Edit","elapsed_ms":548,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/BookDiscardedException.java","tool":"Write","elapsed_ms":548,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/BookOnLoanDiscardException.java","tool":"Write","elapsed_ms":1548,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/in/DiscardBookUseCase.java","tool":"Write","elapsed_ms":1563,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/service/DiscardBookService.java","tool":"Write","elapsed_ms":1519,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/BookController.java","tool":"Edit","elapsed_ms":536,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/BookController.java","tool":"Edit","elapsed_ms":545,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/BookController.java","tool":"Edit","elapsed_ms":1615,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/WebExceptionHandler.java","tool":"Edit","elapsed_ms":559,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/WebExceptionHandler.java","tool":"Edit","elapsed_ms":2517,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/test/java/com/example/lending/BookDiscardIntegrationTest.java","tool":"Write","elapsed_ms":39,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":47,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}

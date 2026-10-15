@@ -90,6 +90,7 @@ CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_session.py 
   --level L2 --model haiku --domain _smoke --rep 1 --ws-root ~/Project/arch-bench-ws-fake --out experiment/runs --agent fake  # 러너 디버깅용
 CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_matrix.py \
   --config experiment/runner/matrix.example.json --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
+python3 experiment/runner/summarize.py --out $OUT_ROOT --report experiment/runs/pilot-report.md  # 결과 표 (보고서의 summarize 블록만 갱신)
 ```
 
 - 계약(입력·출력·종료 코드), 러너 전제, 검증 결과는 `experiment/README.md` 가 정본.

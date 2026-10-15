@@ -1,0 +1,13 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":51,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/out/LoadAllLoansPort.java","tool":"Write","elapsed_ms":2010,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/in/ListMemberLoanHistoryUseCase.java","tool":"Write","elapsed_ms":1700,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/service/ListMemberLoanHistoryService.java","tool":"Write","elapsed_ms":1664,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/LoanJpaRepository.java","tool":"Write","elapsed_ms":1714,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/LoanPersistenceAdapter.java","tool":"Write","elapsed_ms":1610,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/LoanHistoryItemResponse.java","tool":"Write","elapsed_ms":1597,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Edit","elapsed_ms":552,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Edit","elapsed_ms":541,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Edit","elapsed_ms":1608,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/test/java/com/example/lending/MemberLoanHistoryIntegrationTest.java","tool":"Write","elapsed_ms":54,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":58,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}

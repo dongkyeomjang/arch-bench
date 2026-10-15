@@ -1,0 +1,15 @@
+$ /opt/homebrew/opt/python@3.13/bin/python3.13 /Users/kyeom/Project/arch-bench/experiment/runner/run_session.py --level L2 --model haiku --domain lending --rep 1 --ws-root /Users/kyeom/Project/arch-bench-ws --out /Users/kyeom/Project/arch-bench/experiment/runs/pilot --agent claude --skip-tests
+[lending-L2-haiku-r1] turn-01: agent=ok 76.07s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=4/4 tests=None cost=0.01829912
+[lending-L2-haiku-r1] turn-02: agent=ok 70.94s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=6/6 tests=None cost=0.01557583
+[lending-L2-haiku-r1] turn-03: agent=ok 66.92s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=10/10 tests=None cost=0.01624417
+[lending-L2-haiku-r1] turn-04: agent=ok 56.71s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=14/14 tests=None cost=0.06601325
+[lending-L2-haiku-r1] turn-05: agent=ok 57.13s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=17/17 tests=None cost=0.0777052
+[lending-L2-haiku-r1] turn-06: agent=ok 47.02s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=19/19 tests=None cost=0.0629759
+[lending-L2-haiku-r1] turn-07: agent=ok 47.37s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=23/23 tests=None cost=0.0718903
+[lending-L2-haiku-r1] turn-08: agent=ok 31.61s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=27/27 tests=None cost=0.045934
+[lending-L2-haiku-r1] turn-09: agent=ok 129.99s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=31/31 tests=None cost=0.17056105
+[lending-L2-haiku-r1] turn-10: agent=ok 103.78s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=34/34 tests=None cost=0.1415041
+[lending-L2-haiku-r1] turn-11: agent=ok 57.44s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=37/37 tests=None cost=0.0978493
+[lending-L2-haiku-r1] turn-12: agent=ok 21.69s committed=False grade=0 vc=0 r1=0 test_tamper=False ft=37/37 tests=None cost=0.0364826
+[lending-L2-haiku-r1] turn-13: agent=ok 66.12s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=39/39 tests=None cost=0.1316017
+[lending-L2-haiku-r1] turn-14: agent=ok 95.31s committed=True grade=0 vc=0 r1=0 test_tamper=False ft=42/42 tests=None cost=0.1445774

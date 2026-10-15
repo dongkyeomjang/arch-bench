@@ -1,0 +1,12 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":46,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/in/ListMemberLoansUseCase.java","tool":"Write","elapsed_ms":1986,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java","tool":"Write","elapsed_ms":1536,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/service/ListMemberLoansService.java","tool":"Write","elapsed_ms":1479,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/LoanJpaRepository.java","tool":"Write","elapsed_ms":1475,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/LoanPersistenceAdapter.java","tool":"Write","elapsed_ms":1540,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberLoanItemResponse.java","tool":"Write","elapsed_ms":1567,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberLoansResponse.java","tool":"Write","elapsed_ms":1523,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Write","elapsed_ms":1581,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/test/java/com/example/lending/MemberLoansIntegrationTest.java","tool":"Write","elapsed_ms":50,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":51,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":38,"exit_code":0,"action":"skip"}

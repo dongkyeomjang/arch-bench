@@ -1,0 +1,17 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/Member.java","tool":"Write","elapsed_ms":873,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/domain/MemberSuspendedException.java","tool":"Write","elapsed_ms":660,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/MemberMapper.java","tool":"Write","elapsed_ms":640,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/out/persistence/MemberJpaEntity.java","tool":"Write","elapsed_ms":5602,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberResponse.java","tool":"Write","elapsed_ms":1741,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/port/in/SuspendMemberUseCase.java","tool":"Write","elapsed_ms":1737,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/application/service/SuspendMemberService.java","tool":"Write","elapsed_ms":1664,"exit_code":0,"action":"pass"}
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Edit","elapsed_ms":678,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/MemberController.java","tool":"Edit","elapsed_ms":1855,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/WebExceptionHandler.java","tool":"Edit","elapsed_ms":590,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/main/java/com/example/lending/adapter/in/web/WebExceptionHandler.java","tool":"Edit","elapsed_ms":1711,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/ea8aa393f496/lending/src/test/java/com/example/lending/MemberSuspensionIntegrationTest.java","tool":"Write","elapsed_ms":44,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":44,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}

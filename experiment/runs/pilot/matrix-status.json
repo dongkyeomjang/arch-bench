@@ -1,0 +1,39 @@
+{
+  "state": "finished",
+  "stop_reason": null,
+  "total": 2,
+  "done": 1,
+  "pending": 0,
+  "running": 0,
+  "completed": 1,
+  "skipped": 0,
+  "failed": 1,
+  "cost_usd": 1.969872,
+  "max_cost_usd": 2.0,
+  "started_at": "2026-10-15T23:13:27+09:00",
+  "updated_at": "2026-10-15T23:30:51+09:00",
+  "elapsed_s": 1046.7,
+  "avg_session_s": 989.5,
+  "eta_s": 0.0,
+  "parallel": 2,
+  "agent": "claude",
+  "shuffle_seed": 20261215,
+  "sessions": [
+    {
+      "session_id": "lending-L1-haiku-r1",
+      "status": "completed",
+      "cost_usd": 0.872659,
+      "wall_s": 989.5,
+      "exit_code": 0,
+      "workspace_token": "41af13f81a84"
+    },
+    {
+      "session_id": "lending-L2-haiku-r1",
+      "status": "failed",
+      "cost_usd": 1.097213,
+      "wall_s": 1046.7,
+      "exit_code": 1,
+      "workspace_token": "ea8aa393f496"
+    }
+  ]
+}

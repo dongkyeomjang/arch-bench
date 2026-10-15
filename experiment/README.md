@@ -532,26 +532,34 @@ LLOC(`scripts/lloc.py`): `src/main/java` 아래 `*.java` 의 줄 중 빈 줄, �
 - 컴파일 실패: 참조 구현 복사본에 컴파일 오류를 넣고 턴 1~2 → `ft_status compile_failed`, `ft_compile_error true`, `ft_passed 0/6`. `_smoke`(테스트 없음) → `ft_status no_tests`, `ft_total 0`, `ft_pass null`.
 - 숨겨진 테스트 한 번(44개)은 데몬이 떠 있을 때 약 5초(Spring 컨텍스트 1회 + 컴파일).
 
-### 파일럿 `runner/pilot.json` (실행하지 않음)
+### 파일럿 `runner/pilot.json`
 
-L1·L2 × haiku × lending × 5회 = 10세션, 병렬 2, `max_cost_usd 8`. **실행은 지시가 있을 때까지 하지 않는다.** 세션당 예상 비용 `$0.5` 는 `_smoke` 3턴 haiku 실측($0.03~0.04)을 15턴·누적 맥락으로 늘려 잡은 어림값이다(검증 안 됨). `--dry-run` 출력(2회 실행 동일, md5 `6454e2eda92c405f121fb3d7c72b638c`):
+L1·L2 × haiku × lending. 계획은 10세션(5회)이었다. TASK8 에서 1차 2세션(`reps: 1`, `max_cost_usd 2.0`, `skip_agent_tests: true`)만 돌리고, "세션당 $1 초과" 조건에 걸려 멈췄다. 결과는 `runs/pilot/`, 보고서는 `runs/pilot-report.md` 다.
 
-```
-# 10 sessions, shuffle_seed=20261215, agent=claude, parallel=2
-   1  lending-L2-haiku-r4              est_usd=0.5
-   2  lending-L1-haiku-r1              est_usd=0.5
-   3  lending-L1-haiku-r4              est_usd=0.5
-   4  lending-L2-haiku-r2              est_usd=0.5
-   5  lending-L2-haiku-r5              est_usd=0.5
-   6  lending-L1-haiku-r5              est_usd=0.5
-   7  lending-L1-haiku-r3              est_usd=0.5
-   8  lending-L2-haiku-r3              est_usd=0.5
-   9  lending-L1-haiku-r2              est_usd=0.5
-  10  lending-L2-haiku-r1              est_usd=0.5
-# estimated cost: $5.00; max_cost_usd=8
-```
+**비용 실측(TASK8, `claude-haiku-5-5`, Claude Code 2.1.300)**
 
-턴마다 채점(`grade.sh`)·숨겨진 테스트·에이전트 자신의 테스트를 각각 Gradle 로 돌리므로 에이전트 시간 외에 턴당 수십 초가 더 든다. `run_matrix.py` 는 `run_session.py` 에 `--skip-tests` 를 넘기지 않는다(에이전트 자신의 테스트는 매 턴 돈다).
+| | L1-r1 | L2-r1 |
+|---|---|---|
+| 상태 | completed 15턴 | 턴 15 도중 의도적 중단 (14턴 기록) |
+| 비용 | $0.873 | $1.097 (15턴 환산 ≈ $1.19) |
+| 시간 | 16.5분 | 17.4분 |
+| 턴당 입력 토큰(캐시 포함) | 약 56만 | 약 87만 |
+
+- 턴 4~5 부터 턴 비용이 4~5배로 뛴다.
+  - 원인은 `--resume` 으로 누적된 맥락이 100k 토큰을 넘으면서 Haiku 5.5 의 **프롬프트 >100k 단가**(입력·캐시 5배)가 적용되는 것이다.
+  - 처음 3턴만 보고 늘려 잡은 이전 추정치 $0.5 는 실측의 절반이었다. `est_cost_per_session_usd.haiku` 를 **1.1** 로 고쳤다.
+- Sonnet·Opus 5.5 환산과 300세션 예산은 `runs/pilot-report.md` 4절에 있다(세션당 ≈ $3.95 / ≈ $7.90, 같은 토큰 가정).
+- `max_cost_usd` 는 새 세션 시작만 막는다. 세션 하나의 비용 상한은 러너에 없다.
+
+**`skip_agent_tests`(설정 키, 기본 `false`)**: `true` 면 `run_matrix.py` 가 `run_session.py` 에 `--skip-tests` 를 넘긴다.
+- 에이전트 자신의 테스트(`tests_*`)는 마지막 턴에만 돈다.
+- 숨겨진 테스트(`ft_*`)는 매 턴 그대로 돈다.
+- 채점(`grade.sh`)과 숨겨진 테스트는 턴마다 Gradle 로 돌아, 에이전트 시간 외에 턴당 수십 초가 더 든다.
+
+**요약 `runner/summarize.py`**: `summarize.py --out <OUT_ROOT> --report <md>` 로 실행하며, 표준 라이브러리만 쓴다.
+- 만드는 표: 세션 요약, 턴×세션 `violating_classes`, 턴×세션 숨겨진 테스트, 규칙별 세션 수, 수준 비교, 턴별 비용·토큰, 실패·이상.
+- 보고서 파일이 있으면 `<!-- summarize:begin -->`~`<!-- summarize:end -->` 사이만 바꾼다. `_failed-<ts>` 디렉터리는 집계에서 뺀다.
+- 함정 턴 목록(5·8·10·12·14)이 스크립트에 들어 있다. 에이전트에게 복사되지 않는다.
 
 ## L1 아키텍처 산문 ↔ R1~R7 확정 문장 대응표
 
