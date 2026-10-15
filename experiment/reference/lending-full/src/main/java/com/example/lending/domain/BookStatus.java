@@ -2,5 +2,6 @@ package com.example.lending.domain;
 
 public enum BookStatus {
     AVAILABLE,
-    ON_LOAN
+    ON_LOAN,
+    DISCARDED
 }
