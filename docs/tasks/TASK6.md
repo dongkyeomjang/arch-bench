@@ -3,7 +3,7 @@
 - **Date**: 2026-10-15
 - **Status**: completed
 - **Related TASKs**: TASK4, TASK5
-- **Commits**: (이 TASK 커밋)
+- **Commits**: 90a2002
 
 ## Request
 "작업 지시 6". TASK5 남은 숙제에 대한 결정:
