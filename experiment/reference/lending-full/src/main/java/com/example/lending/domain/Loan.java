@@ -56,7 +56,18 @@ public class Loan {
 
     public long overdueDays() {
         requireReturned();
-        return Math.max(0, ChronoUnit.DAYS.between(dueAt, returnedAt));
+        return Math.max(0, ChronoUnit.DAYS.between(effectiveDueAt(), returnedAt));
+    }
+
+    /**
+     * 연체 계산에 쓰는 기한. 기한이 토·일요일이면 다음 월요일까지 연체로 보지 않는다. dueAt 자체는 바꾸지 않는다.
+     */
+    public LocalDate effectiveDueAt() {
+        return switch (dueAt.getDayOfWeek()) {
+            case SATURDAY -> dueAt.plusDays(2);
+            case SUNDAY -> dueAt.plusDays(1);
+            default -> dueAt;
+        };
     }
 
     public long lateFee() {
