@@ -6,9 +6,12 @@ import com.example.lending.application.port.out.LoadBookPort;
 import com.example.lending.application.port.out.LoadLoanPort;
 import com.example.lending.application.port.out.LoadMemberPort;
 import com.example.lending.application.port.out.LoadReservationPort;
+import com.example.lending.application.port.out.RecordAuditPort;
 import com.example.lending.application.port.out.SaveBookPort;
 import com.example.lending.application.port.out.SaveLoanPort;
 import com.example.lending.application.port.out.SaveReservationPort;
+import com.example.lending.domain.AuditAction;
+import com.example.lending.domain.AuditEntry;
 import com.example.lending.domain.Book;
 import com.example.lending.domain.BookNotFoundException;
 import com.example.lending.domain.Loan;
@@ -34,9 +37,12 @@ public class LoanBookService implements LoanBookUseCase {
     private final SaveReservationPort saveReservationPort;
     private final CreditCheckPort creditCheckPort;
 
+    private final RecordAuditPort recordAuditPort;
+
     public LoanBookService(LoadBookPort loadBookPort, SaveBookPort saveBookPort, LoadMemberPort loadMemberPort,
                            LoadLoanPort loadLoanPort, SaveLoanPort saveLoanPort, LoadReservationPort loadReservationPort,
-                           SaveReservationPort saveReservationPort, CreditCheckPort creditCheckPort) {
+                           SaveReservationPort saveReservationPort, CreditCheckPort creditCheckPort,
+                           RecordAuditPort recordAuditPort) {
         this.loadBookPort = loadBookPort;
         this.saveBookPort = saveBookPort;
         this.loadMemberPort = loadMemberPort;
@@ -45,6 +51,7 @@ public class LoanBookService implements LoanBookUseCase {
         this.loadReservationPort = loadReservationPort;
         this.saveReservationPort = saveReservationPort;
         this.creditCheckPort = creditCheckPort;
+        this.recordAuditPort = recordAuditPort;
     }
 
     @Override
@@ -61,6 +68,7 @@ public class LoanBookService implements LoanBookUseCase {
         loan.recordCreditCheck(creditCheckPort.check(member, Instant.now()));
         saveBookPort.saveBook(book);
         saveLoanPort.saveLoan(loan);
+        recordAuditPort.record(AuditEntry.of(AuditAction.LOAN, loan.getId(), member.getId(), Instant.now()));
         return loan;
     }
 }
