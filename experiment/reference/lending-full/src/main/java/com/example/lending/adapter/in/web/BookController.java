@@ -2,22 +2,29 @@ package com.example.lending.adapter.in.web;
 
 import com.example.lending.application.port.in.RegisterBookUseCase;
 import com.example.lending.application.port.in.RegisterBookUseCase.RegisterBookCommand;
+import com.example.lending.application.port.in.SearchBooksUseCase;
 import com.example.lending.domain.Book;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/books")
 public class BookController {
 
     private final RegisterBookUseCase registerBookUseCase;
+    private final SearchBooksUseCase searchBooksUseCase;
 
-    public BookController(RegisterBookUseCase registerBookUseCase) {
+    public BookController(RegisterBookUseCase registerBookUseCase, SearchBooksUseCase searchBooksUseCase) {
         this.registerBookUseCase = registerBookUseCase;
+        this.searchBooksUseCase = searchBooksUseCase;
     }
 
     @PostMapping
@@ -25,5 +32,10 @@ public class BookController {
     public BookResponse registerBook(@RequestBody RegisterBookRequest request) {
         Book book = registerBookUseCase.registerBook(new RegisterBookCommand(request.title()));
         return BookResponse.from(book);
+    }
+
+    @GetMapping
+    public List<BookResponse> searchBooks(@RequestParam(required = false) String title) {
+        return searchBooksUseCase.searchBooks(title).stream().map(BookResponse::from).toList();
     }
 }

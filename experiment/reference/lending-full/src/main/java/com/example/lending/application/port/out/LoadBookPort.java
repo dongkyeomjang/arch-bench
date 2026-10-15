@@ -12,4 +12,6 @@ public interface LoadBookPort {
     Optional<Book> loadBook(UUID bookId);
 
     List<Book> loadBooks(Collection<UUID> bookIds);
+
+    List<Book> searchBooksByTitle(String keyword);
 }

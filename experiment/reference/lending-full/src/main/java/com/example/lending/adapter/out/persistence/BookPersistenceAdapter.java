@@ -31,6 +31,11 @@ public class BookPersistenceAdapter implements LoadBookPort, SaveBookPort {
     }
 
     @Override
+    public List<Book> searchBooksByTitle(String keyword) {
+        return bookJpaRepository.findByTitleContainingIgnoreCase(keyword).stream().map(bookMapper::toDomain).toList();
+    }
+
+    @Override
     public void saveBook(Book book) {
         bookJpaRepository.save(bookMapper.toEntity(book));
     }
