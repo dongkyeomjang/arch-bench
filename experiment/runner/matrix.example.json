@@ -1,0 +1,11 @@
+{
+  "levels": ["L0", "L1", "L2", "L3"],
+  "models": ["haiku", "sonnet", "opus"],
+  "domains": ["_smoke"],
+  "reps": 1,
+  "agent": "fake",
+  "parallel": 2,
+  "max_cost_usd": 5.0,
+  "shuffle_seed": 20261215,
+  "est_cost_per_session_usd": {"haiku": 0.05, "sonnet": 0.3, "opus": 1.5}
+}

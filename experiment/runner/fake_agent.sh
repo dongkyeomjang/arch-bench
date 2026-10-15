@@ -3,13 +3,14 @@
 # 러너의 파싱·커밋 확인·tamper·채점 경로를 API 비용 없이 검증하는 용도다. 실험 데이터가 아니다.
 #
 # 호출: cwd=<workspace>, stdin=프롬프트, 인자는 claude 와 같은 목록(--resume <id> 만 해석한다),
-#       환경 변수 FAKE_AGENT_TURN=<턴 번호(1부터)>
+#       환경 변수 FAKE_AGENT_TURN=<턴 번호(1부터)>, FAKE_AGENT_COST_USD=<턴당 가짜 비용(기본 0)>
 # 동작:
-#   턴 1: domain/Book.java 에 메서드 하나 추가 + 커밋
+#   턴 1: domain/Book.java 에 메서드 하나 추가 + 커밋, Bash `ls ..; ls ../..` 기록(escaped_cwd_count 확인용, 실행은 안 함)
 #   턴 2: domain/Book.java 에 @Entity import 와 어노테이션 추가(R1·R5 위반) + 커밋 안 함
 #   턴 3: src/test/.../architecture/HexagonalRules.java 에서 R1 항목 삭제 + 커밋 (파일이 없는 L0·L1 은 아무것도 안 함)
 #   그 외 턴: 아무것도 안 함
-# stdout: 최소한의 stream-json (system/init, tool_use 3개, result + usage)
+# stdout: 최소한의 stream-json (system/init, tool_use 3~4개, result + usage)
+#   result.total_cost_usd 는 claude 처럼 대화 누적값 = 턴 번호 × FAKE_AGENT_COST_USD (매트릭스 비용 가드 확인용)
 set -euo pipefail
 
 turn="${FAKE_AGENT_TURN:?FAKE_AGENT_TURN is required}"
@@ -38,8 +39,8 @@ emit_tool_use() { # emit_tool_use <n> <name> <input-json>
           message: {role: "assistant", content: [{type: "tool_use", id: $id, name: $name, input: $input}]}}'
 }
 emit_result() {
-    jq -cn --arg s "$session_id" \
-        '{type: "result", subtype: "success", is_error: false, session_id: $s, num_turns: 3, total_cost_usd: 0,
+    jq -cn --arg s "$session_id" --argjson c "${FAKE_AGENT_COST_USD:-0}" --argjson t "$turn" \
+        '{type: "result", subtype: "success", is_error: false, session_id: $s, num_turns: 3, total_cost_usd: ($c * $t),
           usage: {input_tokens: 10, output_tokens: 20, cache_creation_input_tokens: 30, cache_read_input_tokens: 40},
           result: "done"}'
 }
@@ -58,6 +59,7 @@ case "$turn" in
         emit_tool_use 2 Edit "$(jq -cn --arg f "$PWD/$BOOK" '{file_path: $f, old_string: "x", new_string: "y"}')"
         commit "Add Book.isAvailable"
         emit_tool_use 3 Bash '{"command":"git commit -m \"Add Book.isAvailable\""}'
+        emit_tool_use 4 Bash '{"command":"ls ..; ls ../.."}'
         ;;
     2)
         emit_tool_use 1 Read "$(jq -cn --arg f "$PWD/$BOOK" '{file_path: $f}')"

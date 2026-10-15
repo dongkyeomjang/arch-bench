@@ -17,6 +17,8 @@ import hashlib
 import json
 import os
 import re
+import secrets
+import shlex
 import shutil
 import signal
 import subprocess
@@ -37,6 +39,7 @@ AGENT_TIMEOUT_S = 20 * 60
 GRADE_TIMEOUT_S = 10 * 60
 TEST_TIMEOUT_S = 15 * 60
 BASE_COMMIT_MESSAGE = "Initial commit"
+RUNNER_COMMIT_MESSAGE = "Save work in progress"  # 턴 번호·수준을 넣지 않는다(에이전트의 git log 에 보인다)
 ARCH_TEST_DIR = "src/test/java/com/example/lending/architecture/"
 CONFIG_PATHS = (".claude/", "CLAUDE.md", "build.gradle.kts", "gradle/arch.gradle.kts")
 TRACKED_TOOLS = ("Edit", "Write", "MultiEdit", "Bash", "Read", "Task")
@@ -48,6 +51,10 @@ STRIPPED_ENV_PREFIXES = ("CLAUDE_CODE_",)
 STRIPPED_ENV = {"CLAUDECODE", "CLAUDE_PID", "CLAUDE_EFFORT", "CLAUDE_PROJECT_DIR"}
 EXTRA_ENV = {"DISABLE_AUTOUPDATER": "1"}  # 매트릭스 도중 Claude Code 버전이 바뀌지 않게
 LEAK_NAMES = ("CLAUDE.md", "CLAUDE.local.md", ".claude")
+# Bash 명령 분석: 명령 구분자, `..` 경로 성분(`HEAD~1..HEAD` 같은 git 범위는 성분이 아니라 제외)
+SHELL_SEP_RE = re.compile(r"&&|\|\||[;\n|]")
+PARENT_COMPONENT_RE = re.compile(r"(?:^|/)\.\.(?:/|$)")
+HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?^\s*\2\s*$", re.S | re.M)  # 본문은 파일 내용이지 경로가 아니다
 RUNNER_GIT = ["-c", "user.name=runner", "-c", "user.email=runner@example.com", "-c", "commit.gpgsign=false"]
 
 
@@ -130,17 +137,61 @@ def precheck_config_dir() -> Path:
 
 # ---------------------------------------------------------------- 스트림 파싱
 
-def parse_stream(path: Path) -> dict:
-    """stream-json 을 읽어 토큰·도구 호출·리뷰어 판정을 뽑는다. 이상한 줄은 예외 대신 parse_errors 에 남긴다."""
+def escapes_cwd(command: str, cwd: str, ws: Path, ws_root: Path) -> tuple[bool, str]:
+    """Bash 명령이 워크스페이스 밖을 가리키는가 (측정용, 차단하지 않음). 반환: (밖으로 나감, 명령 뒤 cwd).
+
+    명령을 구분자로 나눠 `cd` 로 cwd 를 따라가며, `..` 성분이 있는 경로는 cwd 기준으로 풀어 ws 밖이면,
+    절대 경로는 ws_root 아래인데 ws 밖이면 1건으로 본다. `cd src && ...; cd ..` 처럼 안에서 오르내리는 것은 세지 않는다.
+    어휘 분석이라 변수·서브셸·`~` 는 따라가지 않는다."""
+    ws_s, root_s = str(ws), str(ws_root)
+
+    def inside(p: str, base: str) -> bool:
+        return p == base or p.startswith(base + "/")
+
+    escaped = False
+    command = HEREDOC_RE.sub(lambda m: m.group(0).split("\n", 1)[0], command)
+    for seg in SHELL_SEP_RE.split(command):
+        try:
+            toks = shlex.split(seg)
+        except ValueError:  # 따옴표가 짝이 안 맞는 조각(heredoc 본문 등)
+            toks = seg.split()
+        toks = [t.lstrip("(").rstrip(")") for t in toks]
+        toks = [t for t in toks if t]
+        if not toks:
+            continue
+        if toks[0] == "cd":
+            target = toks[1] if len(toks) > 1 else ""
+            if not target or target.startswith(("~", "$", "-")):
+                continue
+            new = os.path.normpath(os.path.join(cwd, target))
+            if (PARENT_COMPONENT_RE.search(target) or target.startswith("/")) and \
+                    not inside(new, ws_s) and (inside(new, root_s) or PARENT_COMPONENT_RE.search(target)):
+                escaped = True
+            cwd = new
+            continue
+        for t in toks:
+            t = t.split("=", 1)[1] if t.startswith("-") and "=" in t else t
+            if PARENT_COMPONENT_RE.search(t):
+                if not inside(os.path.normpath(os.path.join(cwd, t)), ws_s):
+                    escaped = True
+            elif t.startswith("/") and inside(os.path.normpath(t), root_s) and not inside(os.path.normpath(t), ws_s):
+                escaped = True
+    return escaped, cwd
+
+
+def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
+    """stream-json 을 읽어 토큰·도구 호출·리뷰어 판정·워크스페이스 밖 Bash 를 뽑는다. 이상한 줄은 예외 대신 parse_errors 에 남긴다."""
     out = {
         "agent_session_id": None, "model_id": None, "claude_code_version": None,
         "input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
         "cost_usd_cumulative": None, "num_turns": None, "result_events": 0, "result_is_error": None, "result_text": None,
         "tool_calls": {t: 0 for t in TRACKED_TOOLS}, "tool_calls_all": {}, "subagent_tool_calls": 0,
         "reviewer_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
+        "escaped_cwd_count": 0, "escaped_cwd_commands": [],
         "session_ids_seen": [], "parse_errors": [],
     }
     reviewer_ids: list[str] = []
+    cwds: dict[str | None, str] = {}  # 셸별(메인·서브에이전트) cwd. 턴마다 새 프로세스라 ws 에서 시작
     texts: dict[str, list[str]] = {}  # tool_use_id → 결과 텍스트 후보 (동기 tool_result, 비동기 task_notification)
     if not path.exists():
         out["parse_errors"].append("stream file missing")
@@ -175,6 +226,13 @@ def parse_stream(path: Path) -> dict:
                         continue
                     if c.get("type") == "tool_use":
                         name = c.get("name") or "?"
+                        cmd = (c.get("input") or {}).get("command") if name == "Bash" else None
+                        if isinstance(cmd, str):  # 서브에이전트의 Bash 도 센다
+                            shell = e.get("parent_tool_use_id")
+                            esc, cwds[shell] = escapes_cwd(cmd, cwds.get(shell, str(ws)), ws, ws_root)
+                            if esc:
+                                out["escaped_cwd_count"] += 1
+                                out["escaped_cwd_commands"].append(cmd[:500])
                         if e.get("parent_tool_use_id"):
                             out["subagent_tool_calls"] += 1
                             continue
@@ -263,14 +321,14 @@ def run_agent(args, ws: Path, prompt: str, turn: int, resume_id: str | None, str
             "agent_cmd": " ".join(shown)}
 
 
-def commit_check(ws: Path, turn_name: str, head_before: str) -> dict:
+def commit_check(ws: Path, head_before: str) -> dict:
     head_after_agent = git(ws, "rev-parse", "HEAD")
     agent_committed = head_after_agent != head_before
     dirty = bool(git(ws, "status", "--porcelain"))
     runner_committed = False
     if dirty:  # 에이전트가 커밋하지 않았거나, 커밋 뒤에 남긴 변경 → 러너가 커밋해 턴 끝 상태 = HEAD 로 맞춘다
         git(ws, "add", "-A")
-        run(["git", *RUNNER_GIT, "commit", "-q", "-m", f"turn {turn_name.removeprefix('turn-')} (runner)"], cwd=ws, check=True)
+        run(["git", *RUNNER_GIT, "commit", "-q", "-m", RUNNER_COMMIT_MESSAGE], cwd=ws, check=True)
         runner_committed = True
     return {
         "head_before": head_before, "head_after_agent": head_after_agent, "head_after": git(ws, "rev-parse", "HEAD"),
@@ -411,10 +469,13 @@ def main() -> int:
 
     args.ws_root.mkdir(parents=True, exist_ok=True)
     ws_root = args.ws_root.resolve()
-    ws = ws_root / session_id
-    out = args.out.expanduser().resolve() / session_id
-    if ws.exists() or out.exists():
-        print(f"run_session: {ws if ws.exists() else out} already exists; refusing to overwrite", file=sys.stderr)
+    # 워크스페이스 경로에 조건(수준·모델·도메인)을 넣지 않는다: 에이전트가 pwd·ls .. 로 읽을 수 있다
+    token = secrets.token_hex(6)
+    ws = ws_root / token / "lending"
+    out_root = args.out.expanduser().resolve()
+    out = out_root / session_id
+    if ws.parent.exists() or out.exists():
+        print(f"run_session: {ws.parent if ws.parent.exists() else out} already exists; refusing to overwrite", file=sys.stderr)
         return 4
     try:
         precheck_ws_root(ws_root)
@@ -428,6 +489,9 @@ def main() -> int:
     started = now_iso()
     t_session = time.monotonic()
     out.mkdir(parents=True)
+    # 토큰 → 세션 역추적표. 에이전트가 ls ../.. 로 읽지 못하게 ws_root 밖(결과 루트)에 둔다. 한 줄 append 라 병렬 세션도 안전
+    with (out_root / "workspace-index.jsonl").open("a") as f:
+        f.write(json.dumps({"token": token, "session_id": session_id, "created_at": started}) + "\n")
 
     # 시드: 없으면 만든다 (결정적: 같은 해시)
     if not (SEED / ".git").is_dir():
@@ -456,7 +520,7 @@ def main() -> int:
         "rep": args.rep, "agent": args.agent, "model_id": None, "claude_code_version": cli_version,
         "agent_session_id": None, "agent_session_id_consistent": None,
         "started_at": started, "ended_at": None, "wall_s": None, "status": "running", "exit_code": None,
-        "workspace": str(ws), "seed_commit": seed_commit, "base_commit": base,
+        "workspace": str(ws), "workspace_token": token, "seed_commit": seed_commit, "base_commit": base,
         "base_commit_message": git(ws, "log", "-1", "--format=%s"),
         "arch_bench_commit": git(ROOT, "rev-parse", "HEAD"),
         "arch_bench_dirty": bool(git(ROOT, "status", "--porcelain")),
@@ -501,7 +565,7 @@ def main() -> int:
                 (tdir / "hook-log.jsonl").touch()
             turn.update(hook_summary(tdir / "hook-log.jsonl"))
             # 3) 스트림 파싱
-            parsed = parse_stream(tdir / "stream.jsonl")
+            parsed = parse_stream(tdir / "stream.jsonl", ws, ws_root)
             turn.update(parsed)
             cum = parsed["cost_usd_cumulative"]
             if cum is None:
@@ -516,7 +580,7 @@ def main() -> int:
             if turn["agent_status"] == "ok" and (parsed["result_is_error"] or parsed["result_events"] == 0):
                 turn["agent_status"] = "error"
             # 4) 커밋 확인  5) tamper
-            turn.update(commit_check(ws, turn_name, head_before))
+            turn.update(commit_check(ws, head_before))
             turn.update(tamper_check(ws, base, args.level))
             # 6) 채점
             turn.update(grade(ws, tdir / "arch.json", tdir / "grade.log"))
@@ -548,7 +612,7 @@ def main() -> int:
             session["turns"].append({k: turn.get(k) for k in (
                 "turn", "agent_status", "agent_wall_s", "agent_session_id", "input_tokens", "output_tokens",
                 "cache_creation_input_tokens", "cache_read_input_tokens", "cost_usd", "cost_usd_cumulative", "hook_runs", "hook_blocks",
-                "reviewer_calls", "reviewer_verdicts", "agent_committed", "runner_committed", "no_change",
+                "reviewer_calls", "reviewer_verdicts", "escaped_cwd_count", "agent_committed", "runner_committed", "no_change",
                 "test_tamper", "config_tamper", "grade_exit", "violating_classes", "r1_count", "r2_count",
                 "r3_count", "r4_count", "r5_count", "r6_count", "r7_count", "tests_status", "tests_total",
                 "tests_failed", "parse_errors")})
