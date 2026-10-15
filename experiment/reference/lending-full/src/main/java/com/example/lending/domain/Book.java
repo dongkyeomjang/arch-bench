@@ -49,6 +49,15 @@ public class Book {
         status = BookStatus.DISCARDED;
     }
 
+    public void ensureReservable() {
+        if (status == BookStatus.AVAILABLE) {
+            throw new BookAvailableException(id);
+        }
+        if (status == BookStatus.DISCARDED) {
+            throw new BookDiscardedException(id);
+        }
+    }
+
     public void receiveReturn() {
         status = BookStatus.AVAILABLE;
     }
