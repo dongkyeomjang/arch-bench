@@ -87,7 +87,7 @@ experiment/scripts/inject-harness.sh <L0|L1|L2|L3> <ws>  # 시드 복사본에 �
 experiment/scripts/grade.sh <ws> <out.json>             # 오버레이 채점 (원본 ArchUnit 덮어쓰기 → lending.json)
 experiment/scripts/smoke.sh                             # 1~7단계 검증 (SMOKE_LIVE=1 이면 8단계 Claude Code 실호출)
 CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_session.py \
-  --level L2 --model haiku --domain _smoke --rep 1 --ws-root $ARCH_WS_ROOT --out experiment/runs [--agent fake]
+  --level L2 --model haiku --domain _smoke --rep 1 --ws-root ~/Project/arch-bench-ws-fake --out experiment/runs --agent fake  # 러너 디버깅용
 CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_matrix.py \
   --config experiment/runner/matrix.example.json --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
 ```
@@ -97,6 +97,7 @@ CLAUDE_CONFIG_DIR=~/.claude-arch-bench python3 experiment/runner/run_matrix.py \
 - 러너는 격리 설정 디렉터리 `CLAUDE_CONFIG_DIR`(이 머신: `~/.claude-arch-bench`, 별도 로그인)가 없으면 실행을 거부한다(종료 5). `tasks/_smoke/` 는 러너 검증용이며 실험 과제가 아니다.
 - 채점기 3개 파일의 주석에는 실험 용어를 쓰지 않는다(L2·L3 워크스페이스로 복사되어 에이전트에게 보인다). 원래 동결 대상이며 TASK5 에서 주석만 한 번 바꿨다.
 - 에이전트 세션 워크스페이스는 **이 저장소 밖**, `/Users/kyeom/Project/arch-bench-ws` 아래에 둔다(`ARCH_WS_ROOT`). Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽기 때문이다.
+- **본 실험은 `run_matrix.py` 로만, fake(`--agent fake`/`agent: fake`)는 별도 루트 `~/Project/arch-bench-ws-fake` 에서만 돌린다.** 본 실험 루트에 잔여물이 있으면 claude 매트릭스가 종료 5 로 거부한다(`experiment/README.md` "운영 원칙").
 - 워크스페이스 경로는 `$ARCH_WS_ROOT/<무작위 토큰>/lending` 이다. 경로·커밋 메시지(`Initial commit`, `Save work in progress`)에 수준·모델·턴 번호를 넣지 않는다(에이전트가 `pwd`·`ls ..`·`git log` 로 읽는다). 토큰 → 세션 대응은 `$OUT_ROOT/workspace-index.jsonl`(워크스페이스 루트 밖).
 
 ## Architecture

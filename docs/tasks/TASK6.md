@@ -139,3 +139,19 @@
 
 **Notes**
 - `run_session.py` 를 단독으로 실행할 때는 잔여물 검사가 없다. 본 실험은 `run_matrix.py` 로만 돌린다.
+
+### Follow-up — 2026-10-15 (운영 원칙 문서화)
+
+**Request**: 다음 운영 원칙을 README 운영 절차에 적는다.
+- fake 는 별도 루트(`~/Project/arch-bench-ws-fake`)에서만 돌린다.
+- 본 실험은 `run_matrix.py` 로만 돌린다.
+
+**Changes**
+- `experiment/README.md` 의 "매트릭스 실행기 › 실행 절차" 맨 앞에 "운영 원칙" 3항을 추가했다.
+  - 본 실험은 `run_matrix.py` 로만 돌린다.
+  - fake 는 `~/Project/arch-bench-ws-fake` 에서만 돌린다(`run_session.py --agent fake` 포함).
+  - 본 실험 루트는 매트릭스 하나와 그 `--resume` 전용으로 쓴다.
+- `CLAUDE.md` 실험 절의 `run_session.py` 예시를 fake 루트와 `--agent fake` 로 바꾸고, 같은 원칙을 한 줄 추가했다.
+
+**Notes**
+- 코드로 강제하지 않고 문서 규칙으로 둔다. 바로 앞 Follow-up 의 잔여물 검사가 본 실험 루트 오염을 실행 시점에 잡으므로, 위반은 조용히 지나가지 않고 종료 5 로 드러난다.

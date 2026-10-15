@@ -418,6 +418,11 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 
 ### 실행 절차
 
+**운영 원칙**
+- **본 실험은 `run_matrix.py` 로만 돌린다.** `run_session.py` 단독 실행에는 워크스페이스 잔여물 사전 검사가 없다(단독 실행은 러너 디버깅용).
+- **fake 는 별도 루트에서만 돌린다**: `--ws-root ~/Project/arch-bench-ws-fake`. 본 실험 루트(`~/Project/arch-bench-ws`)에서 fake 를 돌리면 그 워크스페이스가 잔여물로 남아 이후 claude 매트릭스가 종료 5 로 거부된다(잔여물 검사는 `agent: claude` 에만 걸린다). `run_session.py --agent fake` 도 같다. fake 루트는 언제든 비워도 된다.
+- 본 실험 루트는 비어 있는 상태에서 매트릭스 하나로 시작하고, 그 매트릭스의 `--resume` 외에는 다른 실행에 쓰지 않는다.
+
 1. 설정 파일을 만든다(`matrix.example.json` 복사). 키: `levels`·`models`·`domains`(필수), `reps`(기본 1), `agent`(`claude`|`fake`, 기본 `claude`), `parallel`(기본 2), `max_cost_usd`(없으면 가드 없음), `shuffle_seed`(기본 20261215), `est_cost_per_session_usd`(모델별 dict, dry-run 용).
 2. `--dry-run` 으로 세션 목록·순서·예상 비용을 확인한다(파일을 만들지 않는다). 예상 비용은 `est_cost_per_session_usd` 의 단순 합이며 `agent: fake` 여도 그대로 보인다(실제 비용 0).
 3. 같은 `--out` 으로 실행한다. 진행 상황은 `$OUT_ROOT/matrix-status.json`. 결과 디렉터리가 하나라도 이미 있으면 `--resume` 없이는 거부(**종료 4**).
