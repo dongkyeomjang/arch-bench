@@ -1,11 +1,13 @@
 package com.example.lending.adapter.in.web;
 
+import com.example.lending.application.port.in.GetLoanUseCase;
 import com.example.lending.application.port.in.LoanBookUseCase;
 import com.example.lending.application.port.in.LoanBookUseCase.LoanBookCommand;
 import com.example.lending.application.port.in.ReturnBookUseCase;
 import com.example.lending.application.port.in.ReturnBookUseCase.ReturnBookCommand;
 import com.example.lending.domain.Loan;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,10 +24,13 @@ public class LoanController {
 
     private final LoanBookUseCase loanBookUseCase;
     private final ReturnBookUseCase returnBookUseCase;
+    private final GetLoanUseCase getLoanUseCase;
 
-    public LoanController(LoanBookUseCase loanBookUseCase, ReturnBookUseCase returnBookUseCase) {
+    public LoanController(LoanBookUseCase loanBookUseCase, ReturnBookUseCase returnBookUseCase,
+                          GetLoanUseCase getLoanUseCase) {
         this.loanBookUseCase = loanBookUseCase;
         this.returnBookUseCase = returnBookUseCase;
+        this.getLoanUseCase = getLoanUseCase;
     }
 
     @PostMapping
@@ -40,5 +45,10 @@ public class LoanController {
                                      @RequestBody(required = false) ReturnRequest request) {
         LocalDate returnedAt = request != null ? request.returnedAt() : null;
         return ReturnResponse.from(returnBookUseCase.returnBook(new ReturnBookCommand(loanId, returnedAt)));
+    }
+
+    @GetMapping("/{loanId}")
+    public LoanDetailsResponse getLoan(@PathVariable UUID loanId) {
+        return LoanDetailsResponse.from(getLoanUseCase.getLoan(loanId));
     }
 }

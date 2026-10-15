@@ -16,8 +16,10 @@ public class Loan {
     private final LocalDate loanedAt;
     private final LocalDate dueAt;
     private LocalDate returnedAt;
+    private CreditCheck creditCheck;
 
-    private Loan(UUID id, UUID bookId, UUID memberId, LocalDate loanedAt, LocalDate dueAt, LocalDate returnedAt) {
+    private Loan(UUID id, UUID bookId, UUID memberId, LocalDate loanedAt, LocalDate dueAt, LocalDate returnedAt,
+                 CreditCheck creditCheck) {
         this.id = Objects.requireNonNull(id, "id");
         this.bookId = Objects.requireNonNull(bookId, "bookId");
         this.memberId = Objects.requireNonNull(memberId, "memberId");
@@ -27,16 +29,28 @@ public class Loan {
             throw new IllegalArgumentException("dueAt must not be before loanedAt");
         }
         this.returnedAt = returnedAt;
+        this.creditCheck = creditCheck;
     }
 
     // 대출 생성은 Book.loanTo를 통해서만 (대출 가능 여부 규칙을 우회하지 않도록 package-private)
     static Loan start(UUID bookId, UUID memberId, LocalDate loanedAt) {
-        return new Loan(UUID.randomUUID(), bookId, memberId, loanedAt, loanedAt.plusDays(LOAN_PERIOD_DAYS), null);
+        return new Loan(UUID.randomUUID(), bookId, memberId, loanedAt, loanedAt.plusDays(LOAN_PERIOD_DAYS), null, null);
     }
 
     public static Loan reconstitute(UUID id, UUID bookId, UUID memberId, LocalDate loanedAt, LocalDate dueAt,
-                                    LocalDate returnedAt) {
-        return new Loan(id, bookId, memberId, loanedAt, dueAt, returnedAt);
+                                    LocalDate returnedAt, CreditCheck creditCheck) {
+        return new Loan(id, bookId, memberId, loanedAt, dueAt, returnedAt, creditCheck);
+    }
+
+    /**
+     * 대출 전 신용조회 결과를 남긴다. 승인되지 않았으면 대출을 거절한다.
+     */
+    public void recordCreditCheck(CreditCheck check) {
+        Objects.requireNonNull(check, "check");
+        if (!check.approved()) {
+            throw new CreditRejectedException(memberId);
+        }
+        this.creditCheck = check;
     }
 
     public void returnOn(LocalDate date) {
@@ -106,5 +120,9 @@ public class Loan {
 
     public LocalDate getReturnedAt() {
         return returnedAt;
+    }
+
+    public CreditCheck getCreditCheck() {
+        return creditCheck;
     }
 }

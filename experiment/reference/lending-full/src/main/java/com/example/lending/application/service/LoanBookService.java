@@ -1,6 +1,7 @@
 package com.example.lending.application.service;
 
 import com.example.lending.application.port.in.LoanBookUseCase;
+import com.example.lending.application.port.out.CreditCheckPort;
 import com.example.lending.application.port.out.LoadBookPort;
 import com.example.lending.application.port.out.LoadLoanPort;
 import com.example.lending.application.port.out.LoadMemberPort;
@@ -17,6 +18,7 @@ import com.example.lending.domain.ReservationQueue;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Service
@@ -30,10 +32,11 @@ public class LoanBookService implements LoanBookUseCase {
     private final SaveLoanPort saveLoanPort;
     private final LoadReservationPort loadReservationPort;
     private final SaveReservationPort saveReservationPort;
+    private final CreditCheckPort creditCheckPort;
 
     public LoanBookService(LoadBookPort loadBookPort, SaveBookPort saveBookPort, LoadMemberPort loadMemberPort,
                            LoadLoanPort loadLoanPort, SaveLoanPort saveLoanPort, LoadReservationPort loadReservationPort,
-                           SaveReservationPort saveReservationPort) {
+                           SaveReservationPort saveReservationPort, CreditCheckPort creditCheckPort) {
         this.loadBookPort = loadBookPort;
         this.saveBookPort = saveBookPort;
         this.loadMemberPort = loadMemberPort;
@@ -41,6 +44,7 @@ public class LoanBookService implements LoanBookUseCase {
         this.saveLoanPort = saveLoanPort;
         this.loadReservationPort = loadReservationPort;
         this.saveReservationPort = saveReservationPort;
+        this.creditCheckPort = creditCheckPort;
     }
 
     @Override
@@ -53,6 +57,8 @@ public class LoanBookService implements LoanBookUseCase {
         Loan loan = book.loanTo(member.getId(), command.loanedAt() != null ? command.loanedAt() : LocalDate.now());
         ReservationQueue queue = ReservationQueue.of(book.getId(), loadReservationPort.loadWaitingReservations(book.getId()));
         queue.admit(member.getId()).ifPresent(saveReservationPort::saveReservation);
+        // 외부 조회는 내부 규칙(한도·책 상태·예약)을 모두 통과한 뒤 한 번만 부른다
+        loan.recordCreditCheck(creditCheckPort.check(member, Instant.now()));
         saveBookPort.saveBook(book);
         saveLoanPort.saveLoan(loan);
         return loan;
