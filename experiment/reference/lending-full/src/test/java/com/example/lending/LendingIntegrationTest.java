@@ -9,8 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.UUID;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,7 +32,13 @@ class LendingIntegrationTest {
                 .andExpect(jsonPath("$.status").value("AVAILABLE"))
                 .andReturn().getResponse().getContentAsString();
         JsonNode book = objectMapper.readTree(registered);
-        String loanRequest = objectMapper.writeValueAsString(new LoanBody(book.get("id").asText(), UUID.randomUUID().toString()));
+        String member = mockMvc.perform(post("/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Kim\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String memberId = objectMapper.readTree(member).get("memberId").asText();
+        String loanRequest = objectMapper.writeValueAsString(new LoanBody(book.get("id").asText(), memberId));
 
         mockMvc.perform(post("/loans").contentType(MediaType.APPLICATION_JSON).content(loanRequest))
                 .andExpect(status().isCreated())

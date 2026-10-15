@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public class Member {
 
+    static final int MAX_ACTIVE_LOANS = 5;
+
     private final UUID id;
     private final String name;
 
@@ -22,6 +24,12 @@ public class Member {
 
     public static Member reconstitute(UUID id, String name) {
         return new Member(id, name);
+    }
+
+    public void ensureCanBorrow(long activeLoanCount) {
+        if (activeLoanCount >= MAX_ACTIVE_LOANS) {
+            throw new LoanLimitExceededException(id, MAX_ACTIVE_LOANS);
+        }
     }
 
     public UUID getId() {
