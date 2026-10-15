@@ -2,10 +2,11 @@
   "levels": ["L1", "L2"],
   "models": ["haiku"],
   "domains": ["lending"],
-  "reps": 5,
+  "reps": 1,
   "agent": "claude",
   "parallel": 2,
-  "max_cost_usd": 8,
+  "max_cost_usd": 2.0,
   "shuffle_seed": 20261215,
-  "est_cost_per_session_usd": {"haiku": 0.5}
+  "est_cost_per_session_usd": {"haiku": 0.5},
+  "skip_agent_tests": true
 }

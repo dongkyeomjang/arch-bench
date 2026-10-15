@@ -28,7 +28,7 @@ import run_session as rs  # noqa: E402 — 같은 디렉터리의 러너 (preche
 RUN_SESSION = Path(__file__).resolve().parent / "run_session.py"
 DEFAULT_SEED = 20261215
 DEFAULTS = {"reps": 1, "agent": "claude", "parallel": 2, "max_cost_usd": None, "shuffle_seed": DEFAULT_SEED,
-            "est_cost_per_session_usd": {}}
+            "est_cost_per_session_usd": {}, "skip_agent_tests": False}
 REQUIRED = ("levels", "models", "domains")
 
 
@@ -136,6 +136,8 @@ class Matrix:
         cmd = [sys.executable, str(RUN_SESSION), "--level", s["level"], "--model", s["model"], "--domain", s["domain"],
                "--rep", str(s["rep"]), "--ws-root", str(self.ws_root), "--out", str(self.out_root),
                "--agent", self.cfg["agent"]]
+        if self.cfg["skip_agent_tests"]:  # 에이전트 자체 테스트는 마지막 턴만. 숨겨진 테스트(ft_*)는 매 턴 돈다
+            cmd.append("--skip-tests")
         t0 = time.monotonic()
         with log_tmp.open("w") as log:
             log.write(f"$ {' '.join(cmd)}\n")
@@ -223,7 +225,8 @@ def dry_run(cfg: dict, sessions: list[dict]) -> None:
     est = cfg.get("est_cost_per_session_usd") or {}
     total = 0.0
     unknown = set()
-    print(f"# {len(sessions)} sessions, shuffle_seed={cfg['shuffle_seed']}, agent={cfg['agent']}, parallel={cfg['parallel']}")
+    print(f"# {len(sessions)} sessions, shuffle_seed={cfg['shuffle_seed']}, agent={cfg['agent']}, parallel={cfg['parallel']}"
+          + (", skip_agent_tests" if cfg["skip_agent_tests"] else ""))
     for i, s in enumerate(sessions, 1):
         c = est.get(s["model"])  # agent=fake 여도 추정치를 그대로 보인다(실제 비용은 0)
         if c is None:
