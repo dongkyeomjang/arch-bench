@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,16 @@ public class LoanPersistenceAdapter implements LoadLoanPort, SaveLoanPort {
     @Override
     public List<Loan> loadLoansOfMember(UUID memberId) {
         return loanJpaRepository.findByMemberId(memberId).stream().map(LoanJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public List<Loan> loadLoansLoanedBetween(LocalDate from, LocalDate to) {
+        return loanJpaRepository.findByLoanedAtBetween(from, to).stream().map(LoanJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public List<Loan> loadLoansReturnedBetween(LocalDate from, LocalDate to) {
+        return loanJpaRepository.findByReturnedAtBetween(from, to).stream().map(LoanJpaEntity::toDomain).toList();
     }
 
     @Override
