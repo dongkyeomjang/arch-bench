@@ -3,7 +3,7 @@
 - **Date**: 2026-10-15
 - **Status**: in-progress (1차 완료·보고, 2차 8세션은 설계자 결정 대기)
 - **Related TASKs**: TASK6, TASK7
-- **Commits**: 9d474e6 (파일럿 1차 설정·`skip_agent_tests`), {이 작업 커밋 — 아래 Follow-up 또는 git log 참조}
+- **Commits**: 9d474e6 (파일럿 1차 설정·`skip_agent_tests`), 86df9f6 (결과·summarize.py·보고서)
 
 ## Request
 "작업 지시 8: 파일럿 실행과 1차 분석". 채점기·하네스·턴 파일·숨겨진 테스트·참조 구현은 수정하지 않는다.
