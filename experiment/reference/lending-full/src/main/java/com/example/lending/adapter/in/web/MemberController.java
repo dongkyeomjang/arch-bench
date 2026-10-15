@@ -6,6 +6,7 @@ import com.example.lending.application.port.in.ListCurrentLoansUseCase;
 import com.example.lending.application.port.in.ListCurrentLoansUseCase.ListCurrentLoansQuery;
 import com.example.lending.application.port.in.RegisterMemberUseCase;
 import com.example.lending.application.port.in.RegisterMemberUseCase.RegisterMemberCommand;
+import com.example.lending.application.port.in.SuspendMemberUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,13 +28,16 @@ public class MemberController {
     private final GetMemberUseCase getMemberUseCase;
     private final ListCurrentLoansUseCase listCurrentLoansUseCase;
     private final GetLoanHistoryUseCase getLoanHistoryUseCase;
+    private final SuspendMemberUseCase suspendMemberUseCase;
 
     public MemberController(RegisterMemberUseCase registerMemberUseCase, GetMemberUseCase getMemberUseCase,
-                            ListCurrentLoansUseCase listCurrentLoansUseCase, GetLoanHistoryUseCase getLoanHistoryUseCase) {
+                            ListCurrentLoansUseCase listCurrentLoansUseCase, GetLoanHistoryUseCase getLoanHistoryUseCase,
+                            SuspendMemberUseCase suspendMemberUseCase) {
         this.registerMemberUseCase = registerMemberUseCase;
         this.getMemberUseCase = getMemberUseCase;
         this.listCurrentLoansUseCase = listCurrentLoansUseCase;
         this.getLoanHistoryUseCase = getLoanHistoryUseCase;
+        this.suspendMemberUseCase = suspendMemberUseCase;
     }
 
     @PostMapping
@@ -58,5 +62,15 @@ public class MemberController {
     @GetMapping("/{memberId}/loans/history")
     public List<LoanHistoryResponse> getLoanHistory(@PathVariable UUID memberId) {
         return getLoanHistoryUseCase.getLoanHistory(memberId).stream().map(LoanHistoryResponse::from).toList();
+    }
+
+    @PostMapping("/{memberId}/suspend")
+    public MemberResponse suspendMember(@PathVariable UUID memberId) {
+        return MemberResponse.from(suspendMemberUseCase.suspendMember(memberId));
+    }
+
+    @PostMapping("/{memberId}/unsuspend")
+    public MemberResponse unsuspendMember(@PathVariable UUID memberId) {
+        return MemberResponse.from(suspendMemberUseCase.unsuspendMember(memberId));
     }
 }

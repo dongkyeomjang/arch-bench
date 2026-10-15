@@ -18,6 +18,9 @@ public class MemberJpaEntity {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
+    private boolean suspended;
+
     protected MemberJpaEntity() {
     }
 
@@ -25,10 +28,11 @@ public class MemberJpaEntity {
         MemberJpaEntity e = new MemberJpaEntity();
         e.id = member.getId();
         e.name = member.getName();
+        e.suspended = member.isSuspended();
         return e;
     }
 
     Member toDomain() {
-        return Member.reconstitute(id, name);
+        return Member.reconstitute(id, name, suspended);
     }
 }

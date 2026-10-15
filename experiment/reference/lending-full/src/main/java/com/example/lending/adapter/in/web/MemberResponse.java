@@ -4,9 +4,9 @@ import com.example.lending.domain.Member;
 
 import java.util.UUID;
 
-public record MemberResponse(UUID memberId, String name) {
+public record MemberResponse(UUID memberId, String name, boolean suspended) {
 
     static MemberResponse from(Member member) {
-        return new MemberResponse(member.getId(), member.getName());
+        return new MemberResponse(member.getId(), member.getName(), member.isSuspended());
     }
 }
