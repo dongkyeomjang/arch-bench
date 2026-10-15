@@ -190,8 +190,23 @@ done
 
 # ---------------------------------------------------------------- 8. (선택) Claude Code 실호출
 if [ "${SMOKE_LIVE:-0}" = 1 ] && command -v claude >/dev/null; then
-    # 워크스페이스는 arch-bench 밖에 둔다: Claude Code 는 상위 디렉터리의 CLAUDE.md·.claude/ 도 읽는다
-    live="$(mktemp -d "${TMPDIR:-/tmp}/arch-live.XXXXXX")/ws-L2"
+    # 워크스페이스는 arch-bench 밖에 둔다: Claude Code 는 상위 디렉터리의 CLAUDE.md·.claude/ 도 읽는다.
+    # ARCH_WS_ROOT(에이전트 워크스페이스 루트)가 있으면 그 아래, 없으면 임시 디렉터리.
+    ws_root="${ARCH_WS_ROOT:-${TMPDIR:-/tmp}}"
+    mkdir -p "$ws_root" || exit 1
+    ws_root="$(cd "$ws_root" && pwd -P)"
+    # 상위 디렉터리에 CLAUDE.md 나 .claude/ 가 있으면 에이전트에게 새어 들어가므로 거부한다 (~/.claude 는 사용자 설정 위치라 제외)
+    d="$ws_root"
+    while [ "$d" != "/" ]; do
+        for p in CLAUDE.md CLAUDE.local.md .claude; do
+            if [ -e "$d/$p" ] && [ "$d/$p" != "$HOME/.claude" ]; then
+                echo "step8: $d/$p would leak into the agent session; choose another ARCH_WS_ROOT" >&2
+                exit 1
+            fi
+        done
+        d="$(dirname "$d")"
+    done
+    live="$(mktemp -d "$ws_root/smoke-live.XXXXXX")/ws-L2"
     cp -R seed "$live"
     "$S/inject-harness.sh" L2 "$live" >/dev/null
     base=$(cd "$live" && git rev-parse HEAD)

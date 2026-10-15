@@ -90,7 +90,7 @@ experiment/scripts/smoke.sh                             # 1~7단계 검증 (SMOK
 
 - 계약(입력·출력·종료 코드), 러너 전제, 검증 결과는 `experiment/README.md` 가 정본.
 - `experiment/harness/` 텍스트는 사전 등록 전까지 동결. 바꾸면 TASK 로 기록한다.
-- 에이전트 세션 워크스페이스는 **이 저장소 밖**에 둔다 (Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽는다).
+- 에이전트 세션 워크스페이스는 **이 저장소 밖**, `/Users/kyeom/Project/arch-bench-ws` 아래에 둔다(`ARCH_WS_ROOT`). Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽기 때문이다.
 
 ## Architecture
 

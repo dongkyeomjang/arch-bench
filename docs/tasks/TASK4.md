@@ -40,3 +40,21 @@
 - 훅은 Edit/Write 에만 반응한다. `Bash` 로 파일을 쓰면 우회된다(L2 의 측정상 한계, README 알려진 한계 3).
 - 실험 설계 문서의 "L1 예시 문구" 원문이 저장소에 없어 대조하지 못했다. 사전 등록 전 대조 필요.
 - 러너 전제(README): 턴 시작마다 `.harness/retry-count` 삭제, 워크스페이스는 arch-bench 밖(상위 CLAUDE.md 로딩), 사용자 수준 설정 격리.
+
+### Follow-up — 2026-10-15
+
+**Request**: 에이전트 워크스페이스는 `~/Project` 아래에 디렉터리를 하나 만들어 거기서 작업한다(사용자 메시지의 "Proejct" 는 `/Users/kyeom/Project` 의 오타로 판단).
+
+**이전 결정: X → 변경: Y, 사유: Z**
+- 이전 결정: 워크스페이스는 "arch-bench 밖, 예: `mktemp -d`". 8단계는 `$TMPDIR` 아래에서 돌림.
+- 변경: 워크스페이스 루트 = `/Users/kyeom/Project/arch-bench-ws` (생성함, git 저장소 아님). 스크립트에는 경로를 하드코딩하지 않고 환경 변수 `ARCH_WS_ROOT` 로 받는다(미지정 시 `$TMPDIR`).
+- 사유: 사용자 결정. 이 경로의 상위(`~/Project`, `~`, `/Users`, `/`)에는 `CLAUDE.md`·`CLAUDE.local.md`·`.claude/` 가 없음을 확인했다(`~/.claude` 는 사용자 설정 위치라 별도).
+
+**Changes**
+- `experiment/scripts/smoke.sh` 8단계: `ARCH_WS_ROOT` 아래 `smoke-live.XXXXXX/ws-L2` 를 쓴다. 루트부터 `/` 까지 `CLAUDE.md`·`CLAUDE.local.md`·`.claude`(`$HOME/.claude` 제외)가 하나라도 있으면 실행을 거부한다.
+  - 확인: `ARCH_WS_ROOT=<repo>/experiment/ws-bad` → "…/encantado/CLAUDE.md would leak…" 로 거부. `ARCH_WS_ROOT=/Users/kyeom/Project/arch-bench-ws` → 1~7단계 PASS, 8a 결과는 이전과 같음(편집 없이 거부, 훅 미발화, $0.0036). init 이벤트의 cwd 가 새 루트 아래임을 확인.
+- `experiment/README.md` 러너 전제 2·3번과 8단계 절, `CLAUDE.md` Experiment Harness 절에 워크스페이스 루트를 적었다.
+
+**Notes**
+- 사용자 수준 설정은 여전히 격리가 필요하다. `~/.claude/settings.json` 에 사용자 훅 13종(PostToolUse 포함)·플러그인, `~/.claude/skills/` 에 스킬 8개가 있다. `--setting-sources project` 는 settings 만 뺀다. 러너는 전용 `CLAUDE_CONFIG_DIR` 사용을 검토할 것.
+- `/Users/kyeom/Project/arch-bench-ws/smoke-live.*` 는 smoke 8단계가 남긴 것으로, 지워도 된다.
