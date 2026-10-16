@@ -5,35 +5,39 @@ import java.util.UUID;
 
 public class Member {
 
-    static final int MAX_ACTIVE_LOANS = 5;
-
     private final UUID id;
     private final String name;
+    private final LoanTier tier;
     private boolean suspended;
 
-    private Member(UUID id, String name, boolean suspended) {
+    private Member(UUID id, String name, LoanTier tier, boolean suspended) {
         this.id = Objects.requireNonNull(id, "id");
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name must not be blank");
         }
         this.name = name;
+        this.tier = Objects.requireNonNull(tier, "tier");
         this.suspended = suspended;
     }
 
-    public static Member register(String name) {
-        return new Member(UUID.randomUUID(), name, false);
+    /**
+     * 새 회원. id 가 null 이면 새로 만들고, 백오피스가 기존 회원 번호를 주면 그대로 쓴다. 등급은 후원자 목록이 정한다.
+     */
+    public static Member register(UUID id, String name, SponsorRoster sponsors) {
+        UUID memberId = id != null ? id : UUID.randomUUID();
+        return new Member(memberId, name, sponsors.tierFor(memberId), false);
     }
 
-    public static Member reconstitute(UUID id, String name, boolean suspended) {
-        return new Member(id, name, suspended);
+    public static Member reconstitute(UUID id, String name, LoanTier tier, boolean suspended) {
+        return new Member(id, name, tier, suspended);
     }
 
     public void ensureCanBorrow(long activeLoanCount) {
         if (suspended) {
             throw new MemberSuspendedException(id);
         }
-        if (activeLoanCount >= MAX_ACTIVE_LOANS) {
-            throw new LoanLimitExceededException(id, MAX_ACTIVE_LOANS);
+        if (!tier.allowsAnother(activeLoanCount)) {
+            throw new LoanLimitExceededException(id, tier.maxActiveLoans());
         }
     }
 
@@ -51,6 +55,10 @@ public class Member {
 
     public String getName() {
         return name;
+    }
+
+    public LoanTier getTier() {
+        return tier;
     }
 
     public boolean isSuspended() {

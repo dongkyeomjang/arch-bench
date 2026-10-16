@@ -1,4 +1,6 @@
 package com.example.lending.adapter.in.web;
 
-public record RegisterMemberRequest(String name) {
+import java.util.UUID;
+
+public record RegisterMemberRequest(UUID memberId, String name) {
 }

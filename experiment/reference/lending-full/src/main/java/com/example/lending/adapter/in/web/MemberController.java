@@ -43,7 +43,7 @@ public class MemberController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MemberResponse registerMember(@RequestBody RegisterMemberRequest request) {
-        return MemberResponse.from(registerMemberUseCase.registerMember(new RegisterMemberCommand(request.name())));
+        return MemberResponse.from(registerMemberUseCase.registerMember(new RegisterMemberCommand(request.memberId(), request.name())));
     }
 
     @GetMapping("/{memberId}")
