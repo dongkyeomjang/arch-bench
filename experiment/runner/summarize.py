@@ -2,7 +2,10 @@
 """매트릭스 결과 요약: $OUT_ROOT/*/session.json 과 turn-NN/turn.json 을 읽어 마크다운 표를 만든다.
 
 사용:
-  summarize.py --out $OUT_ROOT --report experiment/runs/pilot-report.md [--stdout]
+  summarize.py --out $OUT_ROOT --report experiment/runs/pilot-report.md [--stdout] [--compare OTHER_OUT_ROOT ...]
+
+--compare 로 준 결과 루트의 세션은 "세션 모드 비교" 표에만 들어간다(다른 표는 --out 세션만).
+비용은 모두 claude 가 보고한 total_cost_usd(API 단가 환산 추정)다. 구독 실행이면 실제 청구가 아니다.
 
 보고서 파일이 이미 있으면 `<!-- summarize:begin -->` ~ `<!-- summarize:end -->` 사이만 바꾼다
 (그 밖의 사람이 쓴 절은 그대로 둔다). 없으면 표만 담은 새 파일을 만든다. 표준 라이브러리만 쓴다.
@@ -19,9 +22,10 @@ TRAP_TURNS = (5, 8, 10, 12, 14)  # 함정 턴 (docs/tasks/TASK7.md). 에이전�
 RULES = ("R1", "R2", "R3", "R4", "R5", "R6", "R7")
 REFERENCE_RULES = ("R4", "R5")  # 주 지표 밖, 참고 열
 BEGIN, END = "<!-- summarize:begin -->", "<!-- summarize:end -->"
+COST_NOTE = "(API 단가 환산 추정, 실제 청구 아님)"
 
 
-def load(out_root: Path) -> list[dict]:
+def load(out_root: Path, label: str | None = None) -> list[dict]:
     sessions = []
     for sj in sorted(out_root.glob("*/session.json")):
         if "_failed-" in sj.parent.name:  # --resume 으로 옮겨 둔 이전 시도는 집계에서 뺀다
@@ -29,12 +33,31 @@ def load(out_root: Path) -> list[dict]:
         s = json.loads(sj.read_text())
         turns = []
         for tj in sorted(sj.parent.glob("turn-*/turn.json")):
-            turns.append(json.loads(tj.read_text()))
+            t = json.loads(tj.read_text())
+            if "rate_limit_utilization" not in t:  # TASK9 이전 러너: 스트림의 마지막 rate_limit_event 에서 읽는다
+                t["rate_limit_utilization"] = stream_utilization(tj.parent / "stream.jsonl")
+            turns.append(t)
         s["_turns"] = turns
         s["_dir"] = sj.parent
+        s["_root"] = label or out_root.name
         sessions.append(s)
     sessions.sort(key=lambda s: (s["level"], s["model"], s["rep"]))
     return sessions
+
+
+def stream_utilization(path: Path) -> dict | None:
+    util = None
+    if path.exists():
+        for line in path.read_text(errors="replace").splitlines():
+            if '"rate_limit_event"' not in line:
+                continue
+            try:
+                windows = (json.loads(line).get("rate_limit_info") or {}).get("unifiedWindows") or {}
+            except json.JSONDecodeError:
+                continue
+            if windows:
+                util = {k: (v or {}).get("utilization") for k, v in windows.items()}
+    return util
 
 
 def short(s: dict) -> str:
@@ -80,6 +103,10 @@ def metrics(s: dict) -> dict:
         "avg_output": round(sum(x.get("output_tokens") or 0 for x in t) / n),
         "minutes": None if s.get("wall_s") is None else round(s["wall_s"] / 60, 1),
         "rules_hit": {r: any((x.get(f"{r.lower()}_count") or 0) > 0 for x in t) for r in RULES},
+        "refused_turns": [x["turn"] for x in t if x.get("task_refused")],
+        "rate_limit_wait_min": round(sum(x.get("rate_limit_wait_s") or 0 for x in t) / 60, 1),
+        "util_last": next((x.get("rate_limit_utilization") for x in reversed(t) if x.get("rate_limit_utilization")), None),
+        "util_first": next((x.get("rate_limit_utilization") for x in t if x.get("rate_limit_utilization")), None),
     }
 
 
@@ -91,10 +118,11 @@ def session_table(sessions: list[dict]) -> str:
                      m["avg_input_all"], m["avg_input_uncached"], m["sv_session"], m["sv_first_turn"], m["final_vc"],
                      m["ft_pass_pct"], m["test_tamper"], m["config_tamper"],
                      m["hook_runs"] if s["level"] in ("L2", "L3") else "–",
-                     m["hook_blocks"] if s["level"] in ("L2", "L3") else "–", m["escaped"], m["runner_commits"]])
-    return table(["세션", "수준", "반복", "상태", "비용 $", "시간(분)", "턴당 입력 토큰(캐시 포함)", "턴당 입력 토큰(비캐시)",
+                     m["hook_blocks"] if s["level"] in ("L2", "L3") else "–", m["escaped"], m["runner_commits"],
+                     ",".join(map(str, m["refused_turns"])) or "–", m["rate_limit_wait_min"]])
+    return table(["세션", "수준", "반복", "상태", "비용 $ (환산)", "시간(분)", "턴당 입력 토큰(캐시 포함)", "턴당 입력 토큰(비캐시)",
                   "SV_session", "SV_first_turn", "최종 vc", "FT_pass %", "test_tamper", "config_tamper",
-                  "훅 실행", "훅 exit 2", "escaped_cwd", "러너 대리 커밋"], rows)
+                  "훅 실행", "훅 exit 2", "escaped_cwd", "러너 대리 커밋", "task_refused 턴", "한도 대기(분)"], rows)
 
 
 def heatmap(sessions: list[dict]) -> str:
@@ -157,7 +185,7 @@ def level_table(sessions: list[dict]) -> str:
         ["SV_first_turn 중앙값"] + [fmt(median([s["_m"]["sv_first_turn"] for s in by[lv]])) for lv in levels],
         ["최종 violating_classes 평균"] + [fmt(mean([s["_m"]["final_vc"] for s in by[lv]])) for lv in levels],
         ["FT_pass 평균 %"] + [fmt(mean([s["_m"]["ft_pass_pct"] for s in by[lv]]), 1) for lv in levels],
-        ["비용 평균 $"] + [fmt(mean([s.get("cost_usd") for s in by[lv]]), 3) for lv in levels],
+        ["비용 평균 $ (환산)"] + [fmt(mean([s.get("cost_usd") for s in by[lv]]), 3) for lv in levels],
         ["시간 평균(분)"] + [fmt(mean([s["_m"]["minutes"] for s in by[lv]]), 1) for lv in levels],
     ]
     return table(["지표"] + levels, rows)
@@ -199,12 +227,55 @@ def cost_table(sessions: list[dict]) -> str:
                      fmt(mean([x.get("cache_read_input_tokens") for x in ts]), 0),
                      fmt(mean([x.get("output_tokens") for x in ts]), 0),
                      fmt(mean([x.get("num_turns") for x in ts]), 1)])
-    return table(["턴", "n", "비용 평균 $", "에이전트 시간 평균 s", "입력", "캐시 생성", "캐시 읽기", "출력",
+    return table(["턴", "n", "비용 평균 $ (환산)", "에이전트 시간 평균 s", "입력", "캐시 생성", "캐시 읽기", "출력",
                   "API 왕복 수"], rows)
 
 
-def build(sessions: list[dict], out_root: Path) -> str:
+def first_violation_table(sessions: list[dict]) -> str:
+    """세션별 처음 위반이 생긴 턴과 그때의 위반 클래스·규칙."""
+    rows = []
     for s in sessions:
+        t = next((x for x in s["_turns"] if (x.get("violating_classes") or 0) > 0), None)
+        if t is None:
+            rows.append([short(s), "–", "–", "–"])
+            continue
+        rules = ",".join(r for r in RULES if (t.get(f"{r.lower()}_count") or 0) > 0)
+        classes = ", ".join(c.rsplit(".", 1)[-1] for c in (t.get("violating_classes_list") or []))
+        rows.append([short(s), f"{t['turn']:02d}", rules, classes])
+    return table(["세션", "첫 위반 턴", "그 턴의 규칙(R4·R5 포함)", "위반 클래스"], rows)
+
+
+def mode_table(sessions: list[dict]) -> str:
+    """세션 모드(resume·fresh) × 수준별 세션당 비용·시간·턴당 입력 토큰. --compare 결과 루트도 함께 본다."""
+    groups: dict[tuple, list[dict]] = {}
+    for s in sessions:
+        groups.setdefault((s.get("session_mode") or "resume", s["level"], s["_root"]), []).append(s)
+    rows = []
+    for (mode, lv, root), ss in sorted(groups.items()):
+        turns = [x for s in ss for x in s["_turns"]]
+        rows.append([mode, lv, root, len(ss), f"{sum(s.get('turns_run') or 0 for s in ss)}",
+                     fmt(mean([s.get("cost_usd") for s in ss]), 3),
+                     fmt(mean([(s.get("cost_usd") or 0) / max(1, s.get("turns_run") or 0) for s in ss]), 4),
+                     fmt(mean([s["_m"]["minutes"] for s in ss]), 1),
+                     fmt(mean([(x.get("input_tokens") or 0) + (x.get("cache_creation_input_tokens") or 0)
+                               + (x.get("cache_read_input_tokens") or 0) for x in turns]), 0),
+                     fmt(mean([x.get("output_tokens") for x in turns]), 0)])
+    return table(["모드", "수준", "결과 루트", "세션", "턴 합", "세션당 비용 $ (환산)", "턴당 비용 $ (환산)", "세션당 시간(분)",
+                  "턴당 입력 토큰(캐시 포함)", "턴당 출력 토큰"], rows)
+
+
+def usage_table(sessions: list[dict]) -> str:
+    rows = []
+    for s in sessions:
+        a, b = s["_m"]["util_first"] or {}, s["_m"]["util_last"] or {}
+        rows.append([short(s), fmt(a.get("five_hour")), fmt(b.get("five_hour")), fmt(a.get("seven_day")),
+                     fmt(b.get("seven_day")), s.get("rate_limited_turns", "–"), s["_m"]["rate_limit_wait_min"]])
+    return table(["세션", "5h 사용률(첫 턴)", "5h 사용률(마지막 턴)", "7d 사용률(첫 턴)", "7d 사용률(마지막 턴)",
+                  "한도 거부 턴", "한도 대기(분)"], rows)
+
+
+def build(sessions: list[dict], out_root: Path, compare: list[dict] | None = None) -> str:
+    for s in sessions + (compare or []):
         s["_m"] = metrics(s)
     total_cost = round(sum(s.get("cost_usd") or 0 for s in sessions), 4)
     total_min = round(sum(s["_m"]["minutes"] or 0 for s in sessions), 1)
@@ -217,7 +288,7 @@ def build(sessions: list[dict], out_root: Path) -> str:
         "### 실행 요약",
         "",
         f"- 세션 {len(sessions)}개: completed {done}, 그 밖 {len(sessions) - done}",
-        f"- 총 비용 ${total_cost:.4f} (세션당 평균 ${total_cost / n:.4f})",
+        f"- 총 비용 ${total_cost:.4f} (세션당 평균 ${total_cost / n:.4f}) {COST_NOTE}",
         f"- 세션 시간 합 {total_min}분 (세션당 평균 {total_min / n:.1f}분, 병렬 실행이라 벽시계 시간은 더 짧다)",
         "",
         "### 세션 요약",
@@ -236,6 +307,10 @@ def build(sessions: list[dict], out_root: Path) -> str:
         "",
         ft_heatmap(sessions),
         "",
+        "### 세션별 첫 위반",
+        "",
+        first_violation_table(sessions),
+        "",
         "### 규칙별: 턴 종료 시점에 한 번이라도 > 0 이었던 세션 수",
         "",
         rule_table(sessions),
@@ -246,7 +321,19 @@ def build(sessions: list[dict], out_root: Path) -> str:
         "",
         "### 턴별 비용·토큰 (전 세션 평균)",
         "",
+        f"비용은 {COST_NOTE}.",
+        "",
         cost_table(sessions),
+        "",
+        "### 세션 모드 비교" + (" (--compare 포함)" if compare else ""),
+        "",
+        f"비용은 {COST_NOTE}.",
+        "",
+        mode_table(sessions + (compare or [])),
+        "",
+        "### 구독 사용률 (스트림 rate_limit_event 의 unifiedWindows.utilization, 0~1)",
+        "",
+        usage_table(sessions),
         "",
         "### 실패·이상",
         "",
@@ -261,12 +348,14 @@ def main() -> int:
     ap.add_argument("--out", required=True, type=Path, help="매트릭스 결과 루트")
     ap.add_argument("--report", type=Path, help="마크다운 보고서 경로")
     ap.add_argument("--stdout", action="store_true", help="표 블록을 표준 출력으로도 쓴다")
+    ap.add_argument("--compare", type=Path, nargs="*", default=[], help="세션 모드 비교 표에만 넣을 다른 결과 루트")
     args = ap.parse_args()
     sessions = load(args.out)
+    compare = [s for c in args.compare for s in load(c)]
     if not sessions:
         print(f"summarize: no session.json under {args.out}", file=sys.stderr)
         return 2
-    block = build(sessions, args.out.resolve())
+    block = build(sessions, args.out.resolve(), compare)
     if args.report:
         if args.report.exists():
             text = args.report.read_text()

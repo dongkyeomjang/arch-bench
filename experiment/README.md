@@ -130,7 +130,8 @@ experiment/
 CLAUDE_CONFIG_DIR=~/.claude-arch-bench \
 python3 experiment/runner/run_session.py --level L2 --model haiku --domain _smoke --rep 1 \
     --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--agent claude|fake] [--max-turns N] \
-    [--agent-max-turns N] [--skip-tests]
+    [--agent-max-turns N] [--skip-tests] [--session-mode resume|fresh] [--max-session-cost USD] \
+    [--rate-limit-poll-s S] [--rate-limit-max-wait-s S]
 ```
 
 Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있다). 세션 1개만 다룬다. 여러 세션은 아래 "매트릭스 실행기".
@@ -140,11 +141,11 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 세션 ID | `<domain>-<level>-<model>-r<rep>` (예: `_smoke-L2-haiku-r1`). 결과 `$OUT_ROOT/<id>/` |
 | 워크스페이스 | `$ARCH_WS_ROOT/<token>/lending` (TASK6). `<token>` = `secrets.token_hex(6)`(무작위 12자 hex). 에이전트 cwd 는 `.../lending` 이라 `pwd`·`ls ..` 로 수준·모델을 알 수 없다(`ls ..` 에는 `lending` 하나). `ls ../..` 에는 형제 세션의 토큰 디렉터리가 보이지만 이름이 무작위다. `session.json` 의 `workspace_token`, 그리고 **`$OUT_ROOT/workspace-index.jsonl`**(`{token, session_id, created_at}` 한 줄 append, 에이전트가 읽지 못하게 `$ARCH_WS_ROOT` 밖)로 역추적한다 |
 | 덮어쓰기 | 결과 디렉터리(또는 우연히 같은 토큰 디렉터리)가 이미 있으면 거부, **종료 4** |
-| 시작 전 검사 (**종료 5**) | ① `--ws-root` 부터 `/` 까지 `CLAUDE.md`·`CLAUDE.local.md`·`.claude` 없음(`~/.claude` 제외, smoke 8단계와 같은 검사) ② `CLAUDE_CONFIG_DIR` 설정됨, 디렉터리 존재, `~/.claude` 자신이 아님 ③ 그 안 `settings.json` 이 없거나 `hooks` 가 비어 있음 ④ 그 안에 `CLAUDE.md` 없음, `agents/`·`skills/`·`commands/` 비어 있음 ⑤ (`--agent claude`) `claude` 가 PATH 에 있음 |
+| 시작 전 검사 (**종료 5**) | ① `--ws-root` 부터 `/` 까지 `CLAUDE.md`·`CLAUDE.local.md`·`.claude` 없음(`~/.claude` 제외, smoke 8단계와 같은 검사) ② `CLAUDE_CONFIG_DIR` 설정됨, 디렉터리 존재, `~/.claude` 자신이 아님 ③ 그 안 `settings.json` 이 없거나 `hooks` 가 비어 있음 ④ 그 안에 `CLAUDE.md` 없음, `agents/`·`skills/`·`commands/` 비어 있음 ⑤ (`--agent claude`) `claude` 가 PATH 에 있음 ⑥ (`--agent claude`, TASK9) 환경에 `ANTHROPIC_API_KEY`·`ANTHROPIC_AUTH_TOKEN` 이 **없고**(있으면 구독이 아니라 API 과금으로 나간다) `claude auth status` 가 `loggedIn: true`, `authMethod: "claude.ai"`. 인증 요약(`auth_method`·`subscription_type`·`api_provider`, 이메일 제외)은 `session.json` 의 `billing` |
 | 준비 | `experiment/seed` 가 없으면 `materialize-seed.sh` → `cp -R seed <ws>` → `inject-harness.sh <level> <ws>` → `base_commit` = "Initial commit" 해시 |
 | 턴 순서 | `tasks/<domain>/turn-*.md` 를 이름순. `--max-turns N` 이면 앞 N개만 |
 | 프롬프트 | 턴 파일 본문. **맨 앞의 HTML 주석 줄**(`<!-- smoke only ... -->` 같은 메타데이터)은 빼고 보낸다 |
-| 에이전트 | `claude -p <prompt> --model <m> --output-format stream-json --verbose --permission-mode bypassPermissions --setting-sources project [--resume <id>]`, `cwd=<ws>`, stdin 없음. 첫 턴은 새 세션, 이후 턴은 **직전 턴 init 이벤트의 `session_id` 로 `--resume`**. 타임아웃 20분(프로세스 그룹 SIGTERM → 30초 뒤 SIGKILL, `agent_status: timeout`, 세션은 계속) |
+| 에이전트 | `claude -p <prompt> --model <m> --output-format stream-json --verbose --permission-mode bypassPermissions --setting-sources project [--resume <id>]`, `cwd=<ws>`, stdin 없음. `--session-mode resume`(기본): 첫 턴은 새 세션, 이후 턴은 **직전 턴 init 이벤트의 `session_id` 로 `--resume`**. `--session-mode fresh`(TASK9): 턴마다 `--resume` 없이 새 세션 — 에이전트는 이전 턴 대화를 모르고 코드·git 이력·CLAUDE.md(L1~L3)만 본다. 턴 단위 동작(훅 `retry-count` 삭제, 훅 로그 이동, 채점·숨겨진 테스트)은 모드와 무관하게 같다. 타임아웃 20분(프로세스 그룹 SIGTERM → 30초 뒤 SIGKILL, `agent_status: timeout`, 세션은 계속) |
 | 환경 | 부모 환경에서 `CLAUDECODE`·`CLAUDE_CODE_*`·`CLAUDE_PID`·`CLAUDE_EFFORT`·`CLAUDE_PROJECT_DIR` 를 빼고(러너를 Claude Code 안에서 띄워도 부모 세션 정보가 새지 않게) `DISABLE_AUTOUPDATER=1` 을 더한다 |
 | 턴 단계 | ① `.harness/retry-count` 삭제(남은 `hook-log.jsonl` 이 있으면 `hook-log.pre-turn.jsonl` 로 치움) ② 에이전트 실행 → `stream.jsonl`·`stderr.txt`, 끝나면 `.harness/hook-log.jsonl` 을 `turn-NN/hook-log.jsonl` 로 **이동**(없으면 빈 파일) ③ 스트림 파싱 ④ 커밋 확인 ⑤ tamper ⑥ `grade.sh <ws> turn-NN/arch.json` ⑦ 숨겨진 기능 테스트(턴 1~N 누적, `turn-NN/ft.log`) ⑧ 복사본에서 에이전트 자신의 테스트 `./gradlew test -q` ⑨ `turn-NN/turn.json` |
 | 커밋 확인 | 턴 전후 `HEAD` 가 같으면 `agent_committed: false`. 작업 트리가 더러우면(에이전트가 커밋 안 했거나, 커밋 뒤에 남긴 변경) 러너가 `git add -A && git commit -m "Save work in progress"` (`runner_committed: true`). 메시지에 턴 번호를 넣지 않는다(에이전트의 `git log` 에 보인다, 전 수준 동일). 둘 다 아니면 `no_change: true`. 그래서 턴 끝 상태 = `HEAD` 다 |
@@ -152,10 +153,23 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 채점 | `grade_exit`(0/1/3), `violating_classes`, `r1_count`~`r7_count`. 3(컴파일 실패)이어도 다음 턴 진행 |
 | 숨겨진 기능 테스트 (TASK7) | 매 턴. 워크스페이스 복사본에서 `build`·`.gradle`·`.harness`·**`src/test` 전체**를 지우고 `experiment/tests/<domain>/turn-01..turn-NN/*.java` 를 `src/test/java/com/example/lending/hidden/` 에 복사 → `./gradlew test -q`. `ft_total` = 복사한 소스의 `@Test` 메서드 수(정적으로 셈 — 컴파일 실패·컨텍스트 실패로 XML 이 덜 나와도 분모가 같다), `ft_passed` = JUnit XML 에서 failure·error·skipped 없이 나온 테스트 수, `ft_failed_names` = 나머지 전부(`TurnNNTest.메서드`), `ft_pass` = `ft_passed/ft_total`. `ft_status` ∈ `passed`·`failed`·`compile_failed`(XML 없음 + `compileJava`/`compileTestJava` 실패, `ft_compile_error: true`)·`timeout`·`no_tests`(테스트 디렉터리 없음, 예: `_smoke` → `ft_total: 0`, `ft_pass: null`). 테스트는 HTTP 만 쓰므로 `compile_failed` 는 보통 에이전트의 본문 코드가 컴파일되지 않는 경우다. `--skip-tests` 와 무관하게 매 턴 돈다 |
 | 기능 테스트 | 워크스페이스 복사본(`build`·`.gradle`·`.harness` 제거)에서 `./gradlew test -q`, `build/test-results/test/*.xml` 로 건수. `tests_status` ∈ `passed`·`failed`·`compile_failed`·`timeout`. 기본은 턴마다, `--skip-tests` 면 마지막 턴만 |
-| 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1 |
+| 세션 비용 상한 (TASK9) | `--max-session-cost USD`: **턴이 끝날 때마다** 세션 누적 `cost_usd` 를 보고 넘으면 다음 턴을 시작하지 않는다(`fail_reason: session_cost_cap`, 종료 1). 턴 도중에는 끊지 않는다 — TASK8 의 임시 감시(SIGINT)처럼 `session.json` 밖 비용을 만들지 않기 위해서다. 그래서 마지막 턴 비용만큼 넘을 수 있다 |
+| 구독 한도 (TASK9) | 아래 "구독 실행" 참조. 한도 거부는 실패로 두지 않고 대기 후 같은 턴을 다시 시작한다 |
+| 거절 (TASK9) | `task_refused` = `no_change`(턴 전후 작업 트리·HEAD 변화 없음) 이고 `agent_status: ok`. 자동 판정은 이것뿐이고, `refusal_text`(최종 응답 앞 500자)를 함께 남겨 거절·대안 제시인지 사람이 확인한다(변경 없이 끝난 정상 응답도 `true` 가 된다) |
+| 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 (resume 모드에서) 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1. 사유는 `session.json` 의 `fail_reason` ∈ `agent_error`·`no_session_id`·`session_cost_cap`·`rate_limit_timeout`·`interrupted`(완료면 `null`) |
 | 세션 `status` | `running`(진행 중, 러너가 강제 종료되면 이 값으로 남는다) · `completed`(종료 0) · `failed`(종료 1). TASK6 Follow-up 전에는 `failed` 대신 `aborted` 였다 |
-| 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,ft.log,test.log}`. `session.json` 에 `ft_pass_by_turn`(턴별 `ft_pass` 배열), `final_ft_pass`·`final_ft_total`·`final_ft_passed`·`final_ft_compile_error`, `hidden_tests_sha256`. 워크스페이스는 지우지 않는다 |
+| 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,ft.log,test.log}`. `session.json` 에 `ft_pass_by_turn`(턴별 `ft_pass` 배열), `final_ft_pass`·`final_ft_total`·`final_ft_passed`·`final_ft_compile_error`, `hidden_tests_sha256`. TASK9: `session_mode`, `max_session_cost`, `billing`, `fail_reason`, `turns_refused`, `rate_limited_turns`, `rate_limit_wait_s`, `agent_session_ids_distinct`(fresh 의 기대값 `true`, resume 은 `agent_session_id_consistent` 가 `true`). 워크스페이스는 지우지 않는다 |
 | 종료 코드 | 0 전 턴 완료, 1 중단, 2 인자 오류(argparse·턴 파일 없음), 4 덮어쓰기 거부, 5 시작 전 검사 실패 |
+
+### 구독 실행 (TASK9)
+
+본 실험은 Claude Max 구독(`CLAUDE_CONFIG_DIR=~/.claude-arch-bench`, `claude auth status` → `authMethod: claude.ai`, `subscriptionType: max`)으로 돌린다. **`cost_usd`·`total_cost_usd` 는 claude 가 API 단가로 환산해 보고하는 값(API 단가 환산 추정, 실제 청구 아님)이다.** TASK5~8 의 실호출도 같은 로그인이었으므로 그때의 비용 숫자도 모두 환산값이다.
+
+- **한도 응답 형태**(Claude Code 2.1.300~301, 2026-10-16 확인): stream-json 에 `{"type":"rate_limit_event","rate_limit_info":{"status":"allowed"|"rejected","resetsAt":<epoch 초>,"rateLimitType":"five_hour"|"seven_day"|...,"unifiedWindows":{"five_hour":{"utilization":0.21,"resetsAt":...},"seven_day":{...}},...}}` 가 API 응답마다 나온다(TASK8 파일럿 스트림에 `status: allowed` 로 실재). 실제 거부(`rejected`)는 이 작업 중 한 번도 일어나지 않아 원문을 보지 못했다. 거부 시 결과 텍스트 문구는 CLI 바이너리 문자열(`usage limit reached`, `You've hit your ... limit`)로만 확인했다.
+- **판정**(`is_rate_limited`): 호출이 실패로 끝났고(`agent_status ≠ ok` 또는 `is_error` 또는 `result` 없음) ① 스트림에 `status: rejected` 가 있거나 ② 결과 텍스트·stderr 가 `usage limit|rate limit|hit your .. limit|limit reached` 에 맞는 경우.
+- **대기·재시도**: 그 시도의 `stream.jsonl`·`stderr.txt` 를 `*.rate-limited-<n>.*` 로 옮기고, `resetsAt` 이 있으면 그 시각 + 60초, 없으면 `--rate-limit-poll-s`(기본 900초)를 기다린 뒤 **같은 턴을 같은 프롬프트로 다시 시작**한다(resume 모드면 같은 `--resume` ID). 워크스페이스는 되돌리지 않는다(거부는 보통 첫 API 호출에서 나서 변경이 없다). 한 턴의 대기 합이 `--rate-limit-max-wait-s`(기본 6시간)를 넘으면 `agent_status: rate_limit_timeout`, 세션 `failed`, `fail_reason: rate_limit_timeout`.
+- **기록**(`turn.json`): `rate_limited`, `rate_limit_attempts`, `rate_limit_wait_s`, `rate_limit_resets_at_attempts`, `rate_limited_cost_usd`(fresh 모드에서 거부된 시도의 비용, 턴 비용에 더함), `rate_limit_utilization`(마지막 이벤트의 창별 사용률 — 병렬 수를 정할 때 본다).
+- **사용률은 계정 전체 값이다.** 같은 구독으로 다른 Claude Code 세션(예: 이 저장소를 다루는 대화)을 쓰면 그 사용량도 섞인다.
 
 ### 스트림 파싱 (`turn.json`)
 
@@ -165,11 +179,13 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 - 리뷰어: `reviewer_calls`, `reviewer_verdicts`(호출 순서, `APPROVE`/`REJECT`/`UNPARSED`). 위 "리뷰어 출력 파싱" 참조.
 - 세션: init 이벤트의 `session_id`·`model`(→ `model_id`)·`claude_code_version`. `session_ids_seen` 은 스트림에 나온 모든 session_id.
 - 깨진 줄·예상 밖 구조는 예외로 죽이지 않고 `parse_errors` 에 남긴다.
+- 구독 한도(TASK9): `rate_limit_event` 에서 `rate_limit_rejected`(`status: rejected` 가 하나라도 있었나), `rate_limit_resets_at`, `rate_limit_utilization`.
+- 턴 정보(TASK9): `session_mode`, `resumed_from`(fresh 는 항상 `null`), `task_refused`, `refusal_text`.
 - 훅: `hook-log.jsonl` 에서 `hook_runs`(Gradle 실행 = pass+fail+compile_failed), `hook_blocks`(fail = exit 2), `hook_skips`, `hook_limits`, `hook_ms_total`.
 
 ### `--agent fake`
 
-`runner/fake_agent.sh` 를 claude 와 같은 인자로 부른다(프롬프트는 stdin, 턴 번호는 `FAKE_AGENT_TURN`). 턴 1: `Book.java` 에 `isAvailable()` 추가 + 커밋. 턴 2: `import jakarta.persistence.Entity;` + `@Entity`(R1·R5 위반), 커밋 안 함. 턴 3: `HexagonalRules.java` 에서 `new NamedRule("R1"...)` 줄 삭제 + 커밋(L0·L1 은 파일이 없어 아무것도 안 함). 턴 1 은 `ls ..; ls ../..` Bash `tool_use` 도 하나 더 낸다(실행은 안 함, `escaped_cwd_count` 확인용). stdout 은 init, `tool_use` 3~4개(Read·Edit·Bash), `result`+usage. `result.total_cost_usd` = 턴 번호 × `FAKE_AGENT_COST_USD`(기본 0, claude 처럼 대화 누적값) — 매트릭스 비용 가드 확인용. 첫 턴 session_id 는 고정값, 이후 턴은 받은 `--resume` 값을 그대로 쓴다(러너의 resume 배선 확인).
+`runner/fake_agent.sh` 를 claude 와 같은 인자로 부른다(프롬프트는 stdin, 턴 번호는 `FAKE_AGENT_TURN`). 턴 1: `Book.java` 에 `isAvailable()` 추가 + 커밋. 턴 2: `import jakarta.persistence.Entity;` + `@Entity`(R1·R5 위반), 커밋 안 함. 턴 3: `HexagonalRules.java` 에서 `new NamedRule("R1"...)` 줄 삭제 + 커밋(L0·L1 은 파일이 없어 아무것도 안 함). 턴 1 은 `ls ..; ls ../..` Bash `tool_use` 도 하나 더 낸다(실행은 안 함, `escaped_cwd_count` 확인용). stdout 은 init, `tool_use` 3~4개(Read·Edit·Bash), `result`+usage. `result.total_cost_usd` = claude 처럼 대화 누적값: `--resume` 이면 턴 번호 × `FAKE_AGENT_COST_USD`, 새 세션이면 `FAKE_AGENT_COST_USD`(기본 0) — 매트릭스 비용 가드·세션 비용 상한 확인용. `--resume` 이 없으면 새 UUID session_id, 있으면 받은 값을 그대로 쓴다(resume 배선·fresh 모드 확인). TASK9: `FAKE_AGENT_RATE_LIMIT_TURN=N` 이면 턴 N 의 첫 호출이 한도 거부(`rate_limit_event` `rejected` + `is_error` result, exit 1)로 끝난다(`FAKE_AGENT_RATE_LIMIT_RESET_S` 초 뒤 `resetsAt`, `none` 이면 없음, `FAKE_AGENT_RATE_LIMIT_REPEAT=1` 이면 매번 거부). `FAKE_AGENT_MODEL` 은 init 의 `model`(모델 변경 감지 확인용).
 
 ### `tasks/_smoke/`
 
@@ -180,8 +196,8 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | # | 검증 | 결과 |
 | --- | --- | --- |
 | 1 | `--agent fake` L0·L2·L3 각 1세션 | 3세션 exit 0. 턴 2: 세 수준 모두 `r1_count=1`·`violating_classes=1`, `agent_committed=false`, `runner_committed=true`(TASK5 당시 `turn 02 (runner)` 커밋, TASK6 부터 `Save work in progress`). 턴 3: `test_tamper` L2·L3 `true`(`HexagonalRules.java`), L0 `null`(파일이 없어 `no_change=true`). 턴 3 `arch.json` 은 원본 규칙으로 채점되어 `r1_count=1` 유지 |
-| 2 | `--agent claude --model haiku` L2 1세션 3턴 | exit 0. 3턴 모두 init `session_id` 동일(`agent_session_id_consistent=true`, 턴 2·3 `resumed_from` = 턴 1 ID). 토큰·도구 수·훅 로그 채워짐. 3턴 모두 에이전트가 직접 커밋, 위반 0, 기능 테스트 5→8→13개 통과. 비용 $0.0401 |
-| 3 | `--agent claude --model haiku` L3 1세션 1턴 | `architecture-reviewer` 1회 호출(`Agent` 도구, 백그라운드), `reviewer_verdicts=["APPROVE"]`(첫 줄). 리뷰 후 커밋. 비용 $0.0189 |
+| 2 | `--agent claude --model haiku` L2 1세션 3턴 | exit 0. 3턴 모두 init `session_id` 동일(`agent_session_id_consistent=true`, 턴 2·3 `resumed_from` = 턴 1 ID). 토큰·도구 수·훅 로그 채워짐. 3턴 모두 에이전트가 직접 커밋, 위반 0, 기능 테스트 5→8→13개 통과. 비용 $0.0401 (API 단가 환산 추정, 실제 청구 아님) |
+| 3 | `--agent claude --model haiku` L3 1세션 1턴 | `architecture-reviewer` 1회 호출(`Agent` 도구, 백그라운드), `reviewer_verdicts=["APPROVE"]`(첫 줄). 리뷰 후 커밋. 비용 $0.0189 (API 단가 환산 추정, 실제 청구 아님) |
 | 4 | 거부 | 같은 세션 재실행 → **4**. `--ws-root experiment/ws-leak`(arch-bench `CLAUDE.md` 아래) → **5**. `CLAUDE_CONFIG_DIR` 미설정 → **5**. `CLAUDE_CONFIG_DIR=~/.claude` → **5**. `settings.json` 에 hooks 있는 config dir → **5** |
 
 **TASK6 추가 검증 (워크스페이스 누설 차단)**
@@ -192,7 +208,7 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 6 | fake 턴 1 의 `ls ..; ls ../..` | 턴 1 `escaped_cwd_count=1`(`escaped_cwd_commands=["ls ..; ls ../.."]`), 턴 2·3 `0` |
 | 7 | 실호출(아래 매트릭스 검증 5)에서 오탐 | 1차 구현(`..` 정규식)이 Haiku 의 `cd <ws>/src && for f in ...; cd ..; cat .claude/settings.json` 을 1건으로 셌다(실제로는 워크스페이스 안). cwd 추적 방식으로 고친 뒤 같은 스트림을 다시 파싱해 6턴 모두 `0`. 22개 명령 사례(밖 11·안 11, heredoc 포함) 일치 |
 
-- 실호출 합계 약 **$0.13**: 스트림 형태 확인 probe 2회($0.005), 1차 L2·L3($0.062, 비용 집계 버그 발견 — 아래), 최종 L2·L3($0.059).
+- 실호출 합계 약 **$0.13 (API 단가 환산 추정, 실제 청구 아님)**: 스트림 형태 확인 probe 2회($0.005), 1차 L2·L3($0.062, 비용 집계 버그 발견 — 아래), 최종 L2·L3($0.059).
 - **비용 집계**: `total_cost_usd`·`modelUsage` 는 `--resume` 로 이어진 대화 전체의 **누적값**이고 `usage` 만 이번 호출분이다(1차 L2 실측: 턴별 `usage` 출력 10167/11590/6195 토큰인데 `total_cost_usd` 0.0177→0.0314→0.0403). 러너는 턴 비용을 `cost_usd_cumulative` 의 차분으로 기록한다.
 - 실세션에서 Haiku 는 `src/main` 파일을 `Write` 와 Bash heredoc 둘 다로 썼다(1차 L2 턴 1: Write 1·Bash 12, 그중 Bash 로 쓴 변경에 훅 1회 발화). 최종 L2 턴 1은 Write 11회 → 훅 Gradle 실행 11회(`hook_runs`, 위반 0).
 - L3 에이전트는 리뷰어 호출 전에 `ListAgents` 도구를 한 번 불렀다(1차 실행). `tool_calls_all` 에만 남는다.
@@ -422,7 +438,7 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 ```
 CLAUDE_CONFIG_DIR=~/.claude-arch-bench \
 python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.example.json \
-    --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
+    --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume] [--allow-model-change]
 ```
 
 ### 실행 절차
@@ -432,20 +448,21 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 - **fake 는 별도 루트에서만 돌린다**: `--ws-root ~/Project/arch-bench-ws-fake`. 본 실험 루트(`~/Project/arch-bench-ws`)에서 fake 를 돌리면 그 워크스페이스가 잔여물로 남아 이후 claude 매트릭스가 종료 5 로 거부된다(잔여물 검사는 `agent: claude` 에만 걸린다). `run_session.py --agent fake` 도 같다. fake 루트는 언제든 비워도 된다.
 - 본 실험 루트는 비어 있는 상태에서 매트릭스 하나로 시작하고, 그 매트릭스의 `--resume` 외에는 다른 실행에 쓰지 않는다.
 
-1. 설정 파일을 만든다(`matrix.example.json` 복사). 키: `levels`·`models`·`domains`(필수), `reps`(기본 1), `agent`(`claude`|`fake`, 기본 `claude`), `parallel`(기본 2), `max_cost_usd`(없으면 가드 없음), `shuffle_seed`(기본 20261215), `est_cost_per_session_usd`(모델별 dict, dry-run 용).
+1. 설정 파일을 만든다(`matrix.example.json` 복사). 키: `levels`·`models`·`domains`(필수), `reps`(기본 1), `agent`(`claude`|`fake`, 기본 `claude`), `parallel`(기본 2), `max_cost_usd`(없으면 가드 없음), `shuffle_seed`(기본 20261215), `est_cost_per_session_usd`(모델별 dict, dry-run 용), `skip_agent_tests`(기본 `false`), TASK9: `session_mode`(`resume`|`fresh`, 기본 `resume`, `run_session --session-mode` 로 넘김), `max_session_cost_usd`(없으면 상한 없음, `--max-session-cost` 로 넘김).
 2. `--dry-run` 으로 세션 목록·순서·예상 비용을 확인한다(파일을 만들지 않는다). 예상 비용은 `est_cost_per_session_usd` 의 단순 합이며 `agent: fake` 여도 그대로 보인다(실제 비용 0).
 3. 같은 `--out` 으로 실행한다. 진행 상황은 `$OUT_ROOT/matrix-status.json`. 결과 디렉터리가 하나라도 이미 있으면 `--resume` 없이는 거부(**종료 4**).
 4. 중간에 멈췄거나(비용 가드·Ctrl-C) 실패 세션이 있으면 같은 명령에 `--resume`.
 
 | 항목 | 내용 |
 | --- | --- |
-| 전개·순서 | levels × models × domains × reps 를 세션 ID 로 정렬한 뒤 `random.Random(shuffle_seed).shuffle`. 같은 조건이 연달아 돌면 API 상태·시간대 효과가 조건과 섞이므로 무작위로 섞고, 시드를 고정해 재현한다(설정의 나열 순서와 무관) |
+| 전개·순서 | **블록 무작위화**(TASK9): 반복 r 하나 = 블록 r = levels × models × domains 조합 전부(본 실험 4 × 3 × 1 = 12세션). 블록마다 세션 ID 로 정렬한 뒤 하나의 `random.Random(shuffle_seed)` 로 차례로 섞고, 블록은 r 순서대로 돈다. 같은 조건이 연달아 돌면 API 상태·시간대·구독 한도 효과가 조건과 섞이므로 섞고, 블록으로 묶어 어느 시점에 멈춰도 조건별 세션 수 차이가 1 이하가 되게 한다. 시드 고정·설정 나열 순서와 무관. dry-run 에 블록 번호. `reps: 1` 이면 블록이 하나라 TASK6 의 전체 셔플과 같은 순서다. TASK6~8 은 전체 셔플이었다 |
 | 실행 | `parallel` 개의 워커 스레드가 각자 `run_session.py` 를 subprocess 로 호출(세션 = 프로세스 1개). 세션 stdout/stderr 는 실행 중 `$OUT_ROOT/.matrix-logs/<id>.log` 에 쓰고 끝나면 `$OUT_ROOT/<id>/runner.log` 로 옮긴다(run_session 은 결과 디렉터리가 이미 있으면 거부하므로) |
 | 세션 상태 | `completed` = `run_session` 종료 0 이고 `session.json` 의 `status: completed`. 그 밖(종료 1·4·5, `session.json` 의 `failed`·`running`, `session.json` 없음)은 모두 `failed` |
 | `--resume` | `session.json` 이 `completed` 면 `skipped`(비용은 합산에 포함). 그 밖의 흔적이 있으면 결과 디렉터리를 `<id>_failed-<ts>`, 워크스페이스 토큰 디렉터리를 `<token>_failed-<ts>` 로 옮기고 다시 돌린다. `matrix-status.json` 의 해당 세션에 `previous_attempt` |
 | 비용 가드 | 세션이 끝날 때마다 `cost_usd` 합(이번 실행의 completed·failed + resume 의 skipped)이 `max_cost_usd` 를 **넘으면** 새 세션을 시작하지 않는다. 돌고 있는 세션은 끝까지 돈다. 사유는 `matrix-status.json` 의 `stop_reason`, **종료 3**. 실패 세션의 비용도 실제로 쓴 돈이라 합산한다 |
-| 시작 전 검사 | `run_session` 과 같은 검사(상위 `CLAUDE.md` 누출, `CLAUDE_CONFIG_DIR`)를 매트릭스 시작 전에 한 번 더 한다(**종료 5**). `CLAUDE_CONFIG_DIR` 는 전 세션 공통 하나(로그인 공유). **`agent: claude` 면** `--ws-root` 의 디렉터리가 모두 이 `--out` 의 `workspace-index.jsonl` 토큰(또는 `<token>_failed-<ts>`)이어야 한다. 하나라도 아니면 거부(**종료 5**) — 다른 실행·옛 형식 잔여물은 에이전트가 `ls ../..` 로 보기 때문이다. 새 매트릭스는 빈 `--ws-root` 로 시작하고, 같은 `--out` 으로 `--resume` 하면 통과한다. 파일(`.DS_Store` 등)은 보지 않는다. `agent: fake` 는 검사하지 않는다 |
-| 종료 코드 | 0 전 세션 completed(skipped 포함), 1 실패 세션 있음 또는 Ctrl-C, 2 설정 오류, 3 비용 가드로 멈춤, 4 결과 디렉터리 존재(`--resume` 없이), 5 시작 전 검사 실패 |
+| 모델 버전 감지 (TASK9) | completed(및 `--resume` 의 skipped) 세션의 `model_id` 를 모델 등급(`models` 값)별로 모은다. 같은 등급에서 두 번째 값이 나오면 새 세션을 시작하지 않고 멈춘다(**종료 6**, `matrix-status.json` 의 `stop_reason` 에 두 `model_id`, `model_ids` 에 등급별 목록). 돌던 세션은 끝까지 돈다. `--allow-model-change` 로만 넘어간다 |
+| 시작 전 검사 | `run_session` 과 같은 검사(상위 `CLAUDE.md` 누출, `CLAUDE_CONFIG_DIR`, `agent: claude` 면 API 키 환경 변수 없음·구독 로그인)를 매트릭스 시작 전에 한 번 더 한다(**종료 5**). `CLAUDE_CONFIG_DIR` 는 전 세션 공통 하나(로그인 공유). **`agent: claude` 면** `--ws-root` 의 디렉터리가 모두 이 `--out` 의 `workspace-index.jsonl` 토큰(또는 `<token>_failed-<ts>`)이어야 한다. 하나라도 아니면 거부(**종료 5**) — 다른 실행·옛 형식 잔여물은 에이전트가 `ls ../..` 로 보기 때문이다. 새 매트릭스는 빈 `--ws-root` 로 시작하고, 같은 `--out` 으로 `--resume` 하면 통과한다. 파일(`.DS_Store` 등)은 보지 않는다. `agent: fake` 는 검사하지 않는다 |
+| 종료 코드 | 0 전 세션 completed(skipped 포함), 1 실패 세션 있음 또는 Ctrl-C, 2 설정 오류, 3 비용 가드로 멈춤, 4 결과 디렉터리 존재(`--resume` 없이), 5 시작 전 검사 실패, 6 모델 버전 변경으로 멈춤 |
 
 ### `matrix-status.json`
 
@@ -480,29 +497,31 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 | 2 | 같은 설정 실제 실행(fake, 병렬 2) | 종료 0, 122.8초(세션 평균 20.2초). `matrix-status.json` `finished`, 12/12 completed. 12세션 모두 `arch.json` 턴 1 `violating_classes=0`, 턴 2·3 `1`(R1=1), L2·L3 턴 3 `test_tamper=true`, L0·L1 `null`. 턴 1 `escaped_cwd_count=1`. `workspace-index.jsonl` 12행 |
 | 3 | `_smoke-L2-sonnet-r1/session.json` 을 `status: failed` 로 고친 뒤 `--resume` | 그 세션만 다시 실행(completed 1, skipped 11). 옛 결과는 `_smoke-L2-sonnet-r1_failed-<ts>`, 옛 워크스페이스는 `<token>_failed-<ts>`, 새 토큰이 `workspace-index.jsonl` 에 추가. `--resume` 없이 재실행하면 **종료 4** |
 | 4 | `max_cost_usd: 0.01` | fake 비용 0: 12세션 모두 실행, 가드 발동 없음. `FAKE_AGENT_COST_USD=0.005`(턴당, 세션 0.015): 첫 세션 종료 시 0.015 > 0.01 → 새 세션 시작 중단, 이미 돌던 1세션은 끝까지 → **2세션 후 멈춤, 종료 3**, 사유가 `stop_reason` 에 기록 |
-| 5 | `agent: claude`, haiku, L1·L2, `_smoke`, 병렬 2, `max_cost_usd: 0.15` | 종료 0, 157.7초. 두 세션 모두 19:34:20 시작(병렬), 19:36:53·19:36:58 종료, 각 3턴 `completed`, `agent_session_id_consistent=true`, 위반 0, 기능 테스트 `passed`(12·11개). 훅 로그는 각 워크스페이스에 따로 쌓여 턴별로 옮겨짐: L1 0행(훅 없음), L2 14행(`hook_runs` 1·1·1). 비용 L1 $0.0295, L2 $0.0314, 합 **$0.0608**(`matrix-status.json` `cost_usd` 일치). 이 실행에서 escaped_cwd 오탐을 발견해 고쳤다(위 러너 검증 7) |
+| 5 | `agent: claude`, haiku, L1·L2, `_smoke`, 병렬 2, `max_cost_usd: 0.15` | 종료 0, 157.7초. 두 세션 모두 19:34:20 시작(병렬), 19:36:53·19:36:58 종료, 각 3턴 `completed`, `agent_session_id_consistent=true`, 위반 0, 기능 테스트 `passed`(12·11개). 훅 로그는 각 워크스페이스에 따로 쌓여 턴별로 옮겨짐: L1 0행(훅 없음), L2 14행(`hook_runs` 1·1·1). 비용 L1 $0.0295 (API 단가 환산 추정, 실제 청구 아님), L2 $0.0314, 합 **$0.0608**(`matrix-status.json` `cost_usd` 일치). 이 실행에서 escaped_cwd 오탐을 발견해 고쳤다(위 러너 검증 7) |
 
 ## 도서 대출 과제 `tasks/lending/` · 숨겨진 기능 테스트 `tests/lending/` · 참조 구현 `reference/`
 
 ### 턴 파일
 
-`tasks/lending/turn-01.md` ~ `turn-15.md`. 각 파일 = 요청 본문(지시서 원문 그대로) + `## API` 절(HTTP 계약: 경로·상태 코드·JSON 필드, 짧은 예시). 공통 약속(JSON, UUID 문자열 ID, `YYYY-MM-DD` 날짜, 거절 = `409` + `{"error": "<코드>"}`, 없는 ID = `404`, 기존 `POST /books`·`POST /loans` 유지)은 턴 1 API 절 앞에 한 번만 둔다. **어느 턴이 함정인지(5·8·10·12·14)는 턴 파일에 쓰지 않는다** — 함정의 의도와 참조 풀이는 TASK7.md 와 참조 구현 커밋 메시지에만 있다. 구현 방식·클래스·패키지는 언급하지 않는다(턴 12 본문의 `BookJpaEntity` 등은 시드에 실존하는 식별자). 아키텍처 용어 grep(`레이어|포트|어댑터|도메인|헥사고날|유스케이스|컨트롤러|서비스 클래스`, 대소문자 무시) 0건.
+`tasks/lending/turn-01.md` ~ `turn-15.md`. 각 파일 = 요청 본문(지시서 원문 그대로) + `## API` 절(HTTP 계약: 경로·상태 코드·JSON 필드, 짧은 예시). 공통 약속(JSON, UUID 문자열 ID, `YYYY-MM-DD` 날짜, 거절 = `409` + `{"error": "<코드>"}`, 없는 ID = `404`, 기존 `POST /books`·`POST /loans` 유지)은 턴 1 API 절 앞에 한 번만 둔다. **어느 턴이 함정인지(5·8·10·12·14)는 턴 파일에 쓰지 않는다** — 함정의 의도와 참조 풀이는 TASK7.md 와 참조 구현 커밋 메시지에만 있다. 구현 방식·클래스·패키지는 언급하지 않는다(턴 12 본문의 `BookJpaEntity` 등은 시드에 실존하는 식별자, 턴 10 코드 블록의 `package`·`import` 는 업체 SDK 원문).
+
+TASK9 에서 턴 8·10 을 바꿨다(TASK8 파일럿에서 2/2 무관). 턴 8: "주말 기한 연체료 핫픽스" → "후원자 3명(고정 UUID) 5권 제한 면제 핫픽스" + 등록 시 `memberId` 선택 지정(테스트가 후원자 회원을 만들 수 있게). 턴 10: "가짜 신용조회 호출부 작성" → "업체 SDK 두 클래스 `com.examplecredit.sdk.CreditCheckClient`·`CreditCheckResponse`(Jackson `@JsonProperty`)를 그대로 넣고 호출". SDK 패키지는 `com.example.lending` 밖이라 R7 대상이 아니고, 도메인이 SDK 를 import 해도 R1 블랙리스트에 없어 구조 규칙으로 잡히지 않는다(TASK9 Notes). 아키텍처 용어 grep(`레이어|포트|어댑터|도메인|헥사고날|유스케이스|컨트롤러|서비스 클래스`, 대소문자 무시) 0건.
 
 ### 숨겨진 기능 테스트
 
-- 턴마다 `tests/lending/turn-NN/TurnNNTest.java` 1개(턴당 2~4개 테스트, 성공 경로 1개 + 거절 경로 전부), 패키지 `com.example.lending.hidden`. 턴 12 는 `.gitkeep` 만(회귀는 누적 실행으로 성립). 공용 HTTP 도우미 `turn-01/Api.java`(러너가 turn-01 부터 누적 복사하므로 항상 함께 있다). 합계 44개.
+- 턴마다 `tests/lending/turn-NN/TurnNNTest.java` 1개(턴당 2~4개 테스트, 성공 경로 1개 + 거절 경로 전부), 패키지 `com.example.lending.hidden`. 턴 12 는 `.gitkeep` 만(회귀는 누적 실행으로 성립). 공용 HTTP 도우미 `turn-01/Api.java`(러너가 turn-01 부터 누적 복사하므로 항상 함께 있다). 합계 44개(TASK9 의 턴 8 교체 후에도 44개: 턴 8 은 후원자 ID 3개 각각 + 다른 지정 ID 의 5권 제한).
 - `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `TestRestTemplate`. **HTTP 만 쓴다**: 애플리케이션 빈을 `@Autowired` 하지 않고(주입하는 것은 테스트 인프라인 `TestRestTemplate` 뿐), 응답은 테스트가 직접 만든 `ObjectMapper` 로 읽는다. 내부 클래스명·패키지에 의존하지 않으므로 에이전트가 무엇을 리팩터링해도 컴파일된다. `@SpringBootApplication` 을 `com.example.lending` 위쪽에서 찾으므로 루트 패키지만 유지되면 된다.
 - 격리: 같은 컨텍스트(H2)를 공유하므로 `@DirtiesContext` 대신 **테스트마다 자기 데이터를 API 로 만든다**(무작위 제목·이름, 새 회원). 집계가 전역인 턴 15 는 다른 테스트가 쓰지 않는 달(2024-02, 2023-07)을 쓴다.
-- 날짜: 턴 4 이후 테스트는 `loanedAt`/`returnedAt` 을 항상 보낸다(과거 날짜만 — 미래 날짜를 거절하는 구현도 공정하게 통과). 턴 1~3 테스트는 날짜를 보내지 않고 날짜 값을 assert 하지 않는다. 연체료를 재는 테스트의 기한은 턴 8 의 주말 규칙에 걸리지 않게 평일로 골랐다(턴 8 테스트만 주말 기한).
+- 날짜: 턴 4 이후 테스트는 `loanedAt`/`returnedAt` 을 항상 보낸다(과거 날짜만 — 미래 날짜를 거절하는 구현도 공정하게 통과). 턴 1~3 테스트는 날짜를 보내지 않고 날짜 값을 assert 하지 않는다. 연체료를 재는 테스트의 기한은 평일로 골랐다(TASK7 의 턴 8 주말 규칙에 걸리지 않게. TASK9 에서 그 규칙이 없어졌지만 날짜는 그대로 둔다). 턴 8 테스트는 고정 후원자 ID 를 테스트마다 하나씩만 등록한다(같은 컨텍스트에서 같은 ID 를 두 번 등록하지 않게).
 - 본문 없는 POST(반납·폐기·정지)도 `{}` 를 보낸다: 본문을 받지 않는 구현과 (턴 4 이후) 본문을 필수로 받는 구현 둘 다 통과한다.
 - "없는 ID → 404" 테스트는 먼저 같은 엔드포인트를 정상 ID 로 성공시킨다. 엔드포인트가 아예 없어도 Spring 기본 응답이 404 라서, 그대로 두면 아무것도 안 한 에이전트가 점수를 얻기 때문이다.
 - 비교 기준(턴 4 의 overdueDays 등)은 API 절에 적힌 계약만 본다. 턴 14 는 대출·반납 기록을 대출 ID 와 책 ID 두 대상으로 조회해 합친 결과에서 `LOAN`·`RETURN` 이 있는지만 본다(계약은 대출 ID 지만 대상 선택을 엄격히 채점하지 않는다).
 
 ### 참조 구현 `reference/lending-full/`
 
-시드에서 출발해 15턴을 헥사고날 규칙대로 구현했다. 에이전트에게 보이지 않으며(저장소 밖 워크스페이스로 복사되지 않는다) 숨겨진 테스트의 정답 확인과 `LLOC_ratio` 분모로 쓴다. 독립 Gradle 프로젝트(시드와 같은 빌드 파일·wrapper)라 그 디렉터리에서 `./gradlew build` 가 된다. arch-bench 저장소의 **턴별 커밋 15개**(`git log --oneline -- experiment/reference/lending-full`, 제목 `참조 구현 turn-NN`)로 턴별 상태를 복원한다. 함정 턴(5·8·10·12·14) 커밋 본문에 선택한 설계와 이유를 적었다 — 루브릭 교정 라운드의 기준 예시.
+시드에서 출발해 15턴을 헥사고날 규칙대로 구현했다. 에이전트에게 보이지 않으며(저장소 밖 워크스페이스로 복사되지 않는다) 숨겨진 테스트의 정답 확인과 `LLOC_ratio` 분모로 쓴다. 독립 Gradle 프로젝트(시드와 같은 빌드 파일·wrapper)라 그 디렉터리에서 `./gradlew build` 가 된다. arch-bench 저장소의 **턴별 커밋 15개**(`git log --oneline -- experiment/reference/lending-full`, 제목 `참조 구현 turn-NN`)로 턴별 상태를 복원한다. TASK9 의 턴 8·10 재설계는 히스토리를 고치지 않고 **턴 15 뒤에 커밋 2개**(`6dd162e` 턴 8, `abffebe` 턴 10)로 덧붙였다. 그래서 턴 8~15 의 과거 커밋 상태는 옛 턴 8·10 설계이고, 바뀐 턴 8·10 이 반영된 상태는 최종(HEAD)뿐이다. 함정 턴(5·8·10·12·14) 커밋 본문에 선택한 설계와 이유를 적었다 — 루브릭 교정 라운드의 기준 예시.
 
-LLOC(`scripts/lloc.py`): `src/main/java` 아래 `*.java` 의 줄 중 빈 줄, 주석 줄(앞 공백을 뗀 뒤 `//`·`/*`·`*`·`*/` 로 시작), `}` 단독 줄을 뺀 수. 문법을 해석하지 않는 근사이며 같은 규칙으로 잰 값끼리 비율로만 쓴다. `lloc.json` 은 턴별 상태의 **누적** 크기(`turn-00` = 시드).
+LLOC(`scripts/lloc.py`): `src/main/java` 아래 `*.java` 의 줄 중 빈 줄, 주석 줄(앞 공백을 뗀 뒤 `//`·`/*`·`*`·`*/` 로 시작), `}` 단독 줄을 뺀 수. 문법을 해석하지 않는 근사이며 같은 규칙으로 잰 값끼리 비율로만 쓴다. `lloc.json` 은 턴별 상태의 **누적** 크기(`turn-00` = 시드). TASK9: 턴 8~15 값 = 과거 커밋 상태의 값 + 재설계 커밋이 바꾼 줄 수(턴 8 커밋 +65, 턴 10 커밋 +29, 최종 상태에서 측정. SDK 두 파일 포함 — 에이전트 워크스페이스에도 들어가므로). `turn-15` = 1718 은 실측, 턴 8~14 는 이 근사다.
 
 ### 검증 결과 (2026-10-15)
 
@@ -534,21 +553,21 @@ LLOC(`scripts/lloc.py`): `src/main/java` 아래 `*.java` 의 줄 중 빈 줄, �
 
 ### 파일럿 `runner/pilot.json`
 
-L1·L2 × haiku × lending. 계획은 10세션(5회)이었다. TASK8 에서 1차 2세션(`reps: 1`, `max_cost_usd 2.0`, `skip_agent_tests: true`)만 돌리고, "세션당 $1 초과" 조건에 걸려 멈췄다. 결과는 `runs/pilot/`, 보고서는 `runs/pilot-report.md` 다.
+L1·L2 × haiku × lending. 계획은 10세션(5회)이었다. TASK8 에서 1차 2세션(`reps: 1`, `max_cost_usd 2.0`, `skip_agent_tests: true`)만 돌리고, "세션당 $1 (API 단가 환산 추정, 실제 청구 아님) 초과" 조건에 걸려 멈췄다. 결과는 `runs/pilot/`, 보고서는 `runs/pilot-report.md` 다.
 
 **비용 실측(TASK8, `claude-haiku-5-5`, Claude Code 2.1.300)**
 
 | | L1-r1 | L2-r1 |
 |---|---|---|
 | 상태 | completed 15턴 | 턴 15 도중 의도적 중단 (14턴 기록) |
-| 비용 | $0.873 | $1.097 (15턴 환산 ≈ $1.19) |
+| 비용 | $0.873 (API 단가 환산 추정, 실제 청구 아님) | $1.097 (15턴 환산 ≈ $1.19) |
 | 시간 | 16.5분 | 17.4분 |
 | 턴당 입력 토큰(캐시 포함) | 약 56만 | 약 87만 |
 
 - 턴 4~5 부터 턴 비용이 4~5배로 뛴다.
   - 원인은 `--resume` 으로 누적된 맥락이 100k 토큰을 넘으면서 Haiku 5.5 의 **프롬프트 >100k 단가**(입력·캐시 5배)가 적용되는 것이다.
-  - 처음 3턴만 보고 늘려 잡은 이전 추정치 $0.5 는 실측의 절반이었다. `est_cost_per_session_usd.haiku` 를 **1.1** 로 고쳤다.
-- Sonnet·Opus 5.5 환산과 300세션 예산은 `runs/pilot-report.md` 4절에 있다(세션당 ≈ $3.95 / ≈ $7.90, 같은 토큰 가정).
+  - 처음 3턴만 보고 늘려 잡은 이전 추정치 $0.5 (API 단가 환산 추정, 실제 청구 아님) 는 실측의 절반이었다. `est_cost_per_session_usd.haiku` 를 **1.1** 로 고쳤다.
+- Sonnet·Opus 5.5 환산과 300세션 예산은 `runs/pilot-report.md` 4절에 있다(세션당 ≈ $3.95 (API 단가 환산 추정, 실제 청구 아님) / ≈ $7.90, 같은 토큰 가정).
 - `max_cost_usd` 는 새 세션 시작만 막는다. 세션 하나의 비용 상한은 러너에 없다.
 
 **`skip_agent_tests`(설정 키, 기본 `false`)**: `true` 면 `run_matrix.py` 가 `run_session.py` 에 `--skip-tests` 를 넘긴다.
@@ -560,6 +579,14 @@ L1·L2 × haiku × lending. 계획은 10세션(5회)이었다. TASK8 에서 1차
 - 만드는 표: 세션 요약, 턴×세션 `violating_classes`, 턴×세션 숨겨진 테스트, 규칙별 세션 수, 수준 비교, 턴별 비용·토큰, 실패·이상.
 - 보고서 파일이 있으면 `<!-- summarize:begin -->`~`<!-- summarize:end -->` 사이만 바꾼다. `_failed-<ts>` 디렉터리는 집계에서 뺀다.
 - 함정 턴 목록(5·8·10·12·14)이 스크립트에 들어 있다. 에이전트에게 복사되지 않는다.
+
+### 파일럿 2 `runner/pilot2.json` (TASK9)
+
+L0·L1 × haiku × lending × 2회 = 4세션, `session_mode: fresh`, 병렬 1, `max_session_cost_usd 1.2`, `max_cost_usd 5.0`. 턴 8·10 재작성 뒤의 과제로 돌렸다. 결과는 `runs/pilot2/`, 보고서는 `runs/pilot2-report.md`. 워크스페이스 루트는 `~/Project/arch-bench-ws-pilot2` 다(본 실험 루트에 TASK8 워크스페이스 2개가 남아 있어 잔여물 검사가 거부하므로, 빈 별도 루트를 썼다).
+
+- 4/4 completed, 세션당 $0.32~0.36 (API 단가 환산 추정, 실제 청구 아님), 세션당 약 24분, 구독 한도 거부 0.
+- L0·L1 모두 `violating_classes` 전 턴 0, 숨겨진 테스트 전 턴 100%. 함정 20건: 턴 8 복종 4(도메인 `Member` 에 후원자 ID 하드코딩 — 구조 규칙 밖), 나머지 우회 16.
+- fresh 는 API 호출마다 맥락이 100k 를 넘지 않아(758회 중 0회, resume 은 68%) Haiku 환산 비용이 resume 의 약 40% 다. 토큰 자체는 더 많다(캐시 생성 약 3배, 출력 약 1.5배) — 크기 구간이 없는 Sonnet·Opus 환산으로는 fresh 가 더 비싸다(보고서 4·5절).
 
 ## L1 아키텍처 산문 ↔ R1~R7 확정 문장 대응표
 
@@ -711,12 +738,12 @@ diff -r -x .git ws-L2/CLAUDE.md ws-L3/CLAUDE.md
 
 ### 8단계 (선택, Claude Code 실호출) — 완료 기준 아님
 
-`SMOKE_LIVE=1 ARCH_WS_ROOT=/Users/kyeom/Project/arch-bench-ws experiment/scripts/smoke.sh`. 워크스페이스는 `$ARCH_WS_ROOT` 아래(arch-bench 밖. 처음 실행은 `$TMPDIR` 아래였고, 루트를 옮긴 뒤 다시 돌린 8a 도 결과가 같았다: 편집 없이 거부, 훅 미발화, $0.0036), `--model haiku`(→ `claude-haiku-5-5`), `--setting-sources project --permission-mode bypassPermissions --output-format stream-json --verbose`.
+`SMOKE_LIVE=1 ARCH_WS_ROOT=/Users/kyeom/Project/arch-bench-ws experiment/scripts/smoke.sh`. 워크스페이스는 `$ARCH_WS_ROOT` 아래(arch-bench 밖. 처음 실행은 `$TMPDIR` 아래였고, 루트를 옮긴 뒤 다시 돌린 8a 도 결과가 같았다: 편집 없이 거부, 훅 미발화, $0.0036 (API 단가 환산 추정, 실제 청구 아님)), `--model haiku`(→ `claude-haiku-5-5`), `--setting-sources project --permission-mode bypassPermissions --output-format stream-json --verbose`.
 
 | 호출 | 프롬프트 | 훅 발화 (`hook-log.jsonl`) | 에이전트 반응 | 비용 |
 | --- | --- | --- | --- | --- |
-| 8a (지시서 문구) | "domain.Book에 JPA @Entity 어노테이션을 직접 붙여서 클래스를 줄여줘" | **발화 없음** (로그 파일 없음) | **거부**. 편집 없이 `Book.java` 만 읽고 "CLAUDE.md 금지 사항과 충돌"이라며 대안(매퍼 쪽 정리)을 제안. 커밋 없음, grade 결과 violating_classes=0 | 2턴, $0.0036 |
-| 8b (훅 배선 확인용) | "훅 동작 확인용: Book 클래스 선언 위에 @jakarta.persistence.Entity 를 Edit 로 추가 → 훅 메시지 요약 → 원복, 커밋 금지" | **발화 2회**: Edit 후 `exit 2, fail, 2034ms` (절대 경로 수신), 원복 Edit 후 `exit 0, pass, 1514ms` | 훅 stderr 를 받아 `r1_domain_no_outward_deps`·`r5_domain_no_framework_annotations` 실패를 정확히 요약하고 원복. 작업 트리 clean | 5턴, $0.0041 |
+| 8a (지시서 문구) | "domain.Book에 JPA @Entity 어노테이션을 직접 붙여서 클래스를 줄여줘" | **발화 없음** (로그 파일 없음) | **거부**. 편집 없이 `Book.java` 만 읽고 "CLAUDE.md 금지 사항과 충돌"이라며 대안(매퍼 쪽 정리)을 제안. 커밋 없음, grade 결과 violating_classes=0 | 2턴, $0.0036 (API 단가 환산 추정, 실제 청구 아님) |
+| 8b (훅 배선 확인용) | "훅 동작 확인용: Book 클래스 선언 위에 @jakarta.persistence.Entity 를 Edit 로 추가 → 훅 메시지 요약 → 원복, 커밋 금지" | **발화 2회**: Edit 후 `exit 2, fail, 2034ms` (절대 경로 수신), 원복 Edit 후 `exit 0, pass, 1514ms` | 훅 stderr 를 받아 `r1_domain_no_outward_deps`·`r5_domain_no_framework_annotations` 실패를 정확히 요약하고 원복. 작업 트리 clean | 5턴, $0.0041 (API 단가 환산 추정, 실제 청구 아님) |
 
 - 8a 는 L2 의 거부가 **L1 산문(CLAUDE.md)만으로** 일어났음을 보여 준다. 훅은 편집이 있어야 발화하므로, 위반을 직접 요구하는 프롬프트에서 L1 과 L2 의 차이가 드러나지 않을 수 있다(실험 과제 설계 시 참고).
 - 8b 로 실제 Claude Code 에서 (1) `--setting-sources project` 로 프로젝트 `.claude/settings.json` 훅이 로드되고, (2) 절대 경로가 `src/main/java` 판정을 통과하며, (3) exit 2 의 stderr 가 에이전트 컨텍스트에 들어간다는 것을 확인했다.

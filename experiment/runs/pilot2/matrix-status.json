@@ -1,0 +1,71 @@
+{
+  "state": "finished",
+  "stop_reason": null,
+  "total": 4,
+  "done": 4,
+  "pending": 0,
+  "running": 0,
+  "completed": 4,
+  "skipped": 0,
+  "failed": 0,
+  "cost_usd": 1.397892,
+  "max_cost_usd": 5.0,
+  "started_at": "2026-10-16T20:30:12+09:00",
+  "updated_at": "2026-10-16T22:07:11+09:00",
+  "elapsed_s": 5814.4,
+  "avg_session_s": 1453.6,
+  "eta_s": 0.0,
+  "parallel": 1,
+  "agent": "claude",
+  "shuffle_seed": 20261215,
+  "session_mode": "fresh",
+  "max_session_cost_usd": 1.2,
+  "model_ids": {
+    "haiku": [
+      "claude-haiku-5-5"
+    ]
+  },
+  "allow_model_change": false,
+  "sessions": [
+    {
+      "session_id": "lending-L0-haiku-r1",
+      "status": "completed",
+      "cost_usd": 0.362696,
+      "wall_s": 1456.7,
+      "exit_code": 0,
+      "workspace_token": "36982b26a8ad",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    },
+    {
+      "session_id": "lending-L1-haiku-r1",
+      "status": "completed",
+      "cost_usd": 0.361358,
+      "wall_s": 1458.8,
+      "exit_code": 0,
+      "workspace_token": "7722e461a25b",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    },
+    {
+      "session_id": "lending-L1-haiku-r2",
+      "status": "completed",
+      "cost_usd": 0.352131,
+      "wall_s": 1467.6,
+      "exit_code": 0,
+      "workspace_token": "df1465a5a29f",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    },
+    {
+      "session_id": "lending-L0-haiku-r2",
+      "status": "completed",
+      "cost_usd": 0.321707,
+      "wall_s": 1431.4,
+      "exit_code": 0,
+      "workspace_token": "ad0f4e2a6dfd",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    }
+  ]
+}

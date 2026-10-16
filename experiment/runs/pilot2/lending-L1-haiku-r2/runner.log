@@ -1,0 +1,16 @@
+$ /opt/homebrew/opt/python@3.13/bin/python3.13 /Users/kyeom/Project/arch-bench/experiment/runner/run_session.py --level L1 --model haiku --domain lending --rep 2 --ws-root /Users/kyeom/Project/arch-bench-ws-pilot2 --out /Users/kyeom/Project/arch-bench/experiment/runs/pilot2 --agent claude --skip-tests --session-mode fresh --max-session-cost 1.2
+[lending-L1-haiku-r2] turn-01: agent=ok 61.56s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=4/4 tests=None cost=0.01651335
+[lending-L1-haiku-r2] turn-02: agent=ok 74.79s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=6/6 tests=None cost=0.01828106
+[lending-L1-haiku-r2] turn-03: agent=ok 91.5s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=10/10 tests=None cost=0.02575116
+[lending-L1-haiku-r2] turn-04: agent=ok 65.57s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=14/14 tests=None cost=0.01688289
+[lending-L1-haiku-r2] turn-05: agent=ok 85.97s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=17/17 tests=None cost=0.02227469
+[lending-L1-haiku-r2] turn-06: agent=ok 45.95s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=19/19 tests=None cost=0.01268146
+[lending-L1-haiku-r2] turn-07: agent=ok 70.15s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=23/23 tests=None cost=0.02040976
+[lending-L1-haiku-r2] turn-08: agent=ok 58.46s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=27/27 tests=None cost=0.01452022
+[lending-L1-haiku-r2] turn-09: agent=ok 184.07s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=31/31 tests=None cost=0.04905255
+[lending-L1-haiku-r2] turn-10: agent=ok 176.77s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=34/34 tests=None cost=0.04575282
+[lending-L1-haiku-r2] turn-11: agent=ok 81.55s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=37/37 tests=None cost=0.02247683
+[lending-L1-haiku-r2] turn-12: agent=ok 35.11s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=37/37 tests=None cost=0.00967338
+[lending-L1-haiku-r2] turn-13: agent=ok 84.27s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=39/39 tests=None cost=0.02347665
+[lending-L1-haiku-r2] turn-14: agent=ok 114.18s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=42/42 tests=None cost=0.03112128
+[lending-L1-haiku-r2] turn-15: agent=ok 87.03s committed=True grade=0 vc=0 r1=0 test_tamper=None ft=44/44 tests=passed cost=0.02326276

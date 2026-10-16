@@ -1,7 +1,7 @@
 # TASK8 — 파일럿 1차 실행(2세션)과 1차 분석, 세션당 $1 초과로 2차 보류
 
 - **Date**: 2026-10-15
-- **Status**: in-progress (1차 완료·보고, 2차 8세션은 설계자 결정 대기)
+- **Status**: completed (1차 2세션 완료·보고. 2차 8세션은 TASK9 의 설계 변경으로 대체됨)
 - **Related TASKs**: TASK6, TASK7
 - **Commits**: 9d474e6 (파일럿 1차 설정·`skip_agent_tests`), 86df9f6 (결과·summarize.py·보고서)
 
@@ -73,3 +73,20 @@
   - 지시서 공식의 `max_cost_usd` = 실측 세션당 × 10 × 1.5 ≈ $16.5 는 총 상한 $15 를 넘는다. 상한은 $15 로 잡아야 한다.
 - **워크스페이스:** 지우지 않았다(`~/Project/arch-bench-ws/41af13f81a84`, `ea8aa393f496`). 다음 claude 매트릭스는 같은 `--out experiment/runs/pilot` 이면 `workspace-index.jsonl` 에 있어 사전 검사를 통과한다. 다른 결과 루트를 쓰면 종료 5 다.
 - **함정 턴 정보의 위치:** 함정 턴 번호가 `summarize.py`·`pilot-report.md` 에 있다. 둘 다 에이전트 워크스페이스로 복사되지 않는다(시드·하네스 밖).
+
+### Follow-up — 2026-10-16
+- **TASK8 닫기:** TASK9("작업 지시 9")와 함께 `completed` 로 닫는다.
+- **2차 8세션:** TASK9 의 설계 변경으로 대체되어 돌리지 않는다.
+  - 턴 8·10 재작성.
+  - `--session-mode fresh`.
+  - L0·L1 파일럿 `pilot2.json`.
+- **비용 표기:** 이전 결정은 TASK8 보고서의 비용을 "실측 비용"으로 쓰는 것이었다. 이를 "API 단가 환산 추정, 실제 청구 아님" 표기로 바꾼다.
+  - 사유: 파일럿은 Claude Max 구독 로그인(`authMethod: claude.ai`)으로 돌았다.
+  - `total_cost_usd` 는 claude 가 API 단가로 환산한 값이다.
+  - `experiment/runs/pilot-report.md` 와 `experiment/README.md` 의 비용 숫자에 표기를 붙였다(TASK9).
+- **보고서 질문의 처리 (TASK9 에서 결정됨):**
+  - 질문 1(2차 실행): L0·L1 fresh 파일럿으로 대체.
+  - 질문 3(L0 추가): 반영.
+  - 질문 4·5(턴 10·8 문구): 재작성.
+  - 질문 9(세션 비용 상한): `--max-session-cost` 추가.
+
