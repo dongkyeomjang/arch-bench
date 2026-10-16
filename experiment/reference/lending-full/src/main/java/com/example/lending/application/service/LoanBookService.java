@@ -65,7 +65,7 @@ public class LoanBookService implements LoanBookUseCase {
         ReservationQueue queue = ReservationQueue.of(book.getId(), loadReservationPort.loadWaitingReservations(book.getId()));
         queue.admit(member.getId()).ifPresent(saveReservationPort::saveReservation);
         // 외부 조회는 내부 규칙(한도·책 상태·예약)을 모두 통과한 뒤 한 번만 부른다
-        loan.recordCreditCheck(creditCheckPort.check(member, Instant.now()));
+        loan.recordCreditCheck(creditCheckPort.check(member));
         saveBookPort.saveBook(book);
         saveLoanPort.saveLoan(loan);
         recordAuditPort.record(AuditEntry.of(AuditAction.LOAN, loan.getId(), member.getId(), Instant.now()));
