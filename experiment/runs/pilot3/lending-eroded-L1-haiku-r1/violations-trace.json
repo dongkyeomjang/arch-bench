@@ -1,0 +1,217 @@
+{
+  "session_id": "lending-eroded-L1-haiku-r1",
+  "seed": "eroded",
+  "baseline": "experiment/seed-template/eroded/baseline.json",
+  "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws-pilot3/1747fe4e5be8/lending",
+  "summary": {
+    "turns": 15,
+    "unknown_turns": [],
+    "baseline_violating_classes": 4,
+    "final_violating_classes": 1,
+    "persisted_count": 1,
+    "healed_count": 3,
+    "spread_count": 0,
+    "novel_count": 0,
+    "spread_at_final": 0,
+    "novel_at_final": 0,
+    "embedded_persisted": [
+      "E4"
+    ],
+    "embedded_healed": [
+      "E1",
+      "E2",
+      "E3",
+      "E5"
+    ],
+    "e1_persisted": false,
+    "delta": -3
+  },
+  "baseline_classes": {
+    "com.example.lending.adapter.in.web.BookController": {
+      "rules": [
+        "R3"
+      ],
+      "status": "healed",
+      "healed_at": 12,
+      "first_absent": 12,
+      "reappeared": false
+    },
+    "com.example.lending.application.port.out.LoadBookPort": {
+      "rules": [
+        "R2"
+      ],
+      "status": "healed",
+      "healed_at": 12,
+      "first_absent": 12,
+      "reappeared": false
+    },
+    "com.example.lending.common.DateUtils": {
+      "rules": [
+        "R7"
+      ],
+      "status": "persisted",
+      "healed_at": null,
+      "first_absent": null,
+      "reappeared": false
+    },
+    "com.example.lending.domain.Member": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false
+    }
+  },
+  "embedded": {
+    "E1": {
+      "rules": [],
+      "classes": [
+        "com.example.lending.application.service.LoanBookService"
+      ],
+      "status": "healed",
+      "healed_at": 7,
+      "first_absent": 7,
+      "reappeared": false,
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E2": {
+      "rules": [
+        "R2"
+      ],
+      "classes": [
+        "com.example.lending.application.port.out.LoadBookPort"
+      ],
+      "status": "healed",
+      "healed_at": 12,
+      "first_absent": 12,
+      "reappeared": false,
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": true,
+        "8": true,
+        "9": true,
+        "10": true,
+        "11": true,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E3": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "classes": [
+        "com.example.lending.domain.Member"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E4": {
+      "rules": [
+        "R7"
+      ],
+      "classes": [
+        "com.example.lending.common.DateUtils"
+      ],
+      "status": "persisted",
+      "healed_at": null,
+      "first_absent": null,
+      "reappeared": false,
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": true,
+        "8": true,
+        "9": true,
+        "10": true,
+        "11": true,
+        "12": true,
+        "13": true,
+        "14": true,
+        "15": true
+      }
+    },
+    "E5": {
+      "rules": [
+        "R3"
+      ],
+      "classes": [
+        "com.example.lending.adapter.in.web.BookController"
+      ],
+      "status": "healed",
+      "healed_at": 12,
+      "first_absent": 12,
+      "reappeared": false,
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": true,
+        "8": true,
+        "9": true,
+        "10": true,
+        "11": true,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    }
+  },
+  "new_classes": {}
+}

@@ -1,0 +1,36 @@
+{
+  "tests_executed" : 7,
+  "primary_rules" : [ "R1", "R2", "R3", "R6", "R7" ],
+  "violating_classes" : 3,
+  "violating_classes_list" : [ "com.example.lending.adapter.in.web.BookController", "com.example.lending.common.DateUtils", "com.example.lending.domain.Member" ],
+  "by_rule" : {
+    "R1" : {
+      "count" : 3,
+      "classes" : [ "com.example.lending.domain.Member" ]
+    },
+    "R2" : {
+      "count" : 0,
+      "classes" : [ ]
+    },
+    "R3" : {
+      "count" : 4,
+      "classes" : [ "com.example.lending.adapter.in.web.BookController" ]
+    },
+    "R4" : {
+      "count" : 0,
+      "classes" : [ ]
+    },
+    "R5" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.domain.Member" ]
+    },
+    "R6" : {
+      "count" : 0,
+      "classes" : [ ]
+    },
+    "R7" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.common.DateUtils" ]
+    }
+  }
+}

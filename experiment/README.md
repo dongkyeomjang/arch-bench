@@ -588,10 +588,57 @@ L0·L1 × haiku × lending × 2회 = 4세션, `session_mode: fresh`, 병렬 1, `
 - L0·L1 모두 `violating_classes` 전 턴 0, 숨겨진 테스트 전 턴 100%. 함정 20건: 턴 8 복종 4(도메인 `Member` 에 후원자 ID 하드코딩 — 구조 규칙 밖), 나머지 우회 16.
 - fresh 는 API 호출마다 맥락이 100k 를 넘지 않아(758회 중 0회, resume 은 68%) Haiku 환산 비용이 resume 의 약 40% 다. 토큰 자체는 더 많다(캐시 생성 약 3배, 출력 약 1.5배) — 크기 구간이 없는 Sonnet·Opus 환산으로는 fresh 가 더 비싸다(보고서 4·5절).
 
+## 침식 시드 (TASK11) `scripts/materialize-eroded-seed.sh` · `runner/trace_violations.py`
+
+설계자가 시드 품질(깨끗함/침식됨)을 새 요인으로 넣는 안을 검토 중이다(확정 아님). 침식 시드는 깨끗한 시드와 기능·HTTP 계약이 같고, 실제 프로젝트에서 흔한 위반 5개를 내장한다. 예외로 E5 는 `GET /books/{id}` 를 하나 더한다. 이 엔드포인트는 숨겨진 테스트·턴 파일에 없다.
+
+| ID | 위반 | 구현 (`seed-template/eroded/apply.py`) | 기준선에서 잡힌 규칙·클래스 |
+|---|---|---|---|
+| E1 | 서비스에 비즈니스 규칙 | `Book.loanTo` 제거(`getStatus`/`setStatus` 만), `LoanBookService` 가 `if (book.getStatus() == ON_LOAN) throw` 후 `setStatus`, `Loan.start` 공개 | 없음(구조 규칙 밖, grep 판정) |
+| E2 | 포트가 JPA 타입 반환 | `LoadBookPort.findRaw(UUID) → BookJpaEntity`, `LoanBookService` 가 존재 확인에 사용 | R2 `LoadBookPort` |
+| E3 | 도메인에 `@Entity` | `Member` 에 `@Entity`·`@Id`·`@Column`, `MemberJpaRepository extends JpaRepository<Member, UUID>` | R1·R5 `Member` |
+| E4 | 최상위 `common` 패키지 | `common.DateUtils.addDays`, `Loan` 이 기한 계산에 사용 | R7 `DateUtils` |
+| E5 | 인바운드 → 아웃바운드 직접 | `BookController` `GET /books/{id}` 가 `BookJpaRepository` 를 주입받아 `BookJpaEntity` 반환 | R3 `BookController` |
+
+- **생성:** `experiment/scripts/materialize-eroded-seed.sh`.
+  - 깨끗한 시드가 없으면 먼저 만든다. 그다음 복사 → `apply.py`(원문 조각을 정확히 한 번 찾아 바꾸고, 못 찾으면 실패) → `./gradlew build` → 흔적 검사 → 고정 작성자·시각의 커밋 "seed" → `grade.sh` 기준선 순서로 진행한다.
+  - 두 번 생성해도 커밋 `6f24aa5` 가 같다.
+- **기준선** `seed-template/eroded/baseline.json`: `violating_classes` **4**(`BookController`·`LoadBookPort`·`DateUtils`·`Member`), `by_rule` 은 R1 3·R2 1·R3 4·R4 1·R5 1·R6 0·R7 1 이다.
+  - 지시서는 `experiment/seed-eroded/baseline.json` 이었다. 그런데 러너가 시드 디렉터리를 통째로 워크스페이스로 복사하므로, 거기에 두면 에이전트에게 보이고 `Initial commit` 에 들어간다. 그래서 시드 밖, 패치 옆에 둔다.
+  - `embedded` 에 E1~E5 → 규칙·원인 클래스 대응을 둔다.
+  - **E2 의 `LoanBookService` 는 R2 에 잡히지 않았다.** `BookJpaEntity` 를 지역 변수로만 쓰는데, 바이트코드에 지역 변수 타입이 남지 않는다. 그래서 E2 의 원인 클래스는 `LoadBookPort` 하나다(`expected_classes` 에 원래 의도를 남김).
+- **숨겨진 테스트:** 턴 1 테스트는 두 시드 모두 0/4 로 실패한다(기능 동일).
+- **L1·L2·L3 와의 충돌(의도된 조건):** 하네스 텍스트는 그대로다. 그래서 L1 의 CLAUDE.md 는 "도메인에 @Entity 금지"인데, 코드에는 붙어 있다.
+- **러너:** `run_session.py --seed clean|eroded`(기본 `clean`).
+  - `session.json` 에 `seed` 를 남긴다.
+  - 침식 시드 세션 ID 는 `<domain>-eroded-<level>-<model>-r<rep>` 다. 깨끗한 시드는 이전 형식 그대로다.
+  - 매트릭스 설정 `seeds`(기본 `["clean"]`)도 블록 안의 조합에 들어간다.
+- **위반 추적** `trace_violations.py --baseline <baseline.json> --session <OUT>/<id> [--out] [--workspace]`
+  - 기준선 원인 클래스마다 `persisted`·`healed`(`healed_at` = 그 뒤로 끝까지 없는 첫 턴, `first_absent`, `reappeared`) 를 매긴다.
+  - 새 원인 클래스는 `spread`·`novel` 로 나눈다. (규칙, 계층) 쌍이 기준선 쌍과 같으면 `spread`, 아니면 `novel` 이다. 규칙은 주 지표 + R5, 계층은 domain·application.port·application.service·adapter.in·adapter.out·toplevel.
+  - E2~E5 는 규칙별 원인 클래스로, E1 은 각 턴 `head_after` 의 `LoanBookService.java` 에 `getStatus() ==` 가 있는지(`git show`)로 판정한다.
+  - `arch.json` 이 없는 턴(컴파일 실패)은 `unknown` 이다.
+  - 요약: `persisted_count`·`healed_count`·`spread_count`·`novel_count`·`delta`(최종 − 기준선)·`embedded_persisted/healed`·`e1_persisted`.
+  - `summarize.py` 는 세션 디렉터리에 `violations-trace.json` 이 있으면 "침식 시드 위반 추적" 표를 만들고, 히트맵에 기준선 행(턴 00)을 넣는다.
+  - fake 확인: 침식 시드 L2 3턴에서 컴파일 실패 턴은 `unknown` 이었다. 합성 상태 3개(기준선 / `Book` 에 `@Entity` / `DateUtils` 제거)를 실제로 채점해 넣으면 `Book` = spread (R1·R5, domain, 턴 2), `DateUtils`·E4 = healed@3, 나머지 persisted, delta 0 이다.
+- **파일럿 3** `runner/pilot3.json`: L0·L1 × haiku × eroded × 2, fresh, 병렬 1, `claude_code_version 2.1.301`. 보고서는 `runs/pilot3-report.md`.
+
+### 격리 설정 디렉터리 정리 (TASK11)
+
+- **발견:** TASK10 의 채점 호출 무렵(2026-10-17 01:35) `~/.claude-arch-bench` 에 claude.ai 계정의 **동기화 스킬**(`skills/synced/…`: docx·pdf·pptx·xlsx·browser 등 12개)과 `plugins/synced/` 가 생겼다.
+  - 러너 사전 검사 ④(`skills/` 비어 있어야 함)가 이를 막았다.
+  - TASK8·9 파일럿(10-16 이전)의 init 에는 없었다.
+- **claude.ai 커넥터:** TASK9 pilot2 의 일부 턴 init 에는 claude.ai 커넥터 MCP 서버(Claude Docs·Drive 등)가 보였다(턴마다 달랐다). 에이전트가 그 도구를 호출한 기록은 0건이다.
+- **조치:** `~/.claude-arch-bench/settings.json` 에 `"syncClaudeAiSkills": false`, `"syncClaudeAiPlugins": false`, `"disableClaudeAiConnectors": true` 를 넣었다. 설정 이름은 CLI 2.1.301 의 설정 설명에서 확인했다.
+  - 동기화돼 있던 디렉터리는 `~/Project/arch-bench-archive/claude-config-synced-20261017/` 로 옮겼다(삭제 아님).
+  - 확인 호출의 init: `mcp_servers: []`, 기본 스킬 19개, 내장 플러그인 3개다. TASK8 파일럿 init 과 같다.
+- **사전 검사의 빈틈:** 지금 사전 검사는 `plugins/`·커넥터를 보지 않는다. 러너 변경 범위 밖이라 이번에는 바꾸지 않았다(TASK11 Notes).
+
 ## 의미론 채점 (TASK10) `rubric/` · `scripts/anonymize.sh` · `runner/rate_semantic.py`
 
 설계자가 주 종속변수를 구조 위반(`violating_classes`)에서 의미론 루브릭 점수로 바꾸는 안을 검토 중이다(확정 아님). 이 절은 그 측정 도구다. 사전 채점 결과는 `runs/semantic-pretest.md`.
 
+- **루브릭** `rubric/rubric-v2.md`(TASK11, 다음 채점부터 이 판): v1 의 예시 순환을 없앴다(참조 구현·침식 시드·합성 예시만). D1 1점에서 "존재 여부"를 지웠고, 턴 8 유형은 2점으로 확정했다. 변경 이력 표가 파일 끝에 있다. v2 로는 아직 채점하지 않았다.
 - **루브릭** `rubric/rubric-v1.md`: 설계 문서 "의미론적 위반 평가 프로토콜"의 D1 도메인 빈약화·D2 포트 오염·D3 애그리거트 경계·D4 응집도 붕괴(각 0~3, 합 0~12)를 옮겼다. 차원 정의·점수 기준은 원문 그대로이고, 평가 단위·익명화 절차와 차원별 코드 예시(참조 구현·파일럿 세션 코드)를 덧붙였다. 예시의 출처는 "참조 구현"/"파일럿 세션 코드"로만 적는다(세션·수준 이름을 쓰면 채점 프롬프트로 새어 나간다).
 - **익명화** `scripts/anonymize.sh <workspace> <out-dir> <blind-id>`
   - 입력: git 저장소면 HEAD 를 `git archive` 한다. 일반 디렉터리(참조 구현)는 그대로 복사한다.

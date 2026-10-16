@@ -1,0 +1,36 @@
+{
+  "tests_executed" : 7,
+  "primary_rules" : [ "R1", "R2", "R3", "R6", "R7" ],
+  "violating_classes" : 4,
+  "violating_classes_list" : [ "com.example.lending.adapter.in.web.BookController", "com.example.lending.application.port.out.LoadBookPort", "com.example.lending.common.DateUtils", "com.example.lending.domain.Member" ],
+  "by_rule" : {
+    "R1" : {
+      "count" : 3,
+      "classes" : [ "com.example.lending.domain.Member" ]
+    },
+    "R2" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.application.port.out.LoadBookPort" ]
+    },
+    "R3" : {
+      "count" : 4,
+      "classes" : [ "com.example.lending.adapter.in.web.BookController" ]
+    },
+    "R4" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.adapter.in.web.BookController", "com.example.lending.adapter.in.web.LoanController", "com.example.lending.adapter.in.web.MemberController", "com.example.lending.adapter.in.web.MemberLoansResponse", "com.example.lending.adapter.in.web.MemberLoansResponse$Item", "com.example.lending.adapter.out.persistence.BookJpaEntity", "com.example.lending.adapter.out.persistence.BookPersistenceAdapter", "com.example.lending.adapter.out.persistence.LoanPersistenceAdapter", "com.example.lending.adapter.out.persistence.MemberPersistenceAdapter", "com.example.lending.application.port.in.GetMemberUseCase", "com.example.lending.application.port.in.ListMemberLoansUseCase", "com.example.lending.application.port.in.ListMemberLoansUseCase$ActiveLoan", "com.example.lending.application.port.in.ListMemberLoansUseCase$ActiveLoanPage", "com.example.lending.application.port.in.LoanBookUseCase", "com.example.lending.application.port.in.LoanBookUseCase$LoanBookCommand", "com.example.lending.application.port.in.RegisterBookUseCase", "com.example.lending.application.port.in.RegisterBookUseCase$RegisterBookCommand", "com.example.lending.application.port.in.RegisterMemberUseCase", "com.example.lending.application.port.in.RegisterMemberUseCase$RegisterMemberCommand", "com.example.lending.application.port.in.ReturnLoanUseCase", "com.example.lending.application.port.out.LoadBookPort", "com.example.lending.application.port.out.LoadLoanPort", "com.example.lending.application.port.out.LoadMemberPort", "com.example.lending.application.port.out.SaveBookPort", "com.example.lending.application.port.out.SaveLoanPort", "com.example.lending.application.port.out.SaveMemberPort" ]
+    },
+    "R5" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.domain.Member" ]
+    },
+    "R6" : {
+      "count" : 0,
+      "classes" : [ ]
+    },
+    "R7" : {
+      "count" : 1,
+      "classes" : [ "com.example.lending.common.DateUtils" ]
+    }
+  }
+}

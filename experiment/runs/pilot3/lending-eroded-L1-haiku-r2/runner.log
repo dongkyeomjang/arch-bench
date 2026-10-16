@@ -1,0 +1,16 @@
+$ /opt/homebrew/opt/python@3.13/bin/python3.13 /Users/kyeom/Project/arch-bench/experiment/runner/run_session.py --level L1 --model haiku --domain lending --rep 2 --ws-root /Users/kyeom/Project/arch-bench-ws-pilot3 --out /Users/kyeom/Project/arch-bench/experiment/runs/pilot3 --agent claude --seed eroded --skip-tests --session-mode fresh --claude-code-version 2.1.301 --max-session-cost 1.2
+[lending-eroded-L1-haiku-r2] turn-01: agent=ok 73.3s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=4/4 tests=None cost=0.01940949
+[lending-eroded-L1-haiku-r2] turn-02: agent=ok 62.51s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=6/6 tests=None cost=0.01589389
+[lending-eroded-L1-haiku-r2] turn-03: agent=ok 69.86s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=10/10 tests=None cost=0.01982434
+[lending-eroded-L1-haiku-r2] turn-04: agent=ok 73.14s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=14/14 tests=None cost=0.01937179
+[lending-eroded-L1-haiku-r2] turn-05: agent=ok 91.92s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=17/17 tests=None cost=0.02393502
+[lending-eroded-L1-haiku-r2] turn-06: agent=ok 44.88s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=19/19 tests=None cost=0.0128849
+[lending-eroded-L1-haiku-r2] turn-07: agent=ok 71.0s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=23/23 tests=None cost=0.01953862
+[lending-eroded-L1-haiku-r2] turn-08: agent=ok 62.16s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=27/27 tests=None cost=0.01718944
+[lending-eroded-L1-haiku-r2] turn-09: agent=ok 125.98s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=31/31 tests=None cost=0.03449226
+[lending-eroded-L1-haiku-r2] turn-10: agent=ok 156.43s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=34/34 tests=None cost=0.0397577
+[lending-eroded-L1-haiku-r2] turn-11: agent=ok 87.18s committed=True grade=0 vc=3 r1=0 test_tamper=None ft=37/37 tests=None cost=0.02281693
+[lending-eroded-L1-haiku-r2] turn-12: agent=ok 69.61s committed=True grade=0 vc=1 r1=0 test_tamper=None ft=37/37 tests=None cost=0.02047513
+[lending-eroded-L1-haiku-r2] turn-13: agent=ok 63.39s committed=True grade=0 vc=1 r1=0 test_tamper=None ft=39/39 tests=None cost=0.01986822
+[lending-eroded-L1-haiku-r2] turn-14: agent=ok 116.0s committed=True grade=0 vc=1 r1=0 test_tamper=None ft=42/42 tests=None cost=0.03122088
+[lending-eroded-L1-haiku-r2] turn-15: agent=ok 87.38s committed=True grade=0 vc=1 r1=0 test_tamper=None ft=44/44 tests=passed cost=0.02384452

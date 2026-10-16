@@ -102,7 +102,9 @@ python3 experiment/runner/summarize.py --out $OUT_ROOT --report experiment/runs/
 - 에이전트 세션 워크스페이스는 **이 저장소 밖**, `/Users/kyeom/Project/arch-bench-ws` 아래에 둔다(`ARCH_WS_ROOT`). Claude Code 가 상위 디렉터리의 이 CLAUDE.md 를 읽기 때문이다.
 - **본 실험은 `run_matrix.py` 로만, fake(`--agent fake`/`agent: fake`)는 별도 루트 `~/Project/arch-bench-ws-fake` 에서만 돌린다.** 본 실험 루트에 잔여물이 있으면 claude 매트릭스가 종료 5 로 거부한다(`experiment/README.md` "운영 원칙").
 - Claude Code CLI 는 **2.1.301 로 고정**(사용자 런처 + `DISABLE_AUTOUPDATER`, `experiment/README.md` "운영"). claude 매트릭스 설정에는 `claude_code_version` 이 있어야 하고 `claude --version` 과 다르면 종료 5.
-- 의미론 채점: `experiment/rubric/rubric-v1.md`(D1~D4) · `experiment/scripts/anonymize.sh` · `experiment/runner/rate_semantic.py`. 설계 원칙은 "실험 대상과 다른 채점 모델"이지만 실험이 Haiku·Sonnet·Opus 를 모두 쓰므로 Opus 로 채점한다(작업 지시 10 결정, Opus 세션 자기 채점 편향 가능). 같은 입력 3회 채점의 분산을 남긴다.
+- 침식 시드: `experiment/scripts/materialize-eroded-seed.sh`(E1~E5, 기준선 `experiment/seed-template/eroded/baseline.json` — 시드 디렉터리 안에 두지 않는다, 워크스페이스로 복사된다), 러너 `--seed eroded`, 추적 `experiment/runner/trace_violations.py`.
+- 격리 설정 `~/.claude-arch-bench/settings.json` 은 `syncClaudeAiSkills`·`syncClaudeAiPlugins: false`, `disableClaudeAiConnectors: true` 를 유지한다(claude.ai 스킬·커넥터가 에이전트 세션에 섞이지 않게).
+- 의미론 채점: `experiment/rubric/rubric-v2.md`(D1~D4, v1 은 TASK10 사전 채점용) · `experiment/scripts/anonymize.sh` · `experiment/runner/rate_semantic.py`. 설계 원칙은 "실험 대상과 다른 채점 모델"이지만 실험이 Haiku·Sonnet·Opus 를 모두 쓰므로 Opus 로 채점한다(작업 지시 10 결정, Opus 세션 자기 채점 편향 가능). 같은 입력 3회 채점의 분산을 남긴다.
 - 실호출은 Claude Max 구독(`~/.claude-arch-bench`, `authMethod: claude.ai`)으로 한다. 러너는 `ANTHROPIC_API_KEY`·`ANTHROPIC_AUTH_TOKEN` 이 있거나 구독 로그인이 아니면 종료 5. 결과의 `cost_usd` 는 **API 단가 환산 추정이며 실제 청구가 아니다** — 문서에 비용을 적을 때 그렇게 표기한다. 세션 모드(`--session-mode resume|fresh`, 매트릭스 `session_mode`)와 구독 한도 대기·재시도는 `experiment/README.md` "세션 러너"·"구독 실행".
 - 워크스페이스 경로는 `$ARCH_WS_ROOT/<무작위 토큰>/lending` 이다. 경로·커밋 메시지(`Initial commit`, `Save work in progress`)에 수준·모델·턴 번호를 넣지 않는다(에이전트가 `pwd`·`ls ..`·`git log` 로 읽는다). 토큰 → 세션 대응은 `$OUT_ROOT/workspace-index.jsonl`(워크스페이스 루트 밖).
 
