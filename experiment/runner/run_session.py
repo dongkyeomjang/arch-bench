@@ -4,9 +4,12 @@
 사용:
   run_session.py --level L2 --model haiku --domain _smoke --rep 1 \
                  --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--agent claude|fake] [--max-turns N]
+                 [--session-mode resume|fresh] [--max-session-cost USD]
 
-종료 코드: 0 전 턴 완료, 1 중단(에이전트 오류·인터럽트), 2 인자 오류, 4 워크스페이스·결과 디렉터리가 이미 있음,
-          5 시작 전 검사 실패(상위 CLAUDE.md·.claude 누출, CLAUDE_CONFIG_DIR 미설정·오염)
+종료 코드: 0 전 턴 완료, 1 중단(session.json 의 fail_reason: agent_error·no_session_id·session_cost_cap·
+          rate_limit_timeout·interrupted), 2 인자 오류, 4 워크스페이스·결과 디렉터리가 이미 있음,
+          5 시작 전 검사 실패(상위 CLAUDE.md·.claude 누출, CLAUDE_CONFIG_DIR 미설정·오염, ANTHROPIC_API_KEY 설정,
+          구독 로그인 아님)
 계약 전문은 experiment/README.md "세션 러너" 절.
 """
 from __future__ import annotations
@@ -57,6 +60,10 @@ LEAK_NAMES = ("CLAUDE.md", "CLAUDE.local.md", ".claude")
 # Bash 명령 분석: 명령 구분자, `..` 경로 성분(`HEAD~1..HEAD` 같은 git 범위는 성분이 아니라 제외)
 SHELL_SEP_RE = re.compile(r"&&|\|\||[;\n|]")
 PARENT_COMPONENT_RE = re.compile(r"(?:^|/)\.\.(?:/|$)")
+RATE_LIMIT_TEXT_RE = re.compile(r"usage limit|rate limit|hit your .{0,20}limit|limit reached", re.I)
+API_KEY_ENV = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")  # 있으면 구독이 아니라 API 과금으로 나간다
+RATE_LIMIT_POLL_S = 15 * 60  # 재시도 시각을 모를 때 대기 간격
+RATE_LIMIT_MAX_WAIT_S = 6 * 60 * 60  # 한 턴의 한도 대기 상한
 HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?^\s*\2\s*$", re.S | re.M)  # 본문은 파일 내용이지 경로가 아니다
 RUNNER_GIT = ["-c", "user.name=runner", "-c", "user.email=runner@example.com", "-c", "commit.gpgsign=false"]
 
@@ -138,6 +145,23 @@ def precheck_config_dir() -> Path:
     return cfg
 
 
+def precheck_billing(env: dict) -> dict:
+    """구독 실행 전제: API 키 환경 변수가 없고, CLAUDE_CONFIG_DIR 이 claude.ai(구독) 로그인이다. 반환: 기록용 인증 요약."""
+    leaked = [k for k in API_KEY_ENV if os.environ.get(k)]
+    if leaked:
+        raise PrecheckError(f"{', '.join(leaked)} is set; the agent would bill the API instead of the subscription")
+    p = run(["claude", "auth", "status"], env=env, timeout=60)
+    try:
+        st = json.loads(p.stdout)
+    except json.JSONDecodeError:
+        raise PrecheckError(f"claude auth status did not return JSON (exit {p.returncode}): {p.stderr[:200]}") from None
+    if not st.get("loggedIn") or st.get("authMethod") != "claude.ai":
+        raise PrecheckError(f"CLAUDE_CONFIG_DIR is not logged in with a claude.ai subscription "
+                            f"(loggedIn={st.get('loggedIn')}, authMethod={st.get('authMethod')})")
+    return {"auth_method": st.get("authMethod"), "subscription_type": st.get("subscriptionType"),
+            "api_provider": st.get("apiProvider")}
+
+
 # ---------------------------------------------------------------- 스트림 파싱
 
 def escapes_cwd(command: str, cwd: str, ws: Path, ws_root: Path) -> tuple[bool, str]:
@@ -191,6 +215,7 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
         "tool_calls": {t: 0 for t in TRACKED_TOOLS}, "tool_calls_all": {}, "subagent_tool_calls": 0,
         "reviewer_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
         "escaped_cwd_count": 0, "escaped_cwd_commands": [],
+        "rate_limit_rejected": False, "rate_limit_resets_at": None, "rate_limit_utilization": None,
         "session_ids_seen": [], "parse_errors": [],
     }
     reviewer_ids: list[str] = []
@@ -216,6 +241,14 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
                 out["agent_session_id"] = out["agent_session_id"] or sid
                 out["model_id"] = out["model_id"] or e.get("model")
                 out["claude_code_version"] = out["claude_code_version"] or e.get("claude_code_version")
+            elif t == "rate_limit_event":
+                info = e.get("rate_limit_info") or {}
+                if info.get("status") == "rejected":
+                    out["rate_limit_rejected"] = True
+                    out["rate_limit_resets_at"] = info.get("resetsAt") or out["rate_limit_resets_at"]
+                windows = info.get("unifiedWindows") or {}
+                if windows:  # 마지막 값: 창별 사용률(0~1). 병렬 수를 정할 때 본다
+                    out["rate_limit_utilization"] = {k: (v or {}).get("utilization") for k, v in windows.items()}
             elif t == "system" and st == "task_notification":
                 tid = e.get("tool_use_id")
                 if tid:
@@ -504,6 +537,23 @@ def hook_summary(log: Path) -> dict:
     return counts
 
 
+def agent_env() -> dict:
+    env = {k: v for k, v in os.environ.items()
+           if k not in STRIPPED_ENV and not k.startswith(STRIPPED_ENV_PREFIXES)}
+    env.update(EXTRA_ENV)
+    return env
+
+
+def is_rate_limited(turn: dict) -> bool:
+    """구독 한도로 거부된 호출인가: 스트림의 rate_limit_event status=rejected 가 있고 호출이 실패로 끝났거나,
+    실패한 결과 텍스트·stderr 가 한도 문구다."""
+    failed = turn["agent_status"] != "ok" or bool(turn["result_is_error"]) or turn["result_events"] == 0
+    if not failed:
+        return False
+    return turn["rate_limit_rejected"] or bool(RATE_LIMIT_TEXT_RE.search(f"{turn.get('result_text') or ''}\n"
+                                                                       f"{turn.get('_stderr') or ''}"))
+
+
 def read_prompt(path: Path) -> str:
     """턴 파일 본문. 맨 앞의 HTML 주석 줄(메타데이터, 예: smoke 표시)은 프롬프트에서 뺀다."""
     lines = path.read_text().splitlines()
@@ -526,6 +576,12 @@ def main() -> int:
     ap.add_argument("--max-turns", type=int, default=None, help="앞에서부터 N개의 턴 파일만 실행 (기본: 전부)")
     ap.add_argument("--agent-max-turns", type=int, default=None, help="claude -p 의 --max-turns (기본: 지정 안 함)")
     ap.add_argument("--skip-tests", action="store_true", help="턴마다 기능 테스트를 돌리지 않는다(마지막 턴만)")
+    ap.add_argument("--session-mode", choices=("resume", "fresh"), default="resume",
+                    help="resume: 턴 2 부터 claude --resume 로 대화를 잇는다. fresh: 턴마다 새 대화(코드·CLAUDE.md 만 이어진다)")
+    ap.add_argument("--max-session-cost", type=float, default=None,
+                    help="턴이 끝날 때 세션 누적 cost_usd 가 이 값을 넘으면 멈춘다(fail_reason session_cost_cap)")
+    ap.add_argument("--rate-limit-poll-s", type=float, default=RATE_LIMIT_POLL_S, help="재시도 시각을 모를 때 대기 간격")
+    ap.add_argument("--rate-limit-max-wait-s", type=float, default=RATE_LIMIT_MAX_WAIT_S, help="한 턴의 한도 대기 상한")
     args = ap.parse_args()
 
     session_id = f"{args.domain}-{args.level}-{args.model}-r{args.rep}"
@@ -552,6 +608,7 @@ def main() -> int:
         cfg = precheck_config_dir()
         if args.agent == "claude" and shutil.which("claude") is None:
             raise PrecheckError("claude CLI not found on PATH")
+        billing = precheck_billing(agent_env()) if args.agent == "claude" else None
     except PrecheckError as e:
         print(f"run_session: precheck failed: {e}", file=sys.stderr)
         return 5
@@ -574,9 +631,7 @@ def main() -> int:
         return 1
     base = git(ws, "rev-parse", "HEAD")
 
-    env = {k: v for k, v in os.environ.items()
-           if k not in STRIPPED_ENV and not k.startswith(STRIPPED_ENV_PREFIXES)}
-    env.update(EXTRA_ENV)
+    env = agent_env()
     cli_version = None
     if args.agent == "claude":
         cli_version = run(["claude", "--version"], env=env).stdout.strip()
@@ -587,7 +642,9 @@ def main() -> int:
     grader_files += [SCRIPTS / "grade.sh", SCRIPTS / "overlay-arch.sh"]
     session = {
         "session_id": session_id, "domain": args.domain, "level": args.level, "model": args.model,
-        "rep": args.rep, "agent": args.agent, "model_id": None, "claude_code_version": cli_version,
+        "rep": args.rep, "agent": args.agent, "session_mode": args.session_mode, "model_id": None,
+        "claude_code_version": cli_version, "billing": billing, "max_session_cost": args.max_session_cost,
+        "fail_reason": None,
         "agent_session_id": None, "agent_session_id_consistent": None,
         "started_at": started, "ended_at": None, "wall_s": None, "status": "running", "exit_code": None,
         "workspace": str(ws), "workspace_token": token, "seed_commit": seed_commit, "base_commit": base,
@@ -607,7 +664,8 @@ def main() -> int:
         "agent_commits_turns": 0, "runner_commits_turns": 0, "any_test_tamper": None, "any_config_tamper": False,
         "any_timeout": False, "final_grade_exit": None, "final_violating_classes": None,
         "final_tests_status": None, "ft_pass_by_turn": [], "final_ft_pass": None, "final_ft_total": None,
-        "final_ft_passed": None, "final_ft_compile_error": None, "turns": [],
+        "final_ft_passed": None, "final_ft_compile_error": None, "turns_refused": 0, "rate_limited_turns": 0,
+        "rate_limit_wait_s": 0.0, "turns": [],
     }
     write_json(out / "session.json", session)
 
@@ -627,10 +685,34 @@ def main() -> int:
             if (harness_state / "hook-log.jsonl").exists():
                 shutil.move(harness_state / "hook-log.jsonl", tdir / "hook-log.pre-turn.jsonl")
             head_before = git(ws, "rev-parse", "HEAD")
+            resume_from = resume_id if args.session_mode == "resume" else None
             turn = {"turn": i, "turn_file": tf.name, "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
-                    "started_at": now_iso(), "resumed_from": resume_id}
-            # 2) 에이전트
-            turn.update(run_agent(args, ws, prompt, i, resume_id, tdir / "stream.jsonl", tdir / "stderr.txt", env))
+                    "started_at": now_iso(), "session_mode": args.session_mode, "resumed_from": resume_from,
+                    "rate_limited": False, "rate_limit_attempts": 0, "rate_limit_wait_s": 0.0,
+                    "rate_limit_resets_at_attempts": [], "rate_limited_cost_usd": 0.0}
+            # 2) 에이전트. 구독 한도로 거부되면 그 시도의 기록을 따로 두고, 대기 후 같은 턴을 다시 시작한다
+            #    (워크스페이스는 되돌리지 않는다. 거부는 보통 첫 API 호출에서 나므로 변경이 없다 — 있으면 다음 시도가 이어받는다)
+            while True:
+                turn.update(run_agent(args, ws, prompt, i, resume_from, tdir / "stream.jsonl", tdir / "stderr.txt", env))
+                parsed = parse_stream(tdir / "stream.jsonl", ws, ws_root)
+                probe = {**turn, **parsed, "_stderr": (tdir / "stderr.txt").read_text(errors="replace")[-5000:]}
+                if not is_rate_limited(probe):
+                    break
+                n = turn["rate_limit_attempts"] = turn["rate_limit_attempts"] + 1
+                turn["rate_limited"] = True
+                for name in ("stream.jsonl", "stderr.txt"):
+                    shutil.move(tdir / name, tdir / f"{Path(name).stem}.rate-limited-{n}{Path(name).suffix}")
+                if args.session_mode == "fresh" and parsed["cost_usd_cumulative"]:
+                    turn["rate_limited_cost_usd"] = round(turn["rate_limited_cost_usd"] + parsed["cost_usd_cumulative"], 8)
+                resets = parsed["rate_limit_resets_at"]
+                turn["rate_limit_resets_at_attempts"].append(resets)
+                wait = (resets - time.time() + 60) if isinstance(resets, (int, float)) and resets > time.time() else args.rate_limit_poll_s
+                if turn["rate_limit_wait_s"] + wait > args.rate_limit_max_wait_s:
+                    turn["agent_status"] = "rate_limit_timeout"
+                    break
+                print(f"[{session_id}] {turn_name}: rate limited (attempt {n}); waiting {round(wait)}s", flush=True)
+                time.sleep(wait)
+                turn["rate_limit_wait_s"] = round(turn["rate_limit_wait_s"] + wait, 1)
             # 이 턴의 훅 로그를 결과로 옮긴다(없으면 빈 파일)
             if (harness_state / "hook-log.jsonl").exists():
                 shutil.move(harness_state / "hook-log.jsonl", tdir / "hook-log.jsonl")
@@ -638,11 +720,12 @@ def main() -> int:
                 (tdir / "hook-log.jsonl").touch()
             turn.update(hook_summary(tdir / "hook-log.jsonl"))
             # 3) 스트림 파싱
-            parsed = parse_stream(tdir / "stream.jsonl", ws, ws_root)
             turn.update(parsed)
             cum = parsed["cost_usd_cumulative"]
             if cum is None:
                 turn["cost_usd"] = None
+            elif args.session_mode == "fresh":  # 턴마다 새 대화: 누적값이 곧 이번 턴 비용
+                turn["cost_usd"] = round(cum + turn["rate_limited_cost_usd"], 8)
             else:
                 # 새 대화로 시작했으면(첫 턴, resume 실패) 누적값이 줄어든다 → 그 자체가 이번 턴 비용
                 turn["cost_usd"] = round(cum - prev_cost_cumulative if cum >= prev_cost_cumulative else cum, 8)
@@ -654,6 +737,9 @@ def main() -> int:
                 turn["agent_status"] = "error"
             # 4) 커밋 확인  5) tamper
             turn.update(commit_check(ws, head_before))
+            # 거절 판정은 자동으로 no_change 만 본다. 최종 응답 앞부분을 남겨 사람이 거절·대안 제시인지 확인한다
+            turn["task_refused"] = turn["no_change"] and turn["agent_status"] == "ok"
+            turn["refusal_text"] = (parsed["result_text"] or "")[:500] if turn["task_refused"] else None
             turn.update(tamper_check(ws, base, args.level))
             # 6) 채점
             turn.update(grade(ws, tdir / "arch.json", tdir / "grade.log"))
@@ -672,6 +758,9 @@ def main() -> int:
             session["cost_usd"] = round(session["cost_usd"] + (turn["cost_usd"] or 0.0), 6)
             session["agent_wall_s"] = round(session["agent_wall_s"] + turn["agent_wall_s"], 2)
             session["agent_commits_turns"] += turn["agent_committed"]
+            session["turns_refused"] += turn["task_refused"]
+            session["rate_limited_turns"] += turn["rate_limited"]
+            session["rate_limit_wait_s"] = round(session["rate_limit_wait_s"] + turn["rate_limit_wait_s"], 1)
             session["runner_commits_turns"] += turn["runner_committed"]
             if turn["test_tamper"] is not None:
                 session["any_test_tamper"] = bool(session["any_test_tamper"]) or turn["test_tamper"]
@@ -689,7 +778,8 @@ def main() -> int:
             session["final_ft_passed"] = turn["ft_passed"]
             session["final_ft_compile_error"] = turn["ft_compile_error"]
             session["turns"].append({k: turn.get(k) for k in (
-                "turn", "agent_status", "agent_wall_s", "agent_session_id", "input_tokens", "output_tokens",
+                "turn", "session_mode", "agent_status", "agent_wall_s", "agent_session_id", "rate_limited",
+                "rate_limit_wait_s", "rate_limit_utilization", "task_refused", "input_tokens", "output_tokens",
                 "cache_creation_input_tokens", "cache_read_input_tokens", "cost_usd", "cost_usd_cumulative", "hook_runs", "hook_blocks",
                 "reviewer_calls", "reviewer_verdicts", "escaped_cwd_count", "agent_committed", "runner_committed", "no_change",
                 "test_tamper", "config_tamper", "grade_exit", "violating_classes", "r1_count", "r2_count",
@@ -703,19 +793,31 @@ def main() -> int:
                   f"tests={turn.get('tests_status')} "
                   f"cost={turn['cost_usd']}", flush=True)
 
+            if turn["agent_status"] == "rate_limit_timeout":
+                print(f"run_session: usage limit wait on {turn_name} would exceed {args.rate_limit_max_wait_s}s; stopping",
+                      file=sys.stderr)
+                session["fail_reason"], exit_code = "rate_limit_timeout", 1
+                break
             if turn["agent_status"] == "error":
                 print(f"run_session: agent error on {turn_name}; stopping (see {tdir}/stderr.txt)", file=sys.stderr)
-                exit_code = 1
+                session["fail_reason"], exit_code = "agent_error", 1
                 break
-            if resume_id is None and i < len(turn_files):
+            if args.session_mode == "resume" and resume_id is None and i < len(turn_files):
                 print("run_session: no session id from agent; cannot resume next turn", file=sys.stderr)
-                exit_code = 1
+                session["fail_reason"], exit_code = "no_session_id", 1
+                break
+            if args.max_session_cost is not None and session["cost_usd"] > args.max_session_cost and i < len(turn_files):
+                print(f"run_session: session cost {session['cost_usd']} > {args.max_session_cost} after {turn_name}; stopping",
+                      file=sys.stderr)
+                session["fail_reason"], exit_code = "session_cost_cap", 1
                 break
     except KeyboardInterrupt:
-        exit_code = 1
+        session["fail_reason"], exit_code = "interrupted", 1
 
     session["agent_session_id"] = session_ids[0] if session_ids else None
     session["agent_session_id_consistent"] = (len(set(session_ids)) == 1) if session_ids else None
+    # fresh 모드의 기대값: 턴마다 다른 ID (같은 ID 가 다시 나오면 대화가 이어졌다는 뜻)
+    session["agent_session_ids_distinct"] = (len(set(session_ids)) == len(session_ids)) if session_ids else None
     session["status"] = "completed" if exit_code == 0 else "failed"  # 상태는 running·completed·failed 셋뿐
     session["exit_code"] = exit_code
     session["ended_at"] = now_iso()

@@ -56,7 +56,7 @@ class Turn10Test {
         JsonNode credit = r.body().get("creditCheck");
         assertNotNull(credit, "creditCheck");
         assertTrue(credit.get("approved").asBoolean());
-        assertTrue(credit.get("score").isNumber());
+        assertEquals(742, credit.get("score").asInt(), "score from the provided client");
         assertNotNull(credit.get("checkedAt"));
         assertTrue(!credit.get("checkedAt").isNull());
     }

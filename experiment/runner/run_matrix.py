@@ -3,10 +3,12 @@
 
 사용:
   run_matrix.py --config matrix.json --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
+                [--allow-model-change]
 
+순서: 반복(rep) 하나 = 블록 하나(levels × models × domains 조합 전부). 블록 안을 시드 고정으로 섞고 블록은 rep 순서대로.
 종료 코드: 0 전 세션 completed, 1 실패 세션 있음, 2 설정 오류, 3 비용 가드로 멈춤,
           4 결과 디렉터리가 이미 있음(--resume 없이), 5 시작 전 검사 실패(run_session 과 같은 검사,
-          agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물)
+          agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물), 6 같은 모델 등급에서 model_id 가 바뀜
 계약 전문은 experiment/README.md "매트릭스 실행기" 절.
 """
 from __future__ import annotations
@@ -28,7 +30,8 @@ import run_session as rs  # noqa: E402 — 같은 디렉터리의 러너 (preche
 RUN_SESSION = Path(__file__).resolve().parent / "run_session.py"
 DEFAULT_SEED = 20261215
 DEFAULTS = {"reps": 1, "agent": "claude", "parallel": 2, "max_cost_usd": None, "shuffle_seed": DEFAULT_SEED,
-            "est_cost_per_session_usd": {}, "skip_agent_tests": False}
+            "est_cost_per_session_usd": {}, "skip_agent_tests": False, "session_mode": "resume",
+            "max_session_cost_usd": None}
 REQUIRED = ("levels", "models", "domains")
 
 
@@ -44,17 +47,23 @@ def load_config(path: Path) -> dict:
         raise ValueError(f"agent must be claude|fake, got {cfg['agent']!r}")
     if int(cfg["parallel"]) < 1 or int(cfg["reps"]) < 1:
         raise ValueError("parallel and reps must be >= 1")
+    if cfg["session_mode"] not in ("resume", "fresh"):
+        raise ValueError(f"session_mode must be resume|fresh, got {cfg['session_mode']!r}")
     return cfg
 
 
 def expand(cfg: dict) -> list[dict]:
-    """조합 전개 후 시드 고정 셔플. 정렬된 목록에서 섞으므로 config 의 나열 순서와 무관하게 같은 집합 → 같은 순서."""
-    sessions = [{"level": lv, "model": m, "domain": d, "rep": r,
-                 "session_id": f"{d}-{lv}-{m}-r{r}"}  # run_session.py 의 session_id 규칙과 같아야 한다
-                for d in cfg["domains"] for lv in cfg["levels"] for m in cfg["models"]
-                for r in range(1, int(cfg["reps"]) + 1)]
-    sessions.sort(key=lambda s: s["session_id"])
-    random.Random(int(cfg["shuffle_seed"])).shuffle(sessions)
+    """블록 무작위화: 블록 r = 반복 r 의 조합 전부(levels × models × domains). 블록마다 정렬된 목록을 같은 난수 생성기로
+    차례로 섞으므로 config 의 나열 순서와 무관하게 같은 집합 → 같은 순서. 어느 시점에 멈춰도 조건별 세션 수가 1 이상 차이 나지 않는다."""
+    rng = random.Random(int(cfg["shuffle_seed"]))
+    sessions = []
+    for r in range(1, int(cfg["reps"]) + 1):
+        block = [{"level": lv, "model": m, "domain": d, "rep": r, "block": r,
+                  "session_id": f"{d}-{lv}-{m}-r{r}"}  # run_session.py 의 session_id 규칙과 같아야 한다
+                 for d in cfg["domains"] for lv in cfg["levels"] for m in cfg["models"]]
+        block.sort(key=lambda s: s["session_id"])
+        rng.shuffle(block)
+        sessions += block
     return sessions
 
 
@@ -66,8 +75,10 @@ def read_session_json(path: Path) -> dict | None:
 
 
 class Matrix:
-    def __init__(self, cfg: dict, sessions: list[dict], ws_root: Path, out_root: Path):
+    def __init__(self, cfg: dict, sessions: list[dict], ws_root: Path, out_root: Path, allow_model_change: bool = False):
         self.cfg, self.ws_root, self.out_root = cfg, ws_root, out_root
+        self.allow_model_change = allow_model_change
+        self.model_ids: dict[str, list[str]] = {}  # 모델 등급 → completed 세션에서 본 model_id (처음 본 순서)
         self.sessions = sessions
         self.state = {s["session_id"]: {"session_id": s["session_id"], "status": "pending", "cost_usd": None,
                                         "wall_s": None, "exit_code": None} for s in sessions}
@@ -90,7 +101,8 @@ class Matrix:
             data = read_session_json(out / "session.json")
             if data and data.get("status") == "completed":
                 self.state[sid].update(status="skipped", cost_usd=data.get("cost_usd"), wall_s=data.get("wall_s"),
-                                       exit_code=data.get("exit_code"))
+                                       exit_code=data.get("exit_code"), model_id=data.get("model_id"))
+                self.note_model(s["model"], data.get("model_id"), sid)
                 self.queue.remove(s)
                 continue
             ws = Path(data["workspace"]) if data and data.get("workspace") else None
@@ -98,6 +110,18 @@ class Matrix:
                 ws.parent.rename(ws.parent.with_name(f"{ws.parent.name}_failed-{ts}"))  # <token>_failed-<ts>
             out.rename(out.with_name(f"{sid}_failed-{ts}"))
             self.state[sid]["previous_attempt"] = f"{sid}_failed-{ts}"
+
+    # ------------------------------------------------------------ 모델 버전 감지
+    def note_model(self, grade: str, model_id: str | None, sid: str) -> None:
+        """completed 세션의 model_id 를 등급별로 모은다. 같은 등급에서 두 번째 값이 나오면 새 세션을 시작하지 않는다."""
+        if not model_id:
+            return
+        seen = self.model_ids.setdefault(grade, [])
+        if model_id not in seen:
+            seen.append(model_id)
+        if len(seen) > 1 and not self.allow_model_change and not self.stop_reason:
+            self.stop_reason = (f"model change: {grade} sessions report {seen[0]} and then {model_id} (at {sid}); "
+                                f"no new sessions started; rerun with --allow-model-change to continue")
 
     # ------------------------------------------------------------ 실행
     def cost_total(self) -> float:
@@ -123,7 +147,9 @@ class Matrix:
             "cost_usd": self.cost_total(), "max_cost_usd": self.cfg["max_cost_usd"],
             "started_at": self.started_at, "updated_at": rs.now_iso(), "elapsed_s": elapsed,
             "avg_session_s": avg, "eta_s": eta, "parallel": par, "agent": self.cfg["agent"],
-            "shuffle_seed": self.cfg["shuffle_seed"],
+            "shuffle_seed": self.cfg["shuffle_seed"], "session_mode": self.cfg["session_mode"],
+            "max_session_cost_usd": self.cfg["max_session_cost_usd"], "model_ids": self.model_ids,
+            "allow_model_change": self.allow_model_change,
             "sessions": [self.state[s["session_id"]] for s in self.sessions],
         }
         tmp = self.out_root / "matrix-status.json.tmp"
@@ -138,6 +164,9 @@ class Matrix:
                "--agent", self.cfg["agent"]]
         if self.cfg["skip_agent_tests"]:  # 에이전트 자체 테스트는 마지막 턴만. 숨겨진 테스트(ft_*)는 매 턴 돈다
             cmd.append("--skip-tests")
+        cmd += ["--session-mode", self.cfg["session_mode"]]
+        if self.cfg["max_session_cost_usd"] is not None:
+            cmd += ["--max-session-cost", str(self.cfg["max_session_cost_usd"])]
         t0 = time.monotonic()
         with log_tmp.open("w") as log:
             log.write(f"$ {' '.join(cmd)}\n")
@@ -152,9 +181,11 @@ class Matrix:
             st = self.state[sid]
             st.update(status="completed" if rc == 0 and data.get("status") == "completed" else "failed",
                       exit_code=rc, wall_s=wall, cost_usd=data.get("cost_usd"),
-                      workspace_token=data.get("workspace_token"))
+                      workspace_token=data.get("workspace_token"), model_id=data.get("model_id"),
+                      fail_reason=data.get("fail_reason"))
             if st["status"] == "completed":
                 self.durations.append(wall)
+                self.note_model(s["model"], data.get("model_id"), sid)
             limit = self.cfg["max_cost_usd"]
             if limit is not None and not self.stop_reason and self.cost_total() > float(limit):
                 self.stop_reason = (f"cost guard: cumulative cost_usd {self.cost_total()} > max_cost_usd {limit} "
@@ -181,7 +212,7 @@ class Matrix:
     def run(self) -> int:
         (self.out_root / ".matrix-logs").mkdir(exist_ok=True)
         limit = self.cfg["max_cost_usd"]
-        if limit is not None and self.cost_total() > float(limit):  # 재개 시 이미 쓴 비용
+        if limit is not None and self.cost_total() > float(limit) and not self.stop_reason:  # 재개 시 이미 쓴 비용
             self.stop_reason = f"cost guard: cost_usd of skipped sessions {self.cost_total()} > max_cost_usd {limit}"
         self.write_status()
         threads = [threading.Thread(target=self.worker, daemon=True) for _ in range(int(self.cfg["parallel"]))]
@@ -200,6 +231,8 @@ class Matrix:
         shutil.rmtree(self.out_root / ".matrix-logs", ignore_errors=True)
         if self.stop_reason:
             print(f"[matrix] stopped: {self.stop_reason}", file=sys.stderr)
+            if self.stop_reason.startswith("model change"):
+                return 6
             return 3 if self.stop_reason.startswith("cost guard") else 1
         return 1 if any(v["status"] == "failed" for v in self.state.values()) else 0
 
@@ -225,7 +258,8 @@ def dry_run(cfg: dict, sessions: list[dict]) -> None:
     est = cfg.get("est_cost_per_session_usd") or {}
     total = 0.0
     unknown = set()
-    print(f"# {len(sessions)} sessions, shuffle_seed={cfg['shuffle_seed']}, agent={cfg['agent']}, parallel={cfg['parallel']}"
+    print(f"# {len(sessions)} sessions, shuffle_seed={cfg['shuffle_seed']}, agent={cfg['agent']}, parallel={cfg['parallel']}, "
+          f"session_mode={cfg['session_mode']}, max_session_cost_usd={cfg['max_session_cost_usd']}"
           + (", skip_agent_tests" if cfg["skip_agent_tests"] else ""))
     for i, s in enumerate(sessions, 1):
         c = est.get(s["model"])  # agent=fake 여도 추정치를 그대로 보인다(실제 비용은 0)
@@ -233,7 +267,7 @@ def dry_run(cfg: dict, sessions: list[dict]) -> None:
             unknown.add(s["model"])
         else:
             total += float(c)
-        print(f"{i:4d}  {s['session_id']:<32} est_usd={'?' if c is None else c}")
+        print(f"{i:4d}  block {s['block']:<3d} {s['session_id']:<32} est_usd={'?' if c is None else c}")
     note = f" (no estimate for {sorted(unknown)})" if unknown else ""
     fake = " (agent=fake: actual cost is 0)" if cfg["agent"] == "fake" else ""
     print(f"# estimated cost: ${total:.2f}{note}{fake}; max_cost_usd={cfg['max_cost_usd']}")
@@ -246,6 +280,8 @@ def main() -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--dry-run", action="store_true", help="전개된 세션 목록·순서·예상 비용만 출력")
     ap.add_argument("--resume", action="store_true", help="completed 세션은 건너뛰고 나머지는 _failed-<ts> 로 옮겨 다시 실행")
+    ap.add_argument("--allow-model-change", action="store_true",
+                    help="같은 모델 등급에서 model_id 가 바뀌어도 멈추지 않는다(종료 6 해제)")
     args = ap.parse_args()
     try:
         cfg = load_config(args.config)
@@ -266,6 +302,7 @@ def main() -> int:
         if cfg["agent"] == "claude":
             if shutil.which("claude") is None:
                 raise rs.PrecheckError("claude CLI not found on PATH")
+            rs.precheck_billing(rs.agent_env())
             precheck_ws_leftovers(ws_root, out_root)
     except rs.PrecheckError as e:
         print(f"run_matrix: precheck failed: {e}", file=sys.stderr)
@@ -276,7 +313,7 @@ def main() -> int:
         print(f"run_matrix: {len(existing)} session dirs already exist in {out_root} (e.g. {existing[0]}); "
               f"use --resume", file=sys.stderr)
         return 4
-    m = Matrix(cfg, sessions, ws_root, out_root)
+    m = Matrix(cfg, sessions, ws_root, out_root, allow_model_change=args.allow_model_change)
     if args.resume:
         m.prepare_resume()
     return m.run()
