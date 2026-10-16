@@ -8,7 +8,8 @@
 순서: 반복(rep) 하나 = 블록 하나(levels × models × domains 조합 전부). 블록 안을 시드 고정으로 섞고 블록은 rep 순서대로.
 종료 코드: 0 전 세션 completed, 1 실패 세션 있음, 2 설정 오류, 3 비용 가드로 멈춤,
           4 결과 디렉터리가 이미 있음(--resume 없이), 5 시작 전 검사 실패(run_session 과 같은 검사,
-          agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물), 6 같은 모델 등급에서 model_id 가 바뀜
+          agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물·API 키·구독 로그인 아님·
+          claude_code_version 없음 또는 claude --version 불일치), 6 같은 모델 등급에서 model_id 가 바뀜
 계약 전문은 experiment/README.md "매트릭스 실행기" 절.
 """
 from __future__ import annotations
@@ -31,7 +32,7 @@ RUN_SESSION = Path(__file__).resolve().parent / "run_session.py"
 DEFAULT_SEED = 20261215
 DEFAULTS = {"reps": 1, "agent": "claude", "parallel": 2, "max_cost_usd": None, "shuffle_seed": DEFAULT_SEED,
             "est_cost_per_session_usd": {}, "skip_agent_tests": False, "session_mode": "resume",
-            "max_session_cost_usd": None}
+            "max_session_cost_usd": None, "claude_code_version": None}
 REQUIRED = ("levels", "models", "domains")
 
 
@@ -165,6 +166,8 @@ class Matrix:
         if self.cfg["skip_agent_tests"]:  # 에이전트 자체 테스트는 마지막 턴만. 숨겨진 테스트(ft_*)는 매 턴 돈다
             cmd.append("--skip-tests")
         cmd += ["--session-mode", self.cfg["session_mode"]]
+        if self.cfg["claude_code_version"]:
+            cmd += ["--claude-code-version", str(self.cfg["claude_code_version"])]
         if self.cfg["max_session_cost_usd"] is not None:
             cmd += ["--max-session-cost", str(self.cfg["max_session_cost_usd"])]
         t0 = time.monotonic()
@@ -303,6 +306,9 @@ def main() -> int:
             if shutil.which("claude") is None:
                 raise rs.PrecheckError("claude CLI not found on PATH")
             rs.precheck_billing(rs.agent_env())
+            if not cfg["claude_code_version"]:  # 본 실험은 버전을 고정한다: claude 매트릭스는 설정에 버전이 있어야 한다
+                raise rs.PrecheckError("config has no claude_code_version; pin the CLI version (experiment/README.md 운영)")
+            rs.precheck_cli_version(str(cfg["claude_code_version"]), rs.agent_env())
             precheck_ws_leftovers(ws_root, out_root)
     except rs.PrecheckError as e:
         print(f"run_matrix: precheck failed: {e}", file=sys.stderr)

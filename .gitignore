@@ -27,5 +27,7 @@ build/
 !/experiment/runs/pilot-report.md
 !/experiment/runs/pilot2/
 !/experiment/runs/pilot2-report.md
+!/experiment/runs/semantic-pretest/
+!/experiment/runs/semantic-pretest.md
 /experiment/runner/__pycache__/
 /experiment/scripts/__pycache__/

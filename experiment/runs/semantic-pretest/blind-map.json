@@ -1,0 +1,58 @@
+[
+  {
+    "blind_id": "B-084860",
+    "session": "pilot/lending-L2-haiku-r1",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot1/ea8aa393f496/lending",
+    "source_head": "837384ff3d05ca2b8d5482bbe58d0394bad76903",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-084860",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-f29385",
+    "session": "pilot2/lending-L1-haiku-r1",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot2/7722e461a25b/lending",
+    "source_head": "55982c7c123f46fbd6b0130216d82a20b6ca0a0e",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-f29385",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-778bfa",
+    "session": "pilot2/lending-L0-haiku-r2",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot2/ad0f4e2a6dfd/lending",
+    "source_head": "00d8b4463db5f2189f546706b43812f630bd403a",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-778bfa",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-dede3d",
+    "session": "pilot2/lending-L0-haiku-r1",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot2/36982b26a8ad/lending",
+    "source_head": "d79b19cf415a0da9702ffad7c2569feb99a64dce",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-dede3d",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-ec2016",
+    "session": "pilot/lending-L1-haiku-r1",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot1/41af13f81a84/lending",
+    "source_head": "28528a73d8b553ff44c39cd4fbb99b41a40c9d85",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-ec2016",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-3853aa",
+    "session": "reference/lending-full",
+    "source": "experiment/reference/lending-full",
+    "source_head": "b7059237bc5b20a00152c91af4804aed970482de",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-3853aa",
+    "leaks": []
+  },
+  {
+    "blind_id": "B-db8f97",
+    "session": "pilot2/lending-L1-haiku-r2",
+    "source": "/Users/kyeom/Project/arch-bench-archive/pilot2/df1465a5a29f/lending",
+    "source_head": "b68ff2c71dce4ee7a9696d9639fc4fd4fbafcab6",
+    "anonymized": "/Users/kyeom/Project/arch-bench-archive/blind/B-db8f97",
+    "leaks": []
+  }
+]

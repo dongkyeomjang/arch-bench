@@ -1,0 +1,296 @@
+{
+  "repo": "/Users/kyeom/Project/arch-bench-archive/blind/B-084860",
+  "rubric": "experiment/rubric/rubric-v1.md",
+  "rubric_sha256": "495a2413fa4b90018878c4ad4b243d24828ab99506d0de4971a9ca269a97387a",
+  "code_sha256": "eccd9afba747181909555cf20858e1b1d36975f370bed579f8c837d7a7c7ac16",
+  "prompt_sha256": "f4faa731b8729c82cceba4e740cb081c79a646227f7200c543c7adfa918d1dbe",
+  "files": 115,
+  "prompt_chars": 115051,
+  "model": "opus",
+  "effort": "medium",
+  "claude_code_version": "2.1.301 (Claude Code)",
+  "temperature": null,
+  "seed": null,
+  "sampling_note": "claude CLI exposes no temperature/seed option",
+  "started_at": "2026-10-17T01:43:17+09:00",
+  "runs": [
+    {
+      "run": 1,
+      "ok": true,
+      "result": {
+        "D1": {
+          "score": 2,
+          "rationale": "대출 한도, 정지 여부, 연체료 계산, 중복 예약 금지 같은 핵심 규칙은 Member, Loan, Book, ReservationQueue의 메서드에 있다. 그러나 '책이 AVAILABLE일 때만 예약 우선권을 검사한다'는 대출 허용 조건과, 이미 폐기·정지된 경우의 상태 전이 처리를 서비스가 도메인 상태를 꺼내 판단한다. 이 판단은 null 체크나 존재 여부 수준이 아니라 허용 여부·상태 전이 규칙의 일부이고 여러 서비스에 흩어져 있으므로 2점으로 본다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "if (book.getStatus() == BookStatus.AVAILABLE) {\n    queue.ensureCanBorrow(member.getId());\n}",
+              "reason": "서비스의 if가 도메인 상태(BookStatus)를 꺼내 대출 허용 여부 규칙(예약 우선권 적용 조건)을 판단한다. 핵심 규칙 일부가 서비스에 있는 증상(2점 기준)이다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/DiscardBookService.java",
+              "symbol": "DiscardBookService.discardBook",
+              "quote": "if (book.getStatus() == BookStatus.DISCARDED) {\n    return book;\n}",
+              "reason": "이미 폐기된 책의 상태 전이 처리를 Book.discard가 아니라 서비스가 상태를 꺼내 판단한다. SuspendMemberService의 `if (!member.isSuspended())`도 같은 형태다."
+            }
+          ]
+        },
+        "D2": {
+          "score": 0,
+          "rationale": "모든 포트가 도메인 타입(Book, Loan, Member, Reservation, CreditCheck, AuditEntry), UUID, LocalDate, Instant, 도메인 전용 record(ActiveLoanPage)만 주고받는다. Spring Data의 Page/Sort와 JPA 엔티티는 영속성 어댑터 안에만 있다. 포트는 유스케이스 단위로 나뉘어 있고 CRUD 리포지토리를 그대로 복제하지 않는다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java",
+              "symbol": "LoadActiveLoansPort.loadActiveLoans",
+              "quote": "ActiveLoanPage loadActiveLoans(UUID memberId, int page, int size);\n\nrecord ActiveLoanPage(List<Loan> loans, long totalCount) {",
+              "reason": "페이징을 Spring Data Page가 아니라 도메인 전용 record로 주고받는다(0점 기준)."
+            },
+            {
+              "file": "src/main/java/com/example/lending/adapter/out/persistence/LoanPersistenceAdapter.java",
+              "symbol": "LoanPersistenceAdapter.loadActiveLoans",
+              "quote": "Page<LoanJpaEntity> loans = loanJpaRepository.findByMemberIdAndReturnedAtIsNull(memberId,\n        PageRequest.of(page, size, Sort.by(\"loanedAt\", \"id\")));\nreturn new ActiveLoanPage(loans.map(loanMapper::toDomain).getContent(), loans.getTotalElements());",
+              "reason": "기술 타입(Page, PageRequest, Sort, JpaEntity)이 어댑터 안에서만 쓰이고 포트로 새지 않는다."
+            }
+          ]
+        },
+        "D3": {
+          "score": 0,
+          "rationale": "반납에서 Loan은 Book을 ID(getBookId)로만 참조하고, 서비스가 두 저장을 순서대로 호출한다. 이는 루브릭이 말하는 명시적 조율이다. 애그리거트끼리는 모두 UUID로 참조하고, 중복 예약 금지와 맨 앞 예약자 우선 같은 불변식은 도메인 ReservationQueue 안에 있다. 대출 시 Book, Loan, Reservation을 함께 바꾸는 구조는 참조 구현과 같아 루브릭상 판단이 갈리는 사례이므로 감점하지 않았다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/ReturnLoanService.java",
+              "symbol": "ReturnLoanService.returnLoan",
+              "quote": "Book book = loadBookPort.loadBook(loan.getBookId())\n        .orElseThrow(() -> new BookNotFoundException(loan.getBookId()));\nbook.markReturned();",
+              "reason": "Loan이 Book을 ID로만 참조하고 서비스가 저장을 순서대로 조율하는 0점 예시와 같은 구조다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "saveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);\nqueue.fulfillFor(member.getId()).ifPresent(saveReservationPort::saveReservation);",
+              "reason": "대출 한 번이 세 애그리거트를 바꾼다. 루브릭이 '판단이 갈리는 사례'로 둔 참조 구현과 같은 구조여서 감점 근거로 쓰지 않았다."
+            }
+          ]
+        },
+        "D4": {
+          "score": 0,
+          "rationale": "서비스는 유스케이스를 하나씩 맡는다. 예외는 SuspendMemberService 하나로, 서로 짝인 정지·해제 두 유스케이스를 맡으며 이는 0점 예시와 같다. 클래스 이름(GetMonthlyStatsService, ListAuditService, ReserveBookService 등)이 책임을 정확히 말하고, 만능 유틸 클래스나 무관한 책임이 섞인 클래스는 없다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/SuspendMemberService.java",
+              "symbol": "SuspendMemberService",
+              "quote": "public Member suspendMember(UUID memberId) {\n...\npublic Member unsuspendMember(UUID memberId) {",
+              "reason": "공개 메서드가 2개인 유일한 서비스이며, 루브릭 0점 예시와 같이 짝인 유스케이스다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService.getMonthlyStats",
+              "quote": "List<Loan> loaned = loadLoansInPeriodPort.loadLoanedBetween(from, to);\nList<Loan> returned = loadLoansInPeriodPort.loadReturnedBetween(from, to);",
+              "reason": "통계는 대출 처리 서비스에 붙지 않고 별도 서비스로 분리되어 있다. 이름과 책임이 일치한다."
+            }
+          ]
+        },
+        "ambiguities": [
+          "D1: DiscardBookService와 SuspendMemberService의 '이미 그 상태면 아무것도 하지 않음' 처리를 상태 전이 규칙(2점)으로 볼지, 사소한 검증(1점)으로 볼지 루브릭 문구로는 정해지지 않는다. 여기서는 LoanBookService의 예약 우선권 적용 조건과 합쳐 2점으로 판단했다.",
+          "D1: Member.MAX_CONCURRENT_LOANS = 5는 상수 한도이지만 특정 ID를 박은 값은 아니어서 '매직 값' 증상으로 보지 않았다. 등급별 한도처럼 데이터화되지 않은 상수를 매직 값으로 볼지는 루브릭에 기준이 없다.",
+          "D3: 대출 시 Book(상태), Loan(생성), Reservation(소진) 세 애그리거트를 한 서비스가 바꾸는 구조는 참조 구현과 같다. 루브릭이 이를 판단 보류 사례로 두었으므로 0점으로 처리했다. 또 Book.loanTo가 Loan을 생성하는 팩토리 역할을 하는 점도 경계 침범으로 볼지 명시되어 있지 않다.",
+          "D4: 감사 기록(recordAudit)을 여러 유스케이스 서비스에 덧붙인 것을 '새 기능이 기존 클래스에 억지로 덧붙여진' 증상으로 볼지 애매하다. 유스케이스의 부수 효과로 보고 감점하지 않았다."
+        ]
+      },
+      "attempts": [
+        {
+          "ok": true,
+          "error": null,
+          "cost_usd": 0.5282,
+          "wall_s": 41.0,
+          "model_id": "claude-opus-5-5",
+          "session_id": "ff9daa9a-f0b8-48a9-aafc-2470ca3ac593"
+        }
+      ],
+      "cost_usd": 0.5282,
+      "model_id": "claude-opus-5-5",
+      "usage": {
+        "claude-opus-5-5": {
+          "inputTokens": 2,
+          "outputTokens": 4460,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 54874,
+          "webSearchRequests": 0,
+          "costUSD": 0.5282,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1330,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      }
+    },
+    {
+      "run": 2,
+      "ok": true,
+      "result": {
+        "D1": {
+          "score": 2,
+          "rationale": "한도·연체료·대출 가능 여부·예약 중복 같은 핵심 규칙은 Member, Loan, Book, ReservationQueue 메서드에 있습니다. 그러나 '책이 AVAILABLE일 때만 맨 앞 예약자 규칙을 적용한다'는 허용 여부 판단은 LoanBookService가 도메인 상태를 꺼내 if로 정합니다. 이미 폐기된 책, 이미 정지·해제된 회원의 상태 전이 조건도 DiscardBookService와 SuspendMemberService의 if에 있으므로, 핵심 규칙 일부(허용 여부·상태 전이)가 서비스에 있다는 2점 기준에 해당합니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "if (book.getStatus() == BookStatus.AVAILABLE) {\n    queue.ensureCanBorrow(member.getId());\n}",
+              "reason": "서비스의 if가 도메인 상태(BookStatus)를 꺼내 예약 우선권 적용 여부, 즉 허용 여부를 판단합니다. D1의 '서비스 if/switch가 도메인 상태를 꺼내 판단' 증상에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/DiscardBookService.java",
+              "symbol": "DiscardBookService.discardBook",
+              "quote": "if (book.getStatus() == BookStatus.DISCARDED) {\n    return book;\n}",
+              "reason": "폐기 상태 전이 조건(이미 폐기된 책은 아무 일도 하지 않음)이 Book.discard가 아니라 서비스에 있습니다. SuspendMemberService의 if (!member.isSuspended())도 같은 형태입니다."
+            }
+          ]
+        },
+        "D2": {
+          "score": 0,
+          "rationale": "모든 out 포트는 도메인 타입(Book, Loan, Member, Reservation, CreditCheck, AuditEntry), UUID·LocalDate·int, 도메인 전용 record(ActiveLoanPage)만 주고받습니다. Spring Data의 Page/Sort/PageRequest와 JPA 엔티티는 LoanPersistenceAdapter·BookPersistenceAdapter 안에만 있습니다. 포트는 Load/Save/Count처럼 유스케이스 단위로 나뉘어 있고, CRUD 리포지토리를 그대로 복제하지 않습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java",
+              "symbol": "LoadActiveLoansPort.loadActiveLoans",
+              "quote": "ActiveLoanPage loadActiveLoans(UUID memberId, int page, int size);\n\nrecord ActiveLoanPage(List<Loan> loans, long totalCount) {",
+              "reason": "페이징을 Page/Pageable이 아닌 int와 도메인 전용 record로 주고받습니다. 0점 기준(도메인 타입과 단순 값만 주고받음)에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/CheckCreditPort.java",
+              "symbol": "CheckCreditPort.checkCredit",
+              "quote": "CreditCheck checkCredit(Member member, Instant requestedAt);",
+              "reason": "외부 신용조회 포트가 도메인 타입 CreditCheck와 Member만 씁니다. 어댑터 기술 타입이 포트에 노출되지 않습니다."
+            }
+          ]
+        },
+        "D3": {
+          "score": 0,
+          "rationale": "Loan은 Book·Member를 ID로만 참조하고, 반납은 Loan.returnOn 뒤에 Book.markReturned를 부르고 서비스가 두 저장을 차례로 호출합니다. 이는 루브릭 참고의 '명시적 조율'에 해당합니다. 대출은 Book·Loan·Reservation 세 애그리거트를 바꾸지만, 예약 소진은 ReservationQueue.fulfillFor라는 도메인 객체를 거치고 중복 예약 같은 불변식도 도메인 안에 있어 참조 구현과 같은 구조로 보았습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/ReturnLoanService.java",
+              "symbol": "ReturnLoanService.returnLoan",
+              "quote": "book.markReturned();\n\nsaveLoanPort.saveLoan(loan);\nsaveBookPort.saveBook(book);",
+              "reason": "루브릭 0점 예시와 같은 패턴입니다. Book은 loan.getBookId()로 찾아오고, 서비스가 두 저장을 순서대로 부르는 명시적 조율입니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "saveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);",
+              "reason": "대출 한 번이 Book·Loan·Reservation 세 애그리거트를 바꿉니다. 루브릭에서 '판단이 갈리는 사례'로 든 참조 구현과 같은 구조라 감점하지 않았습니다."
+            }
+          ]
+        },
+        "D4": {
+          "score": 0,
+          "rationale": "서비스마다 유스케이스가 1개이고, SuspendMemberService만 서로 짝인 정지·해제 2개를 맡습니다. 클래스 이름(LoanBookService, GetMonthlyStatsService, ListAuditService 등)이 책임과 맞습니다. 만능 유틸 클래스나 이름과 무관한 책임은 없습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/SuspendMemberService.java",
+              "symbol": "SuspendMemberService",
+              "quote": "public Member suspendMember(UUID memberId) {\n...\npublic Member unsuspendMember(UUID memberId) {",
+              "reason": "공개 유스케이스 메서드가 둘인 유일한 서비스이고, 루브릭 0점 예시와 같은 짝 유스케이스입니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService.getMonthlyStats",
+              "quote": "public class GetMonthlyStatsService implements GetMonthlyStatsUseCase {",
+              "reason": "월별 통계가 대출 서비스에 섞이지 않고 별도 서비스로 분리되어 있습니다. 서비스당 유스케이스 1개라는 0점 기준에 해당합니다."
+            }
+          ]
+        },
+        "ambiguities": [
+          "D1: DiscardBookService와 SuspendMemberService의 if는 '이미 그 상태면 아무 일도 하지 않음'이라는 멱등 처리입니다. 이것이 1점의 '사소한 검증'인지 2점의 '상태 전이 규칙'인지 루브릭 문구만으로는 정해지지 않습니다. LoanBookService의 예약 우선권 적용 조건(AVAILABLE일 때만)은 허용 여부 판단이라 2점으로 기울었습니다.",
+          "D1: StubCreditCheckAdapter의 이름 접두사 'BLOCKED' 거절 규칙은 매직 값입니다. 하지만 도메인 객체가 아닌 임시 어댑터에 있어, '도메인 객체 안의 매직 값' 증상으로 보지 않았습니다.",
+          "D3: 대출 한 번이 Book·Loan·Reservation 세 애그리거트를 바꾸는 구조는 루브릭이 '판단이 갈리는 사례'로 명시한 참조 구현과 같습니다. '명시적 조율'이 셋 이상에도 적용된다고 보고 0점을 주었지만, 다르게 해석하면 1점입니다. 또 Book.loanTo가 Loan을 생성하는 팩토리 역할도 경계 판단에 포함할지 문구로 정해지지 않습니다.",
+          "D4: 감사 기록(recordAudit)이 대출·반납·폐기·정지 서비스 4곳에 덧붙어 있습니다. 이를 유스케이스의 일부로 보았지만, '새 기능이 기존 클래스에 억지로 덧붙여짐' 증상으로 볼 여지도 있습니다."
+        ]
+      },
+      "attempts": [
+        {
+          "ok": true,
+          "error": null,
+          "cost_usd": 0.503028,
+          "wall_s": 40.7,
+          "model_id": "claude-opus-5-5",
+          "session_id": "5f3f0110-5e49-48a4-98ac-8dc66121f470"
+        }
+      ],
+      "cost_usd": 0.503028,
+      "model_id": "claude-opus-5-5",
+      "usage": {
+        "claude-opus-5-5": {
+          "inputTokens": 2,
+          "outputTokens": 4519,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 51580,
+          "webSearchRequests": 0,
+          "costUSD": 0.503028,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1406,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      }
+    }
+  ],
+  "cost_usd": 1.031228,
+  "score_variance": {
+    "D1": {
+      "scores": [
+        2,
+        2
+      ],
+      "mean": 2,
+      "min": 2,
+      "max": 2,
+      "variance": 0
+    },
+    "D2": {
+      "scores": [
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "D3": {
+      "scores": [
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "D4": {
+      "scores": [
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "total": {
+      "scores": [
+        2,
+        2
+      ],
+      "mean": 2,
+      "min": 2,
+      "max": 2,
+      "variance": 0
+    }
+  },
+  "ended_at": "2026-10-17T01:44:39+09:00"
+}

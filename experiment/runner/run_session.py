@@ -537,6 +537,16 @@ def hook_summary(log: Path) -> dict:
     return counts
 
 
+def precheck_cli_version(expected: str, env: dict) -> str:
+    """`claude --version` 의 버전 번호(첫 토큰)가 expected 와 같아야 한다(TASK10, 버전 고정). 반환: 실제 출력."""
+    out = run(["claude", "--version"], env=env, timeout=60).stdout.strip()
+    actual = out.split()[0] if out else ""
+    if actual != expected.strip():
+        raise PrecheckError(f"claude --version is {out!r}, expected {expected!r} (claude_code_version); "
+                            f"pin the CLI or update the config")
+    return out
+
+
 def agent_env() -> dict:
     env = {k: v for k, v in os.environ.items()
            if k not in STRIPPED_ENV and not k.startswith(STRIPPED_ENV_PREFIXES)}
@@ -581,6 +591,8 @@ def main() -> int:
     ap.add_argument("--max-session-cost", type=float, default=None,
                     help="턴이 끝날 때 세션 누적 cost_usd 가 이 값을 넘으면 멈춘다(fail_reason session_cost_cap)")
     ap.add_argument("--rate-limit-poll-s", type=float, default=RATE_LIMIT_POLL_S, help="재시도 시각을 모를 때 대기 간격")
+    ap.add_argument("--claude-code-version", default=None,
+                    help="claude --version 이 이 버전이 아니면 종료 5 (run_matrix 가 설정의 claude_code_version 을 넘긴다)")
     ap.add_argument("--rate-limit-max-wait-s", type=float, default=RATE_LIMIT_MAX_WAIT_S, help="한 턴의 한도 대기 상한")
     args = ap.parse_args()
 
@@ -609,6 +621,8 @@ def main() -> int:
         if args.agent == "claude" and shutil.which("claude") is None:
             raise PrecheckError("claude CLI not found on PATH")
         billing = precheck_billing(agent_env()) if args.agent == "claude" else None
+        if args.agent == "claude" and args.claude_code_version:
+            precheck_cli_version(args.claude_code_version, agent_env())
     except PrecheckError as e:
         print(f"run_session: precheck failed: {e}", file=sys.stderr)
         return 5
@@ -643,7 +657,8 @@ def main() -> int:
     session = {
         "session_id": session_id, "domain": args.domain, "level": args.level, "model": args.model,
         "rep": args.rep, "agent": args.agent, "session_mode": args.session_mode, "model_id": None,
-        "claude_code_version": cli_version, "billing": billing, "max_session_cost": args.max_session_cost,
+        "claude_code_version": cli_version, "claude_code_version_expected": args.claude_code_version,
+        "billing": billing, "max_session_cost": args.max_session_cost,
         "fail_reason": None,
         "agent_session_id": None, "agent_session_id_consistent": None,
         "started_at": started, "ended_at": None, "wall_s": None, "status": "running", "exit_code": None,

@@ -588,6 +588,44 @@ L0·L1 × haiku × lending × 2회 = 4세션, `session_mode: fresh`, 병렬 1, `
 - L0·L1 모두 `violating_classes` 전 턴 0, 숨겨진 테스트 전 턴 100%. 함정 20건: 턴 8 복종 4(도메인 `Member` 에 후원자 ID 하드코딩 — 구조 규칙 밖), 나머지 우회 16.
 - fresh 는 API 호출마다 맥락이 100k 를 넘지 않아(758회 중 0회, resume 은 68%) Haiku 환산 비용이 resume 의 약 40% 다. 토큰 자체는 더 많다(캐시 생성 약 3배, 출력 약 1.5배) — 크기 구간이 없는 Sonnet·Opus 환산으로는 fresh 가 더 비싸다(보고서 4·5절).
 
+## 의미론 채점 (TASK10) `rubric/` · `scripts/anonymize.sh` · `runner/rate_semantic.py`
+
+설계자가 주 종속변수를 구조 위반(`violating_classes`)에서 의미론 루브릭 점수로 바꾸는 안을 검토 중이다(확정 아님). 이 절은 그 측정 도구다. 사전 채점 결과는 `runs/semantic-pretest.md`.
+
+- **루브릭** `rubric/rubric-v1.md`: 설계 문서 "의미론적 위반 평가 프로토콜"의 D1 도메인 빈약화·D2 포트 오염·D3 애그리거트 경계·D4 응집도 붕괴(각 0~3, 합 0~12)를 옮겼다. 차원 정의·점수 기준은 원문 그대로이고, 평가 단위·익명화 절차와 차원별 코드 예시(참조 구현·파일럿 세션 코드)를 덧붙였다. 예시의 출처는 "참조 구현"/"파일럿 세션 코드"로만 적는다(세션·수준 이름을 쓰면 채점 프롬프트로 새어 나간다).
+- **익명화** `scripts/anonymize.sh <workspace> <out-dir> <blind-id>`
+  - 입력: git 저장소면 HEAD 를 `git archive` 한다. 일반 디렉터리(참조 구현)는 그대로 복사한다.
+  - 지우는 것: `.claude/`·`CLAUDE.md`·`CLAUDE.local.md`·`.harness/`·`build/`·`.gradle/`, `gradle/arch.gradle.kts` 와 `build.gradle.kts` 의 그 apply 줄, `src/test/.../architecture/`.
+  - 새 git 저장소에 커밋 1개("snapshot <blind-id>", 고정 작성자·시각)로 남긴다.
+  - 코드에 남은 흔적(`CLAUDE.md`·`archTest`·`훅` 등)은 지우지 않고 `leak:` 줄로 알린다.
+  - 종료 코드: 0 성공, 2 인자 오류, 4 out-dir 이 이미 있음.
+  - `blind-id ↔ session-id` 는 호출자가 `$OUT_ROOT/blind-map.json` 에 둔다.
+- **LLM 보조 채점** `runner/rate_semantic.py --repo <anon> --rubric <md> --model opus --out <json> [--runs 3] [--effort medium] [--max-cost-usd]`
+  - 입력: 익명 사본의 `src/main/java` 전체(파일별 머리글 + 코드 블록)와 루브릭.
+  - 출력: D1~D4 점수·이유·근거(파일·심볼·인용·해당 기준, 차원당 최대 2개)와 `ambiguities` 를 `--json-schema` 로 고정한다. 결과의 `structured_output` 을 읽는다.
+  - 격리: 구독 `claude -p`(러너와 같은 `CLAUDE_CONFIG_DIR`), `--tools ""`, `--system-prompt`(짧은 평가자 지시, 루브릭 밖 아키텍처 지식 없음), 빈 임시 cwd.
+  - 반복·분산: 같은 입력을 `--runs` 번 따로 부르고, 차원·합계별 `scores`·`mean`·`min`·`max`·`variance` 를 `score_variance` 에 남긴다. 스키마 실패만 1회 재시도한다.
+  - **temperature·seed 는 지정할 수 없다**(claude CLI 2.1.301 에 옵션 없음). 그래서 반복 채점 분산으로 안정성을 잰다.
+  - 비용(API 단가 환산 추정, 실제 청구 아님): Opus 5.5, 코드 약 5만 토큰 기준이다. 1회차는 캐시 쓰기 때문에 약 $0.5 다. 같은 입력의 2·3회차는 캐시 읽기라 약 $0.1 씩이다.
+
+## 운영 (TASK10)
+
+- **Claude Code 버전 고정:** 현재 **2.1.301**.
+  - **런처 교체:** `~/.local/bin/claude` 를 설치기가 관리하는 심볼릭 링크 대신 사용자 런처 스크립트(`exec ~/.local/share/claude/versions/2.1.301 "$@"`)로 바꿨다. 공식 문서(code.claude.com/docs/en/setup "Auto-updates")에 따르면, 사용자 런처가 있으면 자동 업데이트는 새 버전을 `versions/` 에 받기만 하고 런처를 건드리지 않으며, 버전 정리도 하지 않는다.
+  - **자동 업데이트 끄기:** 실험 설정 `~/.claude-arch-bench/settings.json` 의 `env` 에 `DISABLE_AUTOUPDATER: "1"`. `claude doctor` 가 `Auto-updates: disabled (set by env: DISABLE_AUTOUPDATER)` 로 확인한다. 러너는 에이전트 환경에도 같은 값을 넣는다.
+  - **되돌리기:** `rm ~/.local/bin/claude && ~/.local/share/claude/versions/2.1.301 update`.
+  - **같은 머신의 다른 사용:** 런처가 하나라서, 이 머신의 대화형 `claude` 도 같은 버전으로 고정된다.
+  - **다른 머신:** `curl -fsSL https://claude.ai/install.sh | bash -s 2.1.301` 로 같은 버전을 설치한 뒤 같은 방법으로 런처를 고정한다.
+- **버전 사전 검사:**
+  - `agent: claude` 매트릭스는 설정에 `claude_code_version`(예: `"2.1.301"`)이 **있어야** 한다. 없거나 `claude --version` 의 첫 토큰과 다르면 종료 5 다.
+  - `run_session.py --claude-code-version` 도 같다(매트릭스가 넘긴다). `session.json` 에 `claude_code_version_expected` 를 남긴다.
+  - TASK8·9 의 `pilot.json`·`pilot2.json` 은 그때 설정 그대로 두었으므로, 다시 돌리려면 키를 넣어야 한다.
+- **git push:** 파일럿 결과(수십 MB) 커밋이 HTTPS push 에서 `HTTP 400 / RPC failed` 로 실패했다. 이 저장소의 로컬 설정에 `git config http.postBuffer 157286400` 을 넣어 해결했다. 다른 머신에서 클론해 결과를 커밋할 때도 같은 설정이 필요하다.
+- **워크스페이스 보관소** `~/Project/arch-bench-archive/`(저장소 밖)
+  - TASK10 에서 파일럿 워크스페이스를 옮겼다(삭제 아님): `pilot1/<token>/lending`, `pilot2/<token>/lending`. 토큰 ↔ 세션 ↔ HEAD 는 `INDEX.md`.
+  - 익명 사본은 `blind/<blind-id>/` 다.
+  - 본 실험 루트 `~/Project/arch-bench-ws` 와 `~/Project/arch-bench-ws-pilot2` 는 비웠다.
+
 ## L1 아키텍처 산문 ↔ R1~R7 확정 문장 대응표
 
 확정 문장은 `REPORT.md` 1절(R2·R3·R4·R5·R6)과 7.1절(R1 확장, R7 신설)의 `.because(...)` 문장이다. 산문에는 규칙 번호를 쓰지 않는다.

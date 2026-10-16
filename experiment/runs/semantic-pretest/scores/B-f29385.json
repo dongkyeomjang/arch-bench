@@ -1,0 +1,417 @@
+{
+  "repo": "/Users/kyeom/Project/arch-bench-archive/blind/B-f29385",
+  "rubric": "experiment/rubric/rubric-v1.md",
+  "rubric_sha256": "495a2413fa4b90018878c4ad4b243d24828ab99506d0de4971a9ca269a97387a",
+  "code_sha256": "08745e8c9f840b865e8ce72a2eac2107359a220d17a56e9b61f3d3a2de6de711",
+  "prompt_sha256": "038de110a470ebf38728d60da3abd03f02639db95c163795cd52ac1cf16f9772",
+  "files": 125,
+  "prompt_chars": 125779,
+  "model": "opus",
+  "effort": "medium",
+  "claude_code_version": "2.1.301 (Claude Code)",
+  "temperature": null,
+  "seed": null,
+  "sampling_note": "claude CLI exposes no temperature/seed option",
+  "started_at": "2026-10-17T01:44:39+09:00",
+  "runs": [
+    {
+      "run": 1,
+      "ok": true,
+      "result": {
+        "D1": {
+          "score": 2,
+          "rationale": "대부분의 규칙은 도메인 메서드에 있습니다. 대출 가능 여부와 신용 거절은 Book.loanTo, 중복 예약 금지는 ReservationQueue.join, 연체료는 Loan.lateFeeOf, 폐기 조건은 Book.discard 에 있습니다. 하지만 한도 면제 규칙이 Member 안의 회원 ID 상수 집합에 의존하고, 이는 루브릭 2 수준 잠정 예시와 같은 형태라 '비즈니스 규칙이 매직 값에 의존한다'(2점)로 보았습니다. 서비스에는 존재 여부 검증과 GetMonthlyStatsService 의 월 범위 검증, 연체 판정(fee > 0) 정도만 있습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/domain/Member.java",
+              "symbol": "Member.checkCanBorrow / UNLIMITED_LOAN_MEMBER_IDS",
+              "quote": "if (UNLIMITED_LOAN_MEMBER_IDS.contains(id)) {\n    return;\n}",
+              "reason": "D1 증상 '도메인 객체 안의 매직 ID·상수 리스트'에 해당합니다. 상수 집합이 한도 규칙의 분기 조건으로 쓰여 2점 기준 '비즈니스 규칙이 매직 값에 의존한다'에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService.getMonthlyStats",
+              "quote": "long overdueCount = lateFees.stream().filter(fee -> fee > 0).count();",
+              "reason": "연체 여부를 서비스가 연체료 값으로 판단합니다. 연체료 계산 자체는 Loan.lateFeeOf 에 있어 가벼운 증상이라 점수를 올리지 않았습니다."
+            }
+          ]
+        },
+        "D2": {
+          "score": 0,
+          "rationale": "application.port 의 모든 시그니처가 도메인 타입(Book, Loan, Member, Reservation, CreditCheck, AuditLog), UUID·LocalDate·int, 포트 전용 record(ActiveLoanRow 등)만 주고받습니다. Spring Data Pageable 은 LoanPersistenceAdapter 안에서만 PageRequest 로 만들고, 신용조회 SDK 타입도 ExampleCreditAdapter 밖으로 나오지 않습니다. 포트는 CRUD 나열 대신 유스케이스별로 나뉘어 있습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java",
+              "symbol": "LoadActiveLoansPort.loadActiveLoans",
+              "quote": "List<ActiveLoanRow> loadActiveLoans(UUID memberId, int page, int size);",
+              "reason": "페이징을 int 와 포트 전용 record 로 주고받아 0 기준 '도메인 타입과 단순 값만'을 충족합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/adapter/out/credit/ExampleCreditAdapter.java",
+              "symbol": "ExampleCreditAdapter.checkCredit",
+              "quote": "CreditCheckResponse response = creditCheckClient.check(memberId.toString(), memberName);\nreturn new CreditCheck(response.approved, response.score, response.checkedAt, response.reasonCodes,",
+              "reason": "외부 SDK DTO 는 어댑터 안에서 도메인 CreditCheck 로 바뀝니다. CheckCreditPort 시그니처는 SDK 에 종속되지 않습니다."
+            }
+          ]
+        },
+        "D3": {
+          "score": 0,
+          "rationale": "반납은 Loan 이 Book 을 getBookId() 로만 참조하고 서비스가 두 저장을 순서대로 호출합니다. 이는 루브릭 참고의 '명시적 조율'이라 0점입니다. 대출은 Book·Loan·Reservation 셋을 바꾸지만, 루브릭이 '판단이 갈리는 사례'로 둔 참조 구현 구조와 같아 0점으로 보았습니다. 중복 예약·대출 가능 여부 같은 불변식은 도메인 안에 있고, DB 잠금은 동시성 보조로만 쓰입니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/ReturnBookService.java",
+              "symbol": "ReturnBookService.returnBook",
+              "quote": "Book book = loadBookPort.loadBookForUpdate(loan.getBookId())\n        .orElseThrow(() -> new BookNotFoundException(loan.getBookId()));\nbook.returnBook();",
+              "reason": "ID 참조와 순차 저장으로 두 애그리거트를 명시적으로 조율하는 0 수준 사례에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "saveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);\nreservations.first().ifPresent(first -> removeReservationPort.removeReservation(first.getId()));",
+              "reason": "한 유스케이스가 세 애그리거트를 바꿉니다. 루브릭이 '판단이 갈리는 사례'로 둔 참조 구현과 같은 구조라 감점하지 않았습니다."
+            }
+          ]
+        },
+        "D4": {
+          "score": 0,
+          "rationale": "서비스마다 공개 유스케이스 메서드가 1개입니다. 정지와 해제도 SuspendMemberService 와 UnsuspendMemberService 로 나뉘어 있습니다. 클래스 이름(GetMonthlyStatsService, DiscardBookService 등)이 책임을 정확히 말하고, 만능 유틸이나 덧붙인 책임은 없습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService",
+              "quote": "public class GetMonthlyStatsService implements GetMonthlyStatsUseCase {",
+              "reason": "통계가 대출 서비스에 덧붙지 않고 별도 서비스로 분리되어 0 기준 '서비스당 유스케이스 1~2개'를 충족합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/UnsuspendMemberService.java",
+              "symbol": "UnsuspendMemberService.unsuspendMember",
+              "quote": "public class UnsuspendMemberService implements UnsuspendMemberUseCase {",
+              "reason": "해제까지 별도 서비스로 나뉘어 있고, 이름과 책임이 일치합니다."
+            }
+          ]
+        },
+        "ambiguities": [
+          "D1: 루브릭 2 수준 예시와 같은 UNLIMITED_LOAN_MEMBER_IDS 를 잠정 판정대로 2점 처리했습니다. 설계자가 1점('매직 값 1건')으로 확정하면 D1은 1점이 됩니다.",
+          "D2: LoadBookPort·LoadLoanPort·LoadMemberPort 의 loadXxxForUpdate 는 시그니처 타입은 도메인이지만 주석과 이름이 RDB 행 잠금을 전제합니다. 이를 '포트가 한 어댑터 구현에만 맞는 형태'로 볼지 루브릭 문구로 정해지지 않아 감점하지 않았습니다.",
+          "D2: 도메인 CreditCheck record 가 SDK 응답 필드(reasonCodes, providerName, providerVersion)를 그대로 옮겨 담습니다. 타입은 도메인 소유라 기술 노출로 보지 않았습니다.",
+          "D3: 대출 시 Book·Loan·Reservation 세 애그리거트를 바꾸는 구조를 루브릭이 미결 사례로 남겨 두었습니다. 참조 구현과 같은 구조라 0점으로 보았지만, '여러 유스케이스가 경계를 넘는다'로 해석하면 점수가 올라갈 수 있습니다. 또 Book.loanTo 가 다른 애그리거트의 객체 묶음(ReservationQueue)을 인자로 받는데, 이것이 '객체 그래프로 붙잡는' 것에 해당하는지도 불분명합니다.",
+          "D1: GetMonthlyStatsService 의 연체 판정(fee > 0)과 월 범위 검증을 '사소한 검증'으로 볼지 '핵심 규칙(계산)'으로 볼지 경계가 모호합니다."
+        ]
+      },
+      "attempts": [
+        {
+          "ok": true,
+          "error": null,
+          "cost_usd": 0.5514824,
+          "wall_s": 46.9,
+          "model_id": "claude-opus-5-5",
+          "session_id": "b8cf5755-45e5-437f-badd-7bca372dac97"
+        }
+      ],
+      "cost_usd": 0.551482,
+      "model_id": "claude-opus-5-5",
+      "usage": {
+        "claude-opus-5-5": {
+          "inputTokens": 2,
+          "outputTokens": 5235,
+          "cacheReadInputTokens": 1472,
+          "cacheCreationInputTokens": 55810,
+          "webSearchRequests": 0,
+          "costUSD": 0.5514824,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1296,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      }
+    },
+    {
+      "run": 2,
+      "ok": true,
+      "result": {
+        "D1": {
+          "score": 2,
+          "rationale": "대부분의 규칙은 도메인 메서드에 있다: Book.loanTo, Book.discard, Loan.returnBook, Loan.lateFee, ReservationQueue.join. 그러나 Member.checkCanBorrow 의 대출 한도 면제가 회원 ID 리터럴 집합에 의존한다. 이는 루브릭 2 수준(잠정) 예시와 같은 형태이며 '비즈니스 규칙이 매직 값에 의존한다'에 해당한다. 그 밖에 서비스에는 존재 여부 검사와 연체 판정 같은 가벼운 판단이 일부 있다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/domain/Member.java",
+              "symbol": "Member.UNLIMITED_LOAN_MEMBER_IDS / Member.checkCanBorrow",
+              "quote": "if (UNLIMITED_LOAN_MEMBER_IDS.contains(id)) {\n    return;\n}",
+              "reason": "도메인 객체 안의 매직 ID 집합이 한도 규칙의 분기 조건으로 쓰인다. 2점 기준 '비즈니스 규칙이 매직 값에 의존한다'에 해당한다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService.getMonthlyStats",
+              "quote": "long overdueCount = lateFees.stream().filter(fee -> fee > 0).count();",
+              "reason": "연체 여부를 도메인 메서드가 아니라 서비스가 연체료 값으로 판단한다. 서비스의 if/조건이 도메인 값을 꺼내 판단하는 가벼운 증상이다."
+            }
+          ]
+        },
+        "D2": {
+          "score": 0,
+          "rationale": "application.port 의 모든 인터페이스는 도메인 타입, UUID·LocalDate·int 같은 단순 값, 포트 전용 record 만 주고받는다. Spring Data Pageable 은 LoanPersistenceAdapter 안에만 있다. 신용조회 SDK 타입도 ExampleCreditAdapter 밖으로 나가지 않는다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java",
+              "symbol": "LoadActiveLoansPort.loadActiveLoans",
+              "quote": "List<ActiveLoanRow> loadActiveLoans(UUID memberId, int page, int size);",
+              "reason": "페이징을 int 값과 포트 전용 record 로 표현한다. 0점 기준 '단순 값·도메인 전용 record 만 주고받는다'에 해당한다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/CheckCreditPort.java",
+              "symbol": "CheckCreditPort.checkCredit",
+              "quote": "CreditCheck checkCredit(UUID memberId, String memberName);",
+              "reason": "외부 SDK DTO 대신 도메인 record CreditCheck 를 돌려준다. 기술 타입이 노출되지 않는다."
+            }
+          ]
+        },
+        "D3": {
+          "score": 0,
+          "rationale": "반납은 Loan 과 Book 을 함께 바꾼다. 다만 Loan 이 Book 을 ID 로만 참조하고 서비스가 두 저장을 순서대로 부르므로, 루브릭 참고의 '명시적 조율'로 보아 0점이다. 대출은 Book·Loan·Reservation 세 애그리거트를 건드리는데, 참조 구현의 '판단이 갈리는 사례'와 같은 구조라서 감점하지 않았다. 다른 애그리거트는 모두 UUID 로 참조하고, 중복 예약 금지 같은 불변식은 ReservationQueue 같은 도메인 안에 있다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/ReturnBookService.java",
+              "symbol": "ReturnBookService.returnBook",
+              "quote": "Book book = loadBookPort.loadBookForUpdate(loan.getBookId())\n        .orElseThrow(() -> new BookNotFoundException(loan.getBookId()));\nbook.returnBook();",
+              "reason": "Loan 이 Book 을 ID 로만 참조하고 서비스가 두 저장을 순서대로 조율한다. 루브릭 0 수준 예시와 같은 구조다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "Loan loan = book.loanTo(member.getId(), loanedAt, reservations, creditCheck);\nsaveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);",
+              "reason": "대출 한 번이 Book·Loan·Reservation 을 함께 바꾼다. 루브릭이 '판단이 갈리는 사례'로 든 참조 구현과 같은 구조다."
+            }
+          ]
+        },
+        "D4": {
+          "score": 0,
+          "rationale": "모든 애플리케이션 서비스가 유스케이스 하나만 구현한다. 정지와 해제도 SuspendMemberService 와 UnsuspendMemberService 로 나뉘어 있다. 클래스 이름이 책임과 맞고, 만능 유틸 클래스나 억지로 덧붙인 책임이 보이지 않는다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService",
+              "quote": "public class GetMonthlyStatsService implements GetMonthlyStatsUseCase {",
+              "reason": "통계는 별도 서비스로 분리되어 있다. 대출 처리 서비스에 섞여 있지 않으므로 0점 기준 '서비스당 유스케이스 1~2개'에 해당한다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/SuspendMemberService.java",
+              "symbol": "SuspendMemberService.suspendMember",
+              "quote": "public class SuspendMemberService implements SuspendMemberUseCase {",
+              "reason": "정지 유스케이스 하나만 맡고, 이름이 책임을 정확히 말한다."
+            }
+          ]
+        },
+        "ambiguities": [
+          "D1: 회원 ID 하드코딩은 루브릭이 2점을 '잠정'으로 둔 사례와 같은 코드다. 설계자가 1점('매직 값 1건이 도메인에 있다')으로 확정하면 D1 점수는 1이 된다.",
+          "D2: LoadBookPort·LoadLoanPort·LoadMemberPort 에 행 잠금을 뜻하는 loadXxxForUpdate 메서드가 있다. 기술 타입은 아니지만 RDB 비관적 잠금을 전제로 한 형태다. 이를 '포트가 한 어댑터 구현에만 맞는 형태'로 볼지는 루브릭 문구로 정해지지 않는다.",
+          "D2: LoanPersistenceAdapter 는 대출 관련 포트 6개를 함께 구현한다(어댑터 쪽 이야기다). LoadLoanStatsPort 같은 포트도 조회 전용 Row record 를 돌려주는데, 이것이 '도메인 전용 record'에 포함되는지는 해석이 필요했다.",
+          "D3: 대출 시 Book 상태 변경, Loan 생성, Reservation 삭제가 한 트랜잭션에서 일어난다. Book.loanTo 가 ReservationQueue 객체를 인자로 받는다. 루브릭이 '판단이 갈리는 사례'로 남긴 구조라서 참조 구현에 맞춰 0점으로 보았다. 경계를 넘는 것으로 보면 1점이 될 수 있다.",
+          "D4: 루브릭 기준이 서비스에 초점을 둔다. 그래서 MemberController 가 대출 목록과 이력 조회까지 맡는 것처럼 컨트롤러·어댑터가 여러 유스케이스를 묶는 경우는 감점하지 않았다."
+        ]
+      },
+      "attempts": [
+        {
+          "ok": true,
+          "error": null,
+          "cost_usd": 0.0965164,
+          "wall_s": 37.1,
+          "model_id": "claude-opus-5-5",
+          "session_id": "a667ba62-2a50-4931-bcda-51296f2f4a83"
+        }
+      ],
+      "cost_usd": 0.096516,
+      "model_id": "claude-opus-5-5",
+      "usage": {
+        "claude-opus-5-5": {
+          "inputTokens": 2,
+          "outputTokens": 4111,
+          "cacheReadInputTokens": 56922,
+          "cacheCreationInputTokens": 363,
+          "webSearchRequests": 0,
+          "costUSD": 0.0965164,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1171,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      }
+    },
+    {
+      "run": 3,
+      "ok": true,
+      "result": {
+        "D1": {
+          "score": 2,
+          "rationale": "상태 전이, 대출 가능 여부, 연체료 계산, 중복 예약 금지 같은 규칙은 대부분 Book·Loan·Member·ReservationQueue의 메서드에 있습니다. 그런데 대출 한도 면제 규칙이 Member 안의 회원 ID 리터럴 집합으로 분기합니다. 이는 루브릭이 2점(잠정)으로 든 '비즈니스 규칙이 매직 값에 의존한다' 사례와 같은 형태입니다. 서비스에는 회원 중복 존재 확인, 월 범위 검증, 미반납이면 연체료를 null로 두는 분기 같은 가벼운 검증만 있습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/domain/Member.java",
+              "symbol": "Member.checkCanBorrow / UNLIMITED_LOAN_MEMBER_IDS",
+              "quote": "if (UNLIMITED_LOAN_MEMBER_IDS.contains(id)) {\n    return;\n}",
+              "reason": "한도 규칙의 분기 조건이 회원 속성이 아니라 하드코딩된 ID 집합에 의존합니다. '도메인 객체 안의 매직 ID·상수 리스트' 증상이며, 2점 기준 '비즈니스 규칙이 매직 값에 의존한다'에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/RegisterMemberService.java",
+              "symbol": "RegisterMemberService.registerMember",
+              "quote": "if (loadMemberPort.loadMember(command.memberId()).isPresent()) {\n    throw new MemberAlreadyExistsException(command.memberId());\n}",
+              "reason": "서비스에 있는 존재 여부 검증입니다. 1점 수준의 사소한 검증이라 점수를 더 올리지는 않았습니다."
+            }
+          ]
+        },
+        "D2": {
+          "score": 0,
+          "rationale": "모든 out 포트는 도메인 타입(Book, Loan, Member, Reservation, AuditLog, CreditCheck), UUID·LocalDate·int 같은 단순 값, 포트 전용 record(ActiveLoanRow, LoanHistoryRow, ReturnedLoanRow)만 주고받습니다. 신용조회 SDK 타입과 Spring Data의 PageRequest·Pageable은 어댑터 안에만 있습니다. 포트도 용도별로 나뉘어 있어 CRUD 리포지토리를 그대로 복제하지 않습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/CheckCreditPort.java",
+              "symbol": "CheckCreditPort.checkCredit",
+              "quote": "CreditCheck checkCredit(UUID memberId, String memberName);",
+              "reason": "외부 SDK의 CreditCheckResponse는 ExampleCreditAdapter 안에서만 쓰이고, 포트는 도메인 record만 돌려줍니다. 0점 기준을 충족합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/port/out/LoadActiveLoansPort.java",
+              "symbol": "LoadActiveLoansPort.loadActiveLoans",
+              "quote": "List<ActiveLoanRow> loadActiveLoans(UUID memberId, int page, int size);",
+              "reason": "페이징을 int 값과 포트 전용 record로 표현합니다. Page/Pageable은 LoanPersistenceAdapter에만 있으며, 참조 구현의 0 수준과 같은 형태입니다."
+            }
+          ]
+        },
+        "D3": {
+          "score": 0,
+          "rationale": "Loan은 Book과 Member를 ID로만 참조합니다. 반납은 Loan.returnBook과 Book.returnBook을 부른 뒤 두 저장을 순서대로 호출하는 명시적 조율로, 참조 구현의 0 수준과 같습니다. 대출은 Book.loanTo가 예약 줄 규칙과 신용조회 결과를 도메인 안에서 판단하고 Loan을 만듭니다. 서비스가 Book·Loan·Reservation 저장을 순서대로 조율하는 구조이며, 이는 루브릭이 '판단이 갈리는 사례'로 든 참조 구현과 같습니다. 중복 예약 금지와 대출 중 상태 같은 불변식도 도메인 안에 있습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/ReturnBookService.java",
+              "symbol": "ReturnBookService.returnBook",
+              "quote": "book.returnBook();\nsaveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);",
+              "reason": "Loan과 Book을 함께 바꾸지만, Book은 loan.getBookId()로 ID 조회하고 저장을 순서대로 호출합니다. 루브릭 참고의 '명시적 조율'에 해당해 0점입니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/LoanBookService.java",
+              "symbol": "LoanBookService.loanBook",
+              "quote": "Loan loan = book.loanTo(member.getId(), loanedAt, reservations, creditCheck);\nsaveBookPort.saveBook(book);\nsaveLoanPort.saveLoan(loan);",
+              "reason": "유스케이스 하나가 Book 변경, Loan 생성, 뒤이은 Reservation 삭제까지 세 애그리거트에 걸칩니다. 루브릭이 판단이 갈린다고 명시한 참조 구현 구조와 같아서 감점하지 않았습니다."
+            }
+          ]
+        },
+        "D4": {
+          "score": 0,
+          "rationale": "application/service의 서비스는 모두 유스케이스를 하나씩 맡습니다. 정지와 해제도 SuspendMemberService와 UnsuspendMemberService로 나뉘어 있고, 클래스 이름이 책임과 맞습니다. 만능 유틸 클래스나 이름과 무관한 책임이 덧붙은 서비스는 없습니다.",
+          "evidence": [
+            {
+              "file": "src/main/java/com/example/lending/application/service/GetMonthlyStatsService.java",
+              "symbol": "GetMonthlyStatsService",
+              "quote": "public class GetMonthlyStatsService implements GetMonthlyStatsUseCase {",
+              "reason": "월별 통계가 대출 서비스에 덧붙지 않고 별도 서비스로 있습니다. '서비스당 유스케이스 1~2개, 이름이 책임을 정확히 말한다'는 0점 기준에 해당합니다."
+            },
+            {
+              "file": "src/main/java/com/example/lending/application/service/UnsuspendMemberService.java",
+              "symbol": "UnsuspendMemberService.unsuspendMember",
+              "quote": "public class UnsuspendMemberService implements UnsuspendMemberUseCase {",
+              "reason": "짝 유스케이스까지 별도 클래스로 나누었습니다. 혼재된 책임이 없습니다."
+            }
+          ]
+        },
+        "ambiguities": [
+          "D1: UNLIMITED_LOAN_MEMBER_IDS는 루브릭의 잠정 2점 예시와 사실상 같은 코드입니다. 1점('매직 값 1건이 도메인에 있다')과 2점('비즈니스 규칙이 매직 값에 의존한다') 사이의 설계자 확정(semantic-pretest.md 질문 5)이 아직 없어서 잠정 기준에 따라 2점을 주었습니다.",
+          "D2: LoadBookPort·LoadLoanPort·LoadMemberPort의 loadXxxForUpdate는 행 잠금이라는 저장소 동시성 개념을 포트 메서드 이름과 계약으로 드러냅니다. 기술 타입을 노출하지 않아 0점으로 보았지만, 이것을 '한 어댑터 구현에만 맞는 형태'로 볼지는 루브릭 문구로 정해지지 않습니다.",
+          "D2: 도메인 CreditCheck record가 providerName, providerVersion, reasonCodes처럼 특정 업체 응답 구조를 따르는 필드를 가집니다. 이것을 포트 오염으로 볼지 도메인 값으로 볼지 루브릭에 기준이 없습니다.",
+          "D3: 대출 유스케이스가 Book, Loan, Reservation 세 애그리거트를 바꿉니다. 루브릭은 이 구조를 '판단이 갈리는 사례'로만 제시해서 참조 구현과 같은 구조로 보고 0점을 주었습니다. 해석에 따라 1점이 될 수 있습니다.",
+          "D3: 예약 줄 순서가 ReservationJpaEntity의 IDENTITY seq(저장 순번)로 정해집니다. 이것을 '불변식이 DB나 어댑터에만 존재한다'로 볼지 루브릭에 기준이 없습니다.",
+          "D4: 루브릭은 서비스 기준으로만 서술되어 있습니다. 포트 6개를 구현하는 LoanPersistenceAdapter(통계 조회 포함)나 유스케이스 6개를 쓰는 MemberController 같은 어댑터·컨트롤러의 응집도를 평가 대상에 넣을지 정해져 있지 않아 감점하지 않았습니다."
+        ]
+      },
+      "attempts": [
+        {
+          "ok": true,
+          "error": null,
+          "cost_usd": 0.1166404,
+          "wall_s": 45.8,
+          "model_id": "claude-opus-5-5",
+          "session_id": "3502b250-0b84-42d6-9350-f7c2be658b22"
+        }
+      ],
+      "cost_usd": 0.11664,
+      "model_id": "claude-opus-5-5",
+      "usage": {
+        "claude-opus-5-5": {
+          "inputTokens": 2,
+          "outputTokens": 5118,
+          "cacheReadInputTokens": 56922,
+          "cacheCreationInputTokens": 361,
+          "webSearchRequests": 0,
+          "costUSD": 0.1166404,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1711,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      }
+    }
+  ],
+  "cost_usd": 0.764639,
+  "score_variance": {
+    "D1": {
+      "scores": [
+        2,
+        2,
+        2
+      ],
+      "mean": 2,
+      "min": 2,
+      "max": 2,
+      "variance": 0
+    },
+    "D2": {
+      "scores": [
+        0,
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "D3": {
+      "scores": [
+        0,
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "D4": {
+      "scores": [
+        0,
+        0,
+        0
+      ],
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "variance": 0
+    },
+    "total": {
+      "scores": [
+        2,
+        2,
+        2
+      ],
+      "mean": 2,
+      "min": 2,
+      "max": 2,
+      "variance": 0
+    }
+  },
+  "ended_at": "2026-10-17T01:46:49+09:00"
+}
