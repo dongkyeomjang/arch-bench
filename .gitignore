@@ -19,6 +19,7 @@ build/
 
 # experiment 생성물 (materialize-seed.sh, smoke.sh)
 /experiment/seed/
+/experiment/seed-eroded/
 /experiment/ws-*/
 /experiment/out-*.json
 /experiment/smoke-out/

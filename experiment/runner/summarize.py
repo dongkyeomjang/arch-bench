@@ -40,6 +40,8 @@ def load(out_root: Path, label: str | None = None) -> list[dict]:
         s["_turns"] = turns
         s["_dir"] = sj.parent
         s["_root"] = label or out_root.name
+        tr = sj.parent / "violations-trace.json"  # 침식 시드 세션: trace_violations.py 결과(있으면)
+        s["_trace"] = json.loads(tr.read_text()) if tr.exists() else None
         sessions.append(s)
     sessions.sort(key=lambda s: (s["level"], s["model"], s["rep"]))
     return sessions
@@ -128,6 +130,9 @@ def session_table(sessions: list[dict]) -> str:
 def heatmap(sessions: list[dict]) -> str:
     header = ["턴"] + [short(s) for s in sessions]
     rows = []
+    if any(s["_trace"] for s in sessions):  # 침식 시드: 턴 0 = 시드 기준선
+        rows.append(["00 (기준선)"] + [fmt((s["_trace"] or {}).get("summary", {}).get("baseline_violating_classes"))
+                                      if s["_trace"] else "–" for s in sessions])
     for n in range(1, 16):
         row = [("*" if n in TRAP_TURNS else "") + f"{n:02d}"]
         for s in sessions:
@@ -274,6 +279,25 @@ def usage_table(sessions: list[dict]) -> str:
                   "한도 거부 턴", "한도 대기(분)"], rows)
 
 
+def trace_table(sessions: list[dict]) -> str:
+    """trace_violations.py 요약: 내장 위반 E1~E5 운명과 새 위반."""
+    rows = []
+    for s in sessions:
+        tr = s["_trace"]
+        if not tr:
+            continue
+        sm, emb = tr["summary"], tr["embedded"]
+        fates = [("persisted" if emb[e]["status"] == "persisted" else
+                  f"healed@{emb[e]['healed_at']}" if emb[e]["status"] == "healed" else emb[e]["status"]) for e in sorted(emb)]
+        rows.append([short(s)] + fates + [sm["persisted_count"], sm["healed_count"], sm["spread_count"], sm["novel_count"],
+                                          f"{sm['baseline_violating_classes']}→{sm['final_violating_classes']}",
+                                          fmt(sm.get("delta"))])
+    if not rows:
+        return "없음 (violations-trace.json 이 있는 세션이 없다)."
+    return table(["세션", "E1", "E2", "E3", "E4", "E5", "기준선 클래스 persisted", "healed", "spread(새)", "novel(새)",
+                  "vc 기준선→최종", "delta"], rows)
+
+
 def build(sessions: list[dict], out_root: Path, compare: list[dict] | None = None) -> str:
     for s in sessions + (compare or []):
         s["_m"] = metrics(s)
@@ -298,6 +322,10 @@ def build(sessions: list[dict], out_root: Path, compare: list[dict] | None = Non
         "- 훅 실행 = 실제로 archTest 를 돌린 횟수(pass·fail·compile_failed), 훅 exit 2 = 위반으로 막은 횟수(fail).",
         "",
         session_table(sessions),
+        "",
+        "### 침식 시드 위반 추적 (`trace_violations.py`)",
+        "",
+        trace_table(sessions),
         "",
         "### 턴 × 세션 `violating_classes` (턴 종료 시점, `*` = 함정 턴)",
         "",

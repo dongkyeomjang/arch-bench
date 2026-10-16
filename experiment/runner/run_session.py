@@ -35,6 +35,8 @@ ROOT = Path(__file__).resolve().parents[2]  # arch-bench
 EXP = ROOT / "experiment"
 SCRIPTS = EXP / "scripts"
 SEED = EXP / "seed"
+SEEDS = {"clean": (SEED, "materialize-seed.sh"),  # --seed → (시드 디렉터리, 없을 때 만드는 스크립트)
+         "eroded": (EXP / "seed-eroded", "materialize-eroded-seed.sh")}
 FAKE_AGENT = EXP / "runner" / "fake_agent.sh"
 HIDDEN_TESTS = EXP / "tests"  # <domain>/turn-NN/*.java, 에이전트에게 보이지 않는 HTTP 수준 기능 테스트
 HIDDEN_TEST_DIR = "src/test/java/com/example/lending/hidden"
@@ -547,6 +549,11 @@ def precheck_cli_version(expected: str, env: dict) -> str:
     return out
 
 
+def session_id_for(domain: str, level: str, model: str, rep: int, seed: str = "clean") -> str:
+    """깨끗한 시드는 TASK5 부터의 형식 그대로, 침식 시드는 도메인 뒤에 시드 이름을 넣는다(매트릭스에서 겹치지 않게)."""
+    return f"{domain}-{level}-{model}-r{rep}" if seed == "clean" else f"{domain}-{seed}-{level}-{model}-r{rep}"
+
+
 def agent_env() -> dict:
     env = {k: v for k, v in os.environ.items()
            if k not in STRIPPED_ENV and not k.startswith(STRIPPED_ENV_PREFIXES)}
@@ -591,12 +598,14 @@ def main() -> int:
     ap.add_argument("--max-session-cost", type=float, default=None,
                     help="턴이 끝날 때 세션 누적 cost_usd 가 이 값을 넘으면 멈춘다(fail_reason session_cost_cap)")
     ap.add_argument("--rate-limit-poll-s", type=float, default=RATE_LIMIT_POLL_S, help="재시도 시각을 모를 때 대기 간격")
+    ap.add_argument("--seed", choices=tuple(SEEDS), default="clean",
+                    help="clean: 깨끗한 시드(experiment/seed). eroded: 내장 위반 E1~E5 가 있는 침식 시드(experiment/seed-eroded)")
     ap.add_argument("--claude-code-version", default=None,
                     help="claude --version 이 이 버전이 아니면 종료 5 (run_matrix 가 설정의 claude_code_version 을 넘긴다)")
     ap.add_argument("--rate-limit-max-wait-s", type=float, default=RATE_LIMIT_MAX_WAIT_S, help="한 턴의 한도 대기 상한")
     args = ap.parse_args()
 
-    session_id = f"{args.domain}-{args.level}-{args.model}-r{args.rep}"
+    session_id = session_id_for(args.domain, args.level, args.model, args.rep, args.seed)
     task_dir = EXP / "tasks" / args.domain
     turn_files = sorted(task_dir.glob("turn-*.md"))
     if not turn_files:
@@ -635,10 +644,11 @@ def main() -> int:
         f.write(json.dumps({"token": token, "session_id": session_id, "created_at": started}) + "\n")
 
     # 시드: 없으면 만든다 (결정적: 같은 해시)
-    if not (SEED / ".git").is_dir():
-        run(["bash", str(SCRIPTS / "materialize-seed.sh")], check=True)
-    seed_commit = git(SEED, "rev-parse", "HEAD")
-    shutil.copytree(SEED, ws, symlinks=True)
+    seed_dir, seed_script = SEEDS[args.seed]
+    if not (seed_dir / ".git").is_dir():
+        run(["bash", str(SCRIPTS / seed_script)], check=True)
+    seed_commit = git(seed_dir, "rev-parse", "HEAD")
+    shutil.copytree(seed_dir, ws, symlinks=True)
     p = run(["bash", str(SCRIPTS / "inject-harness.sh"), args.level, str(ws)])
     if p.returncode != 0:
         print(f"run_session: inject-harness failed ({p.returncode}): {p.stderr}", file=sys.stderr)
@@ -662,7 +672,7 @@ def main() -> int:
         "fail_reason": None,
         "agent_session_id": None, "agent_session_id_consistent": None,
         "started_at": started, "ended_at": None, "wall_s": None, "status": "running", "exit_code": None,
-        "workspace": str(ws), "workspace_token": token, "seed_commit": seed_commit, "base_commit": base,
+        "workspace": str(ws), "workspace_token": token, "seed": args.seed, "seed_commit": seed_commit, "base_commit": base,
         "base_commit_message": git(ws, "log", "-1", "--format=%s"),
         "arch_bench_commit": git(ROOT, "rev-parse", "HEAD"),
         "arch_bench_dirty": bool(git(ROOT, "status", "--porcelain")),

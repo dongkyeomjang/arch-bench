@@ -32,7 +32,7 @@ RUN_SESSION = Path(__file__).resolve().parent / "run_session.py"
 DEFAULT_SEED = 20261215
 DEFAULTS = {"reps": 1, "agent": "claude", "parallel": 2, "max_cost_usd": None, "shuffle_seed": DEFAULT_SEED,
             "est_cost_per_session_usd": {}, "skip_agent_tests": False, "session_mode": "resume",
-            "max_session_cost_usd": None, "claude_code_version": None}
+            "max_session_cost_usd": None, "claude_code_version": None, "seeds": ["clean"]}
 REQUIRED = ("levels", "models", "domains")
 
 
@@ -48,20 +48,23 @@ def load_config(path: Path) -> dict:
         raise ValueError(f"agent must be claude|fake, got {cfg['agent']!r}")
     if int(cfg["parallel"]) < 1 or int(cfg["reps"]) < 1:
         raise ValueError("parallel and reps must be >= 1")
+    bad_seeds = [x for x in cfg["seeds"] if x not in rs.SEEDS]
+    if bad_seeds or not cfg["seeds"]:
+        raise ValueError(f"seeds must be a non-empty subset of {sorted(rs.SEEDS)}, got {cfg['seeds']}")
     if cfg["session_mode"] not in ("resume", "fresh"):
         raise ValueError(f"session_mode must be resume|fresh, got {cfg['session_mode']!r}")
     return cfg
 
 
 def expand(cfg: dict) -> list[dict]:
-    """블록 무작위화: 블록 r = 반복 r 의 조합 전부(levels × models × domains). 블록마다 정렬된 목록을 같은 난수 생성기로
+    """블록 무작위화: 블록 r = 반복 r 의 조합 전부(levels × models × domains × seeds). 블록마다 정렬된 목록을 같은 난수 생성기로
     차례로 섞으므로 config 의 나열 순서와 무관하게 같은 집합 → 같은 순서. 어느 시점에 멈춰도 조건별 세션 수가 1 이상 차이 나지 않는다."""
     rng = random.Random(int(cfg["shuffle_seed"]))
     sessions = []
     for r in range(1, int(cfg["reps"]) + 1):
-        block = [{"level": lv, "model": m, "domain": d, "rep": r, "block": r,
-                  "session_id": f"{d}-{lv}-{m}-r{r}"}  # run_session.py 의 session_id 규칙과 같아야 한다
-                 for d in cfg["domains"] for lv in cfg["levels"] for m in cfg["models"]]
+        block = [{"level": lv, "model": m, "domain": d, "rep": r, "block": r, "seed": sd,
+                  "session_id": rs.session_id_for(d, lv, m, r, sd)}  # run_session.py 와 같은 규칙
+                 for d in cfg["domains"] for sd in cfg["seeds"] for lv in cfg["levels"] for m in cfg["models"]]
         block.sort(key=lambda s: s["session_id"])
         rng.shuffle(block)
         sessions += block
@@ -162,7 +165,7 @@ class Matrix:
         log_tmp = self.out_root / ".matrix-logs" / f"{sid}.log"  # run_session 은 결과 디렉터리가 있으면 거부하므로 끝나고 옮긴다
         cmd = [sys.executable, str(RUN_SESSION), "--level", s["level"], "--model", s["model"], "--domain", s["domain"],
                "--rep", str(s["rep"]), "--ws-root", str(self.ws_root), "--out", str(self.out_root),
-               "--agent", self.cfg["agent"]]
+               "--agent", self.cfg["agent"], "--seed", s["seed"]]
         if self.cfg["skip_agent_tests"]:  # 에이전트 자체 테스트는 마지막 턴만. 숨겨진 테스트(ft_*)는 매 턴 돈다
             cmd.append("--skip-tests")
         cmd += ["--session-mode", self.cfg["session_mode"]]
