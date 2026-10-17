@@ -53,6 +53,7 @@ CONFIG_PATHS = (".claude/", "CLAUDE.md", "build.gradle.kts", "gradle/arch.gradle
 TRACKED_TOOLS = ("Edit", "Write", "MultiEdit", "Bash", "Read", "Task")
 SUBAGENT_TOOLS = ("Task", "Agent")  # Claude Code 2.1.x 에서 서브에이전트 도구 이름은 Agent (구 Task)
 REVIEWER = "architecture-reviewer"
+AGENT_ID_RE = re.compile(r"agentId:\s*([0-9a-z]+)")
 VERDICT_RE = re.compile(r"VERDICT:\s*(APPROVE|REJECT)\b")
 # 에이전트 프로세스에 넘기지 않는 환경 변수: 러너를 Claude Code 안에서 띄웠을 때 부모 세션 정보가 새지 않게
 STRIPPED_ENV_PREFIXES = ("CLAUDE_CODE_",)
@@ -260,12 +261,14 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
         "input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
         "cost_usd_cumulative": None, "num_turns": None, "result_events": 0, "result_is_error": None, "result_text": None,
         "tool_calls": {t: 0 for t in TRACKED_TOOLS}, "tool_calls_all": {}, "subagent_tool_calls": 0,
-        "reviewer_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
+        "reviewer_calls": 0, "reviewer_resend_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
         "escaped_cwd_count": 0, "escaped_cwd_commands": [],
         "rate_limit_rejected": False, "rate_limit_resets_at": None, "rate_limit_utilization": None,
         "hook_responses": [], "session_ids_seen": [], "parse_errors": [], "_init": None,
     }
     reviewer_ids: list[str] = []
+    call_line: dict[str, int] = {}  # tool_use_id → 줄 번호(판정을 호출 순서대로 늘어놓는다)
+    sends: list[tuple[str, str]] = []  # (SendMessage tool_use_id, to) — 끝에서 리뷰어 agentId 로 가는 것만 리뷰 호출로 센다
     cwds: dict[str | None, str] = {}  # 셸별(메인·서브에이전트) cwd. 턴마다 새 프로세스라 ws 에서 시작
     texts: dict[str, list[str]] = {}  # tool_use_id → 결과 텍스트 후보 (동기 tool_result, 비동기 task_notification)
     if not path.exists():
@@ -332,6 +335,10 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
                             out["tool_calls"][key] += 1
                         if name in SUBAGENT_TOOLS and (c.get("input") or {}).get("subagent_type") == REVIEWER:
                             reviewer_ids.append(c.get("id"))
+                            call_line[c.get("id")] = lineno
+                        elif name == "SendMessage":
+                            call_line[c.get("id")] = lineno
+                            sends.append((c.get("id"), str((c.get("input") or {}).get("to") or "")))
                     elif c.get("type") == "tool_result" and not e.get("parent_tool_use_id"):
                         tc = c.get("content")
                         if isinstance(tc, list):
@@ -350,6 +357,12 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
                 out["result_text"] = e.get("result")
         except Exception as ex:  # noqa: BLE001 — 파싱 실패로 세션을 죽이지 않는다
             out["parse_errors"].append(f"line {lineno}: {type(ex).__name__}: {ex}")
+    # TASK13: 비동기 리뷰어는 결과에 "agentId: <id>" 를 남기고, 에이전트가 SendMessage(to=<id>) 로 재검토를 보낸다.
+    # 그 SendMessage 도 리뷰 호출로 센다. 판정은 같은 tool_use_id 의 task_notification 요약에서 읽는다(stream 순서 유지)
+    reviewer_agents = {m for rid in reviewer_ids for t in texts.get(rid, []) for m in AGENT_ID_RE.findall(t)}
+    resends = [sid for sid, to in sends if to in reviewer_agents]
+    out["reviewer_resend_calls"] = len(resends)
+    reviewer_ids = sorted(reviewer_ids + resends, key=lambda i: call_line.get(i, 0))
     out["reviewer_calls"] = len(reviewer_ids)
     for rid in reviewer_ids:
         verdict = None
@@ -614,6 +627,46 @@ def agent_env() -> dict:
     return env
 
 
+def precheck_agent_env(env: dict) -> None:
+    """에이전트 환경에 EXTRA_ENV 가 그대로 있어야 한다(TASK13). 특히 ENABLE_CLAUDEAI_MCP_SERVERS=false 가 없으면
+    claude.ai 커넥터가 에이전트 세션에 실린다(TASK12, --setting-sources project 라 사용자 설정이 적용되지 않음)."""
+    for k, v in EXTRA_ENV.items():
+        if env.get(k) != v:
+            raise PrecheckError(f"agent environment: {k} must be {v!r} (got {env.get(k)!r})")
+    if env.get("ENABLE_CLAUDEAI_MCP_SERVERS") != "false":
+        raise PrecheckError("agent environment: ENABLE_CLAUDEAI_MCP_SERVERS must be 'false' (claude.ai connectors)")
+
+
+def quota_probe(env: dict) -> dict:
+    """구독 사용률을 읽는다(TASK13). 짧은 claude -p 호출 하나의 stream 에서 rate_limit_event 의 unifiedWindows
+    (창별 utilization 0~1, 소수 둘째 자리, resetsAt)를 뽑는다. 저장소 밖 빈 임시 디렉터리에서 haiku 로 부른다.
+    값은 이 호출이 시작될 때의 사용률이며, 호출 자체의 소모(약 $0.001 환산)는 세션 비용에 넣지 않는다."""
+    rec = {"at": now_iso(), "status": None, "windows": None, "probe_cost_usd": None, "error": None}
+    with tempfile.TemporaryDirectory(prefix="quota-") as d:
+        try:
+            p = run(["claude", "-p", "Reply with the single word ok.", "--model", "haiku", "--output-format", "stream-json",
+                     "--verbose", "--setting-sources", "project", "--max-turns", "1", "--tools", ""],
+                    cwd=Path(d), env=env, timeout=180)
+        except Exception as ex:  # noqa: BLE001 — 사용률을 못 읽어도 세션은 돈다
+            rec["error"] = f"{type(ex).__name__}: {ex}"
+            return rec
+    for line in p.stdout.splitlines():
+        try:
+            e = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if e.get("type") == "rate_limit_event":
+            info = e.get("rate_limit_info") or {}
+            rec["status"] = info.get("status")
+            rec["windows"] = {k: {"utilization": (v or {}).get("utilization"), "resets_at": (v or {}).get("resetsAt")}
+                              for k, v in (info.get("unifiedWindows") or {}).items()}
+        elif e.get("type") == "result":
+            rec["probe_cost_usd"] = e.get("total_cost_usd")
+    if rec["windows"] is None:
+        rec["error"] = rec["error"] or f"no rate_limit_event in probe output (exit {p.returncode})"
+    return rec
+
+
 def is_rate_limited(turn: dict) -> bool:
     """구독 한도로 거부된 호출인가: 스트림의 rate_limit_event status=rejected 가 있고 호출이 실패로 끝났거나,
     실패한 결과 텍스트·stderr 가 한도 문구다."""
@@ -682,6 +735,7 @@ def main() -> int:
         cfg = precheck_config_dir()
         if args.agent == "claude" and shutil.which("claude") is None:
             raise PrecheckError("claude CLI not found on PATH")
+        precheck_agent_env(agent_env())
         billing = precheck_billing(agent_env()) if args.agent == "claude" else None
         if args.agent == "claude" and args.claude_code_version:
             precheck_cli_version(args.claude_code_version, agent_env())
@@ -744,7 +798,11 @@ def main() -> int:
         "final_tests_status": None, "ft_pass_by_turn": [], "final_ft_pass": None, "final_ft_total": None,
         "final_ft_passed": None, "final_ft_compile_error": None, "turns_refused": 0, "rate_limited_turns": 0,
         "rate_limit_wait_s": 0.0, "init_config": None, "config_contamination": [], "turns": [],
+        "quota_before": None, "quota_after": None,
     }
+    # 구독 사용률(TASK13): 세션 직전·직후에 짧은 탐침 호출로 읽는다. fake 는 읽지 않는다
+    if args.agent == "claude":
+        session["quota_before"] = quota_probe(env)
     write_json(out / "session.json", session)
 
     exit_code = 0
@@ -911,6 +969,8 @@ def main() -> int:
     session["exit_code"] = exit_code
     session["ended_at"] = now_iso()
     session["wall_s"] = round(time.monotonic() - t_session, 2)
+    if args.agent == "claude":
+        session["quota_after"] = quota_probe(env)
     write_json(out / "session.json", session)
     return exit_code
 

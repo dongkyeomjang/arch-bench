@@ -71,6 +71,16 @@ def load_config(path: Path) -> dict:
     if dup:
         raise ValueError(f"blocks overlap on cells {dup[:3]}")
     cfg["blocks"] = blocks
+    cap = cfg["max_session_cost_usd"]  # TASK13: 단일 값 또는 모델별 dict
+    if isinstance(cap, dict):
+        models = sorted({m for b in blocks for m in b["models"]})
+        missing = [m for m in models if m not in cap]
+        if missing:
+            raise ValueError(f"max_session_cost_usd has no cap for models {missing}")
+        if any(not isinstance(v, (int, float)) or v <= 0 for v in cap.values()):
+            raise ValueError("max_session_cost_usd values must be positive numbers")
+    elif cap is not None and (not isinstance(cap, (int, float)) or cap <= 0):
+        raise ValueError("max_session_cost_usd must be a positive number or a {model: number} dict")
     if cfg["agent"] not in ("claude", "fake"):
         raise ValueError(f"agent must be claude|fake, got {cfg['agent']!r}")
     if int(cfg["parallel"]) < 1:
@@ -78,6 +88,11 @@ def load_config(path: Path) -> dict:
     if cfg["session_mode"] not in ("resume", "fresh"):
         raise ValueError(f"session_mode must be resume|fresh, got {cfg['session_mode']!r}")
     return cfg
+
+
+def session_cap(cfg: dict, model: str) -> float | None:
+    cap = cfg["max_session_cost_usd"]
+    return cap.get(model) if isinstance(cap, dict) else cap
 
 
 def cells_of(b: dict) -> list[tuple[str, str, str, str]]:
@@ -201,8 +216,9 @@ class Matrix:
         cmd += ["--session-mode", self.cfg["session_mode"]]
         if self.cfg["claude_code_version"]:
             cmd += ["--claude-code-version", str(self.cfg["claude_code_version"])]
-        if self.cfg["max_session_cost_usd"] is not None:
-            cmd += ["--max-session-cost", str(self.cfg["max_session_cost_usd"])]
+        cap = session_cap(self.cfg, s["model"])
+        if cap is not None:
+            cmd += ["--max-session-cost", str(cap)]
         t0 = time.monotonic()
         with log_tmp.open("w") as log:
             log.write(f"$ {' '.join(cmd)}\n")

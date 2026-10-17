@@ -1,0 +1,7 @@
+{
+  "levels": ["L3"], "models": ["sonnet", "opus"], "domains": ["lending"],
+  "seeds": ["eroded"], "reps": 1, "parallel": 1, "session_mode": "fresh",
+  "skip_agent_tests": true, "max_cost_usd": 50,
+  "max_session_cost_usd": {"sonnet": 15, "opus": 30},
+  "claude_code_version": "2.1.301"
+}
