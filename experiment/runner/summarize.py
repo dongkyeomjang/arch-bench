@@ -294,8 +294,27 @@ def trace_table(sessions: list[dict]) -> str:
                                           fmt(sm.get("delta"))])
     if not rows:
         return "없음 (violations-trace.json 이 있는 세션이 없다)."
-    return table(["세션", "E1", "E2", "E3", "E4", "E5", "기준선 클래스 persisted", "healed", "spread(새)", "novel(새)",
-                  "vc 기준선→최종", "delta"], rows)
+    out = table(["세션", "E1", "E2", "E3", "E4", "E5", "기준선 클래스 persisted", "healed", "spread(새)", "novel(새)",
+                 "vc 기준선→최종", "delta"], rows)
+    # 노출(TASK12): 운명 × 그 위반의 원인 파일을 요청 작업이 건드렸는가
+    abbrev = {"healed_when_exposed": "치유(노출)", "healed_unexposed": "치유(노출 없음)",
+              "persisted_despite_exposure": "유지(노출됨)", "never_exposed": "유지(노출 없음)", None: "?"}
+    erows, prows = [], []
+    for s in sessions:
+        tr = s["_trace"]
+        if not tr or "rule_placement" not in tr:
+            continue
+        emb = tr["embedded"]
+        erows.append([short(s)] + [f"{abbrev[emb[e].get('exposure')]} {','.join(map(str, emb[e].get('exposed_turns') or [])) or '—'}"
+                                   for e in sorted(emb)])
+        rp = tr["rule_placement"]
+        prows.append([short(s)] + [f"{rp[t]['at_turn'] or '?'} / {rp[t]['at_final'] or '?'}" for t in sorted(rp, key=int)])
+    if erows:
+        out += ("\n\n노출 (각 칸: 분류 + 원인 파일을 바꾼 턴). 치유(노출 없음) = 요청 작업이 그 파일을 건드리지 않은 턴에 사라짐.\n\n"
+                + table(["세션", "E1", "E2", "E3", "E4", "E5"], erows)
+                + "\n\n규칙 위치 자동 근사 (각 칸: 그 턴 끝 / 마지막 턴, 루브릭 D1 근사치 — 사람 채점 대체 아님)\n\n"
+                + table(["세션", "턴 2 한도", "턴 7 폐기", "턴 8 후원자", "턴 13 정지"], prows))
+    return out
 
 
 def build(sessions: list[dict], out_root: Path, compare: list[dict] | None = None) -> str:

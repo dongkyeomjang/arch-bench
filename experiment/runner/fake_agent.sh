@@ -8,6 +8,7 @@
 #       is_error result, exit 1)로 끝난다. FAKE_AGENT_RATE_LIMIT_RESET_S=<초>(기본 2, "none" 이면 resetsAt 없음),
 #       FAKE_AGENT_RATE_LIMIT_REPEAT=1 이면 매 호출 거부(대기 시간 초과 확인용). 러너의 한도 대기·재시도 확인용
 #       FAKE_AGENT_MODEL=<이름>(기본 fake-model): init 의 model (매트릭스 model_id 변경 감지 확인용)
+#       FAKE_AGENT_INIT_MCP=<이름>: init 의 mcp_servers 에 그 서버를 넣는다(러너의 config_contamination 중단 확인용)
 # 동작:
 #   턴 1: domain/Book.java 에 메서드 하나 추가 + 커밋, Bash `ls ..; ls ../..` 기록(escaped_cwd_count 확인용, 실행은 안 함)
 #   턴 2: domain/Book.java 에 @Entity import 와 어노테이션 추가(R1·R5 위반) + 커밋 안 함
@@ -55,8 +56,10 @@ RULES="src/test/java/com/example/lending/architecture/HexagonalRules.java"
 commit() { git add -A && git -c user.name=fake-agent -c user.email=fake@example.com -c commit.gpgsign=false commit -q -m "$1"; }
 
 emit_init() {
-    jq -cn --arg s "$session_id" --arg cwd "$PWD" --arg m "${FAKE_AGENT_MODEL:-fake-model}" \
-        '{type: "system", subtype: "init", session_id: $s, cwd: $cwd, model: $m, claude_code_version: "fake", tools: []}'
+    jq -cn --arg s "$session_id" --arg cwd "$PWD" --arg m "${FAKE_AGENT_MODEL:-fake-model}" --arg mcp "${FAKE_AGENT_INIT_MCP:-}" \
+        '{type: "system", subtype: "init", session_id: $s, cwd: $cwd, model: $m, claude_code_version: "fake", tools: [],
+          mcp_servers: (if $mcp == "" then [] else [{name: $mcp, status: "pending", source: "claudeai"}] end),
+          skills: ["debug"], plugins: [{name: "cc-plugin-telemetry", path: "builtin", source: "cc-plugin-telemetry@builtin"}]}'
 }
 emit_tool_use() { # emit_tool_use <n> <name> <input-json>
     jq -cn --arg s "$session_id" --arg id "toolu_fake_${turn}_$1" --arg name "$2" --argjson input "$3" \

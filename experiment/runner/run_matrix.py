@@ -5,7 +5,8 @@
   run_matrix.py --config matrix.json --ws-root $ARCH_WS_ROOT --out $OUT_ROOT [--dry-run] [--resume]
                 [--allow-model-change]
 
-순서: 반복(rep) 하나 = 블록 하나(levels × models × domains 조합 전부). 블록 안을 시드 고정으로 섞고 블록은 rep 순서대로.
+순서: 반복(rep) 하나 = 블록 하나(levels × models × domains × seeds 조합 전부). 블록 안을 시드 고정으로 섞고 블록은 rep 순서대로.
+`blocks` 배열이면 반복 r 의 블록 = 반복 수가 r 이상인 설정 블록들의 셀을 합친 것(TASK12).
 종료 코드: 0 전 세션 completed, 1 실패 세션 있음, 2 설정 오류, 3 비용 가드로 멈춤,
           4 결과 디렉터리가 이미 있음(--resume 없이), 5 시작 전 검사 실패(run_session 과 같은 검사,
           agent=claude 면 workspace-index.jsonl 에 없는 워크스페이스 잔여물·API 키·구독 로그인 아님·
@@ -34,37 +35,66 @@ DEFAULTS = {"reps": 1, "agent": "claude", "parallel": 2, "max_cost_usd": None, "
             "est_cost_per_session_usd": {}, "skip_agent_tests": False, "session_mode": "resume",
             "max_session_cost_usd": None, "claude_code_version": None, "seeds": ["clean"]}
 REQUIRED = ("levels", "models", "domains")
+BLOCK_KEYS = ("seeds", "levels", "models", "reps")
 
 
 def load_config(path: Path) -> dict:
-    cfg = {**DEFAULTS, **json.loads(path.read_text())}
-    missing = [k for k in REQUIRED if not cfg.get(k)]
-    if missing:
-        raise ValueError(f"config needs non-empty {missing}")
-    bad = [lv for lv in cfg["levels"] if lv not in rs.LEVELS]
-    if bad:
-        raise ValueError(f"unknown levels {bad}")
+    """평면 설정(levels·models·seeds·reps)이나 `blocks` 배열(블록마다 seeds·levels·models·reps, domains 는 공통)을 받는다.
+    평면 설정은 블록 하나로 바꾼다 → cfg["blocks"] 는 항상 있다."""
+    raw = json.loads(path.read_text())
+    cfg = {**DEFAULTS, **raw}
+    if "blocks" in raw:
+        flat = [k for k in BLOCK_KEYS if k in raw]
+        if flat:
+            raise ValueError(f"use either blocks or top-level {flat}, not both")
+        if not isinstance(raw["blocks"], list) or not raw["blocks"]:
+            raise ValueError("blocks must be a non-empty list")
+        blocks = [{"domains": raw.get("domains"), **b} for b in raw["blocks"]]
+    else:
+        blocks = [{k: cfg[k] for k in (*BLOCK_KEYS, "domains")}]
+    for i, b in enumerate(blocks):
+        where = f"blocks[{i}]: " if "blocks" in raw else ""
+        missing = [k for k in (*REQUIRED, "seeds") if not b.get(k)]
+        if missing:
+            raise ValueError(f"{where}config needs non-empty {missing}")
+        bad = [lv for lv in b["levels"] if lv not in rs.LEVELS]
+        if bad:
+            raise ValueError(f"{where}unknown levels {bad}")
+        bad_seeds = [x for x in b["seeds"] if x not in rs.SEEDS]
+        if bad_seeds:
+            raise ValueError(f"{where}seeds must be a subset of {sorted(rs.SEEDS)}, got {b['seeds']}")
+        if int(b.get("reps", 1)) < 1:
+            raise ValueError(f"{where}reps must be >= 1")
+        b["reps"] = int(b.get("reps", 1))
+    cells = [c for b in blocks for c in cells_of(b)]
+    dup = sorted({c for c in cells if cells.count(c) > 1})
+    if dup:
+        raise ValueError(f"blocks overlap on cells {dup[:3]}")
+    cfg["blocks"] = blocks
     if cfg["agent"] not in ("claude", "fake"):
         raise ValueError(f"agent must be claude|fake, got {cfg['agent']!r}")
-    if int(cfg["parallel"]) < 1 or int(cfg["reps"]) < 1:
-        raise ValueError("parallel and reps must be >= 1")
-    bad_seeds = [x for x in cfg["seeds"] if x not in rs.SEEDS]
-    if bad_seeds or not cfg["seeds"]:
-        raise ValueError(f"seeds must be a non-empty subset of {sorted(rs.SEEDS)}, got {cfg['seeds']}")
+    if int(cfg["parallel"]) < 1:
+        raise ValueError("parallel must be >= 1")
     if cfg["session_mode"] not in ("resume", "fresh"):
         raise ValueError(f"session_mode must be resume|fresh, got {cfg['session_mode']!r}")
     return cfg
 
 
+def cells_of(b: dict) -> list[tuple[str, str, str, str]]:
+    return [(d, sd, lv, m) for d in b["domains"] for sd in b["seeds"] for lv in b["levels"] for m in b["models"]]
+
+
 def expand(cfg: dict) -> list[dict]:
-    """블록 무작위화: 블록 r = 반복 r 의 조합 전부(levels × models × domains × seeds). 블록마다 정렬된 목록을 같은 난수 생성기로
-    차례로 섞으므로 config 의 나열 순서와 무관하게 같은 집합 → 같은 순서. 어느 시점에 멈춰도 조건별 세션 수가 1 이상 차이 나지 않는다."""
+    """블록 무작위화: 무작위화 블록 r = 반복 수가 r 이상인 설정 블록들의 셀(domains × seeds × levels × models)을 합친 것.
+    블록마다 정렬된 목록을 같은 난수 생성기로 차례로 섞으므로 config 의 나열 순서와 무관하게 같은 집합 → 같은 순서.
+    어느 시점에 멈춰도 같은 반복 수를 가진 셀끼리는 세션 수가 1 이상 차이 나지 않는다.
+    설정 블록이 하나면(평면 설정) 블록 r = 반복 r 의 조합 전부로, TASK11 까지와 같은 순서가 나온다."""
     rng = random.Random(int(cfg["shuffle_seed"]))
     sessions = []
-    for r in range(1, int(cfg["reps"]) + 1):
+    for r in range(1, max(b["reps"] for b in cfg["blocks"]) + 1):
         block = [{"level": lv, "model": m, "domain": d, "rep": r, "block": r, "seed": sd,
                   "session_id": rs.session_id_for(d, lv, m, r, sd)}  # run_session.py 와 같은 규칙
-                 for d in cfg["domains"] for sd in cfg["seeds"] for lv in cfg["levels"] for m in cfg["models"]]
+                 for b in cfg["blocks"] if b["reps"] >= r for d, sd, lv, m in cells_of(b)]
         block.sort(key=lambda s: s["session_id"])
         rng.shuffle(block)
         sessions += block

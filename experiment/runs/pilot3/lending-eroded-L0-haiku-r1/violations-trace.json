@@ -25,6 +25,37 @@
     "embedded_healed": [
       "E2"
     ],
+    "embedded_exposure": {
+      "E1": "persisted_despite_exposure",
+      "E2": "healed_when_exposed",
+      "E3": "persisted_despite_exposure",
+      "E4": "never_exposed",
+      "E5": "persisted_despite_exposure"
+    },
+    "healed_when_exposed": [
+      "E2"
+    ],
+    "healed_unexposed": [],
+    "persisted_despite_exposure": [
+      "E1",
+      "E3",
+      "E5"
+    ],
+    "never_exposed": [
+      "E4"
+    ],
+    "rule_placement": {
+      "2": "service",
+      "7": "service",
+      "8": "service",
+      "13": "service"
+    },
+    "rule_placement_final": {
+      "2": "service",
+      "7": "service",
+      "8": "service",
+      "13": "service"
+    },
     "e1_persisted": true,
     "delta": 3
   },
@@ -36,7 +67,13 @@
       "status": "persisted",
       "healed_at": null,
       "first_absent": null,
-      "reappeared": false
+      "reappeared": false,
+      "exposed_turns": [
+        6,
+        7,
+        12
+      ],
+      "exposure": "persisted_despite_exposure"
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -45,7 +82,12 @@
       "status": "healed",
       "healed_at": 7,
       "first_absent": 7,
-      "reappeared": false
+      "reappeared": false,
+      "exposed_turns": [
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed"
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -54,7 +96,9 @@
       "status": "persisted",
       "healed_at": null,
       "first_absent": null,
-      "reappeared": false
+      "reappeared": false,
+      "exposed_turns": [],
+      "exposure": "never_exposed"
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -64,7 +108,12 @@
       "status": "persisted",
       "healed_at": null,
       "first_absent": null,
-      "reappeared": false
+      "reappeared": false,
+      "exposed_turns": [
+        8,
+        13
+      ],
+      "exposure": "persisted_despite_exposure"
     }
   },
   "embedded": {
@@ -77,6 +126,18 @@
       "healed_at": null,
       "first_absent": null,
       "reappeared": false,
+      "exposed_turns": [
+        2,
+        3,
+        4,
+        7,
+        8,
+        9,
+        10,
+        13,
+        14
+      ],
+      "exposure": "persisted_despite_exposure",
       "by_turn": {
         "1": true,
         "2": true,
@@ -106,6 +167,11 @@
       "healed_at": 7,
       "first_absent": 7,
       "reappeared": false,
+      "exposed_turns": [
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
       "by_turn": {
         "1": true,
         "2": true,
@@ -136,6 +202,11 @@
       "healed_at": null,
       "first_absent": null,
       "reappeared": false,
+      "exposed_turns": [
+        8,
+        13
+      ],
+      "exposure": "persisted_despite_exposure",
       "by_turn": {
         "1": true,
         "2": true,
@@ -165,6 +236,8 @@
       "healed_at": null,
       "first_absent": null,
       "reappeared": false,
+      "exposed_turns": [],
+      "exposure": "never_exposed",
       "by_turn": {
         "1": true,
         "2": true,
@@ -194,6 +267,12 @@
       "healed_at": null,
       "first_absent": null,
       "reappeared": false,
+      "exposed_turns": [
+        6,
+        7,
+        12
+      ],
+      "exposure": "persisted_despite_exposure",
       "by_turn": {
         "1": true,
         "2": true,
@@ -274,6 +353,76 @@
         15
       ],
       "at_final": true
+    }
+  },
+  "rule_placement": {
+    "2": {
+      "rule": "limit",
+      "at_turn": "service",
+      "at_final": "service",
+      "evidence_at_turn": {
+        "application.service": [
+          "LoanBookService: throw LoanLimitExceededException",
+          "LoanBookService: if loadLoanPort.countByMemberId(command.memberId()) >= Loan.MAX_LOANS_PER_MEMBER"
+        ]
+      },
+      "evidence_at_final": {
+        "application.service": [
+          "LoanBookService: throw LoanLimitExceededException",
+          "LoanBookService: if !LOAN_LIMIT_EXEMPT_MEMBER_IDS.contains(command.memberId()) && loadLoanPort.count"
+        ]
+      }
+    },
+    "7": {
+      "rule": "discard",
+      "at_turn": "service",
+      "at_final": "service",
+      "evidence_at_turn": {
+        "application.service": [
+          "LoanBookService: throw BookDiscardedException",
+          "LoanBookService: if book.getStatus() == BookStatus.DISCARDED"
+        ]
+      },
+      "evidence_at_final": {
+        "application.service": [
+          "LoanBookService: throw BookDiscardedException",
+          "LoanBookService: if book.getStatus() == BookStatus.DISCARDED",
+          "ReserveBookService: throw BookDiscardedException",
+          "ReserveBookService: if book.getStatus() == BookStatus.DISCARDED"
+        ]
+      }
+    },
+    "8": {
+      "rule": "sponsor",
+      "at_turn": "service",
+      "at_final": "service",
+      "evidence_at_turn": {
+        "application.service": [
+          "LoanBookService: if !LOAN_LIMIT_EXEMPT_MEMBER_IDS.contains(command.memberId()) && loadLoanPort.count"
+        ]
+      },
+      "evidence_at_final": {
+        "application.service": [
+          "LoanBookService: if !LOAN_LIMIT_EXEMPT_MEMBER_IDS.contains(command.memberId()) && loadLoanPort.count"
+        ]
+      }
+    },
+    "13": {
+      "rule": "suspend",
+      "at_turn": "service",
+      "at_final": "service",
+      "evidence_at_turn": {
+        "application.service": [
+          "LoanBookService: throw MemberSuspendedException",
+          "LoanBookService: if member.isSuspended()"
+        ]
+      },
+      "evidence_at_final": {
+        "application.service": [
+          "LoanBookService: throw MemberSuspendedException",
+          "LoanBookService: if member.isSuspended()"
+        ]
+      }
     }
   }
 }

@@ -66,6 +66,14 @@ RATE_LIMIT_TEXT_RE = re.compile(r"usage limit|rate limit|hit your .{0,20}limit|l
 API_KEY_ENV = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")  # 있으면 구독이 아니라 API 과금으로 나간다
 RATE_LIMIT_POLL_S = 15 * 60  # 재시도 시각을 모를 때 대기 간격
 RATE_LIMIT_MAX_WAIT_S = 6 * 60 * 60  # 한 턴의 한도 대기 상한
+REQUIRED_SETTINGS = {"syncClaudeAiSkills": False, "syncClaudeAiPlugins": False, "disableClaudeAiConnectors": True}
+PLUGINS_ALLOWED_ENTRIES = {"known_marketplaces.json", "marketplaces"}  # 마켓플레이스 목록(카탈로그)일 뿐 설치된 플러그인이 아니다
+# Claude Code 2.1.301 이 항상 싣는 번들 스킬(TASK8~11 의 init 이벤트 전부 이 19개). @builtin 플러그인은 허용.
+# CLI 버전을 바꾸면 init 을 다시 확인해 갱신한다
+BUNDLED_SKILLS = frozenset({
+    "deep-research", "design", "design-sync", "dataviz", "update-config", "verify", "debug", "code-review", "simplify",
+    "batch", "fewer-permission-prompts", "doctor", "loop", "schedule", "claude-api", "workflow-authoring", "run",
+    "run-skill-generator", "plugin-authoring"})
 HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?^\s*\2\s*$", re.S | re.M)  # 본문은 파일 내용이지 경로가 아니다
 RUNNER_GIT = ["-c", "user.name=runner", "-c", "user.email=runner@example.com", "-c", "commit.gpgsign=false"]
 
@@ -142,9 +150,42 @@ def precheck_config_dir() -> Path:
         raise PrecheckError(f"{cfg / 'CLAUDE.md'} exists; user memory would mix into the session")
     for sub in ("agents", "skills", "commands"):
         d = cfg / sub
-        if d.is_dir() and any(d.iterdir()):
+        if d.is_dir() and any(d.iterdir()):  # skills/synced/ (claude.ai 동기화 스킬) 도 여기서 걸린다
             raise PrecheckError(f"{d} is not empty; user {sub} would mix into the session")
+    # claude.ai 스킬·플러그인 동기화와 커넥터는 꺼 둔다(TASK11 에서 오염 발견, TASK12 에서 검사로 승격)
+    data = json.loads(settings.read_text() or "{}") if settings.exists() else {}
+    for key, want in REQUIRED_SETTINGS.items():
+        if data.get(key) is not want:
+            raise PrecheckError(f"{settings}: {key} must be {str(want).lower()} (got {data.get(key)!r})")
+    plugins = cfg / "plugins"
+    if plugins.is_dir():
+        for entry in plugins.iterdir():
+            if entry.name in PLUGINS_ALLOWED_ENTRIES:
+                continue
+            if entry.name == "installed_plugins.json":
+                try:
+                    installed = (json.loads(entry.read_text() or "{}") or {}).get("plugins") or {}
+                except json.JSONDecodeError:
+                    installed = {"<unparsable>": True}
+                if installed:
+                    raise PrecheckError(f"{entry} lists installed plugins {sorted(installed)}; they would mix into the session")
+                continue
+            if entry.is_file() or any(entry.iterdir()):  # cache/·repos/·synced/ 등 설치·동기화된 플러그인
+                raise PrecheckError(f"{entry} is not empty; installed or synced plugins would mix into the session")
     return cfg
+
+
+def init_contamination(init: dict | None) -> dict:
+    """세션 init 이벤트의 MCP 서버·스킬·플러그인 목록과, 고정 CLI 의 기본 목록 밖 항목(오염)을 돌려준다.
+    init 이 없으면(fake·파싱 실패) 판정하지 않는다."""
+    if not init:
+        return {"init_seen": False, "mcp_servers": None, "skills": None, "plugins": None, "contamination": []}
+    mcp = [m.get("name") if isinstance(m, dict) else str(m) for m in init.get("mcp_servers") or []]
+    skills = list(init.get("skills") or [])
+    plugins = [p.get("source") or p.get("name") if isinstance(p, dict) else str(p) for p in init.get("plugins") or []]
+    bad = ([f"mcp:{m}" for m in mcp] + [f"skill:{s}" for s in skills if s not in BUNDLED_SKILLS]
+           + [f"plugin:{p}" for p in plugins if not str(p).endswith("@builtin")])
+    return {"init_seen": True, "mcp_servers": mcp, "skills": skills, "plugins": plugins, "contamination": bad}
 
 
 def precheck_billing(env: dict) -> dict:
@@ -218,7 +259,7 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
         "reviewer_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
         "escaped_cwd_count": 0, "escaped_cwd_commands": [],
         "rate_limit_rejected": False, "rate_limit_resets_at": None, "rate_limit_utilization": None,
-        "session_ids_seen": [], "parse_errors": [],
+        "session_ids_seen": [], "parse_errors": [], "_init": None,
     }
     reviewer_ids: list[str] = []
     cwds: dict[str | None, str] = {}  # 셸별(메인·서브에이전트) cwd. 턴마다 새 프로세스라 ws 에서 시작
@@ -243,6 +284,7 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
                 out["agent_session_id"] = out["agent_session_id"] or sid
                 out["model_id"] = out["model_id"] or e.get("model")
                 out["claude_code_version"] = out["claude_code_version"] or e.get("claude_code_version")
+                out["_init"] = out["_init"] or e
             elif t == "rate_limit_event":
                 info = e.get("rate_limit_info") or {}
                 if info.get("status") == "rejected":
@@ -690,7 +732,7 @@ def main() -> int:
         "any_timeout": False, "final_grade_exit": None, "final_violating_classes": None,
         "final_tests_status": None, "ft_pass_by_turn": [], "final_ft_pass": None, "final_ft_total": None,
         "final_ft_passed": None, "final_ft_compile_error": None, "turns_refused": 0, "rate_limited_turns": 0,
-        "rate_limit_wait_s": 0.0, "turns": [],
+        "rate_limit_wait_s": 0.0, "init_config": None, "config_contamination": [], "turns": [],
     }
     write_json(out / "session.json", session)
 
@@ -744,7 +786,9 @@ def main() -> int:
             else:
                 (tdir / "hook-log.jsonl").touch()
             turn.update(hook_summary(tdir / "hook-log.jsonl"))
-            # 3) 스트림 파싱
+            # 3) 스트림 파싱. init 의 MCP 서버·스킬·플러그인을 기록하고 기본 목록 밖이 있으면 이 턴 기록 후 중단한다
+            init_cfg = init_contamination(parsed.pop("_init"))
+            turn["init_config"] = init_cfg
             turn.update(parsed)
             cum = parsed["cost_usd_cumulative"]
             if cum is None:
@@ -818,6 +862,15 @@ def main() -> int:
                   f"tests={turn.get('tests_status')} "
                   f"cost={turn['cost_usd']}", flush=True)
 
+            if session["init_config"] is None and init_cfg["init_seen"]:
+                session["init_config"] = {k: init_cfg[k] for k in ("mcp_servers", "skills", "plugins")}
+            if init_cfg["contamination"]:
+                session["config_contamination"] = sorted(set(session["config_contamination"]) | set(init_cfg["contamination"]))
+                write_json(out / "session.json", session)
+                print(f"run_session: config contamination on {turn_name}: {init_cfg['contamination']}; stopping",
+                      file=sys.stderr)
+                session["fail_reason"], exit_code = "config_contamination", 1
+                break
             if turn["agent_status"] == "rate_limit_timeout":
                 print(f"run_session: usage limit wait on {turn_name} would exceed {args.rate_limit_max_wait_s}s; stopping",
                       file=sys.stderr)

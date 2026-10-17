@@ -69,6 +69,24 @@ _`experiment/runner/summarize.py --out pilot3` 생성. 이 블록은 다시 생�
 | L1-r1 | healed@7 | healed@12 | healed@1 | persisted | healed@12 | 1 | 3 | 0 | 0 | 4→1 | -3 |
 | L1-r2 | healed@7 | healed@12 | healed@1 | persisted | healed@12 | 1 | 3 | 0 | 0 | 4→1 | -3 |
 
+노출 (각 칸: 분류 + 원인 파일을 바꾼 턴). 치유(노출 없음) = 요청 작업이 그 파일을 건드리지 않은 턴에 사라짐.
+
+| 세션 | E1 | E2 | E3 | E4 | E5 |
+|---|---|---|---|---|---|
+| L0-r1 | 유지(노출됨) 2,3,4,7,8,9,10,13,14 | 치유(노출) 6,7 | 유지(노출됨) 8,13 | 유지(노출 없음) — | 유지(노출됨) 6,7,12 |
+| L0-r2 | 유지(노출됨) 2,3,4,7,8,9,10,12,13,14 | 치유(노출) 7,12 | 유지(노출됨) 8,13 | 유지(노출 없음) — | 치유(노출) 6,7,12 |
+| L1-r1 | 치유(노출) 2,4,7,9,10,12,14 | 치유(노출) 5,12 | 치유(노출) 1,2,8,13 | 유지(노출 없음) — | 치유(노출) 6,7,12 |
+| L1-r2 | 치유(노출) 2,4,7,9,10,12,14 | 치유(노출) 12 | 치유(노출) 1,2,8,13 | 유지(노출 없음) — | 치유(노출) 6,7,12 |
+
+규칙 위치 자동 근사 (각 칸: 그 턴 끝 / 마지막 턴, 루브릭 D1 근사치 — 사람 채점 대체 아님)
+
+| 세션 | 턴 2 한도 | 턴 7 폐기 | 턴 8 후원자 | 턴 13 정지 |
+|---|---|---|---|---|
+| L0-r1 | service / service | service / service | service / service | service / service |
+| L0-r2 | service / service | service / service | service / service | service / service |
+| L1-r1 | domain / domain | domain / domain | domain / domain | domain / domain |
+| L1-r2 | domain / domain | domain / domain | domain / domain | domain / domain |
+
 ### 턴 × 세션 `violating_classes` (턴 종료 시점, `*` = 함정 턴)
 
 | 턴 | L0-r1 | L0-r2 | L1-r1 | L1-r2 |

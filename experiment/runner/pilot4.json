@@ -1,0 +1,6 @@
+{
+  "levels": ["L2", "L3"], "models": ["haiku"], "domains": ["lending"],
+  "seeds": ["eroded"], "reps": 1, "parallel": 1, "session_mode": "fresh",
+  "skip_agent_tests": true, "max_cost_usd": 3.0, "max_session_cost_usd": 1.5,
+  "claude_code_version": "2.1.301"
+}
