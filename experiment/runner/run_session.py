@@ -57,7 +57,10 @@ VERDICT_RE = re.compile(r"VERDICT:\s*(APPROVE|REJECT)\b")
 # 에이전트 프로세스에 넘기지 않는 환경 변수: 러너를 Claude Code 안에서 띄웠을 때 부모 세션 정보가 새지 않게
 STRIPPED_ENV_PREFIXES = ("CLAUDE_CODE_",)
 STRIPPED_ENV = {"CLAUDECODE", "CLAUDE_PID", "CLAUDE_EFFORT", "CLAUDE_PROJECT_DIR"}
-EXTRA_ENV = {"DISABLE_AUTOUPDATER": "1"}  # 매트릭스 도중 Claude Code 버전이 바뀌지 않게
+# DISABLE_AUTOUPDATER: 매트릭스 도중 Claude Code 버전이 바뀌지 않게.
+# ENABLE_CLAUDEAI_MCP_SERVERS=false (TASK12): claude.ai 커넥터 MCP 서버를 끈다. 에이전트는 --setting-sources project 라
+# CLAUDE_CONFIG_DIR/settings.json 의 disableClaudeAiConnectors 가 읽히지 않는다(pilot1~3 의 일부 턴에 커넥터가 실린 원인)
+EXTRA_ENV = {"DISABLE_AUTOUPDATER": "1", "ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
 LEAK_NAMES = ("CLAUDE.md", "CLAUDE.local.md", ".claude")
 # Bash 명령 분석: 명령 구분자, `..` 경로 성분(`HEAD~1..HEAD` 같은 git 범위는 성분이 아니라 제외)
 SHELL_SEP_RE = re.compile(r"&&|\|\||[;\n|]")
