@@ -77,6 +77,7 @@ BUNDLED_SKILLS = frozenset({
     "deep-research", "design", "design-sync", "dataviz", "update-config", "verify", "debug", "code-review", "simplify",
     "batch", "fewer-permission-prompts", "doctor", "loop", "schedule", "claude-api", "workflow-authoring", "run",
     "run-skill-generator", "plugin-authoring"})
+HOOK_RULE_RE = re.compile(r"\[arch\] (R\d) \S+\s+FAIL|\b(R\d)\s[a-z-]+ violated")  # 훅 stderr 의 실패 규칙
 HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?^\s*\2\s*$", re.S | re.M)  # 본문은 파일 내용이지 경로가 아니다
 RUNNER_GIT = ["-c", "user.name=runner", "-c", "user.email=runner@example.com", "-c", "commit.gpgsign=false"]
 
@@ -262,7 +263,7 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
         "reviewer_calls": 0, "reviewer_verdicts": [], "reviewer_verdict_not_first_line": 0,
         "escaped_cwd_count": 0, "escaped_cwd_commands": [],
         "rate_limit_rejected": False, "rate_limit_resets_at": None, "rate_limit_utilization": None,
-        "session_ids_seen": [], "parse_errors": [], "_init": None,
+        "hook_responses": [], "session_ids_seen": [], "parse_errors": [], "_init": None,
     }
     reviewer_ids: list[str] = []
     cwds: dict[str | None, str] = {}  # 셸별(메인·서브에이전트) cwd. 턴마다 새 프로세스라 ws 에서 시작
@@ -288,6 +289,12 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
                 out["model_id"] = out["model_id"] or e.get("model")
                 out["claude_code_version"] = out["claude_code_version"] or e.get("claude_code_version")
                 out["_init"] = out["_init"] or e
+            elif t == "system" and st == "hook_response":
+                err = str(e.get("stderr") or "")
+                out["hook_responses"].append({
+                    "hook_name": e.get("hook_name"), "exit_code": e.get("exit_code"), "outcome": e.get("outcome"),
+                    "subagent": bool(e.get("parent_tool_use_id")),
+                    "rules": sorted({a or b for a, b in HOOK_RULE_RE.findall(err)}), "stderr_head": err[:1500]})
             elif t == "rate_limit_event":
                 info = e.get("rate_limit_info") or {}
                 if info.get("status") == "rejected":
@@ -366,7 +373,8 @@ def parse_stream(path: Path, ws: Path, ws_root: Path) -> dict:
 def run_agent(args, ws: Path, prompt: str, turn: int, resume_id: str | None, stream: Path, stderr: Path,
               env: dict) -> dict:
     cmd = ["--model", args.model, "--output-format", "stream-json", "--verbose",
-           "--permission-mode", "bypassPermissions", "--setting-sources", "project"]
+           "--permission-mode", "bypassPermissions", "--setting-sources", "project",
+           "--include-hook-events"]  # TASK12: 훅 stderr·exit_code 를 스트림에 남긴다(출력 전용, 에이전트 입력은 그대로)
     if args.agent_max_turns:
         cmd += ["--max-turns", str(args.agent_max_turns)]
     if resume_id:
