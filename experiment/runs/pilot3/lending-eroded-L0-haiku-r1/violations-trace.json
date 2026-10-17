@@ -73,7 +73,8 @@
         7,
         12
       ],
-      "exposure": "persisted_despite_exposure"
+      "exposure": "persisted_despite_exposure",
+      "healing_context": null
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -87,7 +88,34 @@
         6,
         7
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build to see the current state.",
+            "Baseline build passes. Now the implementation: a `DISCARDED` status, a `discard()` on the domain, two 409 exceptio",
+            "The build passes. I'll confirm the new tests actually ran, then commit."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -98,7 +126,8 @@
       "first_absent": null,
       "reappeared": false,
       "exposed_turns": [],
-      "exposure": "never_exposed"
+      "exposure": "never_exposed",
+      "healing_context": null
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -113,7 +142,8 @@
         8,
         13
       ],
-      "exposure": "persisted_despite_exposure"
+      "exposure": "persisted_despite_exposure",
+      "healing_context": null
     }
   },
   "embedded": {
@@ -154,7 +184,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E2": {
       "rules": [
@@ -188,6 +219,33 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build to see the current state.",
+            "Baseline build passes. Now the implementation: a `DISCARDED` status, a `discard()` on the domain, two 409 exceptio",
+            "The build passes. I'll confirm the new tests actually ran, then commit."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E3": {
@@ -223,7 +281,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E4": {
       "rules": [
@@ -254,7 +313,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E5": {
       "rules": [
@@ -289,7 +349,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     }
   },
   "new_classes": {

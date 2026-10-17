@@ -62,8 +62,11 @@ def stream_utilization(path: Path) -> dict | None:
     return util
 
 
+MULTI_MODEL = False  # 결과 루트에 모델이 둘 이상이면 세션 이름에 모델을 넣는다(TASK13, pilot5)
+
+
 def short(s: dict) -> str:
-    return f"{s['level']}-r{s['rep']}"
+    return f"{s['level']}-{s['model']}-r{s['rep']}" if MULTI_MODEL else f"{s['level']}-r{s['rep']}"
 
 
 def fmt(v, nd=2) -> str:
@@ -398,6 +401,8 @@ def main() -> int:
     ap.add_argument("--compare", type=Path, nargs="*", default=[], help="세션 모드 비교 표에만 넣을 다른 결과 루트")
     args = ap.parse_args()
     sessions = load(args.out)
+    global MULTI_MODEL
+    MULTI_MODEL = len({s["model"] for s in sessions}) > 1
     compare = [s for c in args.compare for s in load(c)]
     if not sessions:
         print(f"summarize: no session.json under {args.out}", file=sys.stderr)

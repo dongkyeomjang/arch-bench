@@ -1,0 +1,57 @@
+{
+  "state": "finished",
+  "stop_reason": null,
+  "total": 2,
+  "done": 2,
+  "pending": 0,
+  "running": 0,
+  "completed": 2,
+  "skipped": 0,
+  "failed": 0,
+  "cost_usd": 14.685001,
+  "max_cost_usd": 50,
+  "started_at": "2026-10-17T17:34:11+09:00",
+  "updated_at": "2026-10-17T18:30:16+09:00",
+  "elapsed_s": 3367.1,
+  "avg_session_s": 1683.5,
+  "eta_s": 0.0,
+  "parallel": 1,
+  "agent": "claude",
+  "shuffle_seed": 20261215,
+  "session_mode": "fresh",
+  "max_session_cost_usd": {
+    "sonnet": 15,
+    "opus": 30
+  },
+  "model_ids": {
+    "opus": [
+      "claude-opus-5-5"
+    ],
+    "sonnet": [
+      "claude-sonnet-5-5"
+    ]
+  },
+  "allow_model_change": false,
+  "sessions": [
+    {
+      "session_id": "lending-eroded-L3-opus-r1",
+      "status": "completed",
+      "cost_usd": 10.731232,
+      "wall_s": 2182.6,
+      "exit_code": 0,
+      "workspace_token": "434a229ae604",
+      "model_id": "claude-opus-5-5",
+      "fail_reason": null
+    },
+    {
+      "session_id": "lending-eroded-L3-sonnet-r1",
+      "status": "completed",
+      "cost_usd": 3.953769,
+      "wall_s": 1184.5,
+      "exit_code": 0,
+      "workspace_token": "c3fb03afe648",
+      "model_id": "claude-sonnet-5-5",
+      "fail_reason": null
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "baseline": "experiment/seed-template/eroded/baseline.json",
   "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
   "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
-  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws-pilot4/83e380e9181d/lending",
   "summary": {
     "turns": 15,
     "unknown_turns": [],
@@ -70,7 +70,48 @@
         6,
         7
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -85,7 +126,48 @@
         5,
         6
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -98,7 +180,49 @@
       "exposed_turns": [
         2
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -115,7 +239,46 @@
         8,
         13
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "ter.out` 의 `MemberJpaEntity` 가 맡도록 분리 - `./gradlew build` 통과(기존 테스트 1개 + 신규 회원 테스트 4개) - `./gradlew archTest` 는 회원 코드와 무관한 기존 도서·대출 위반(R2/R3/R4/R7)으로 여전히 실패합니다. 이번 요청 범위 밖이라 손대지 않았고, 리뷰어에게도 그 점을 알렸습니다.",
+            "로 두었습니다. - 아키텍처 리뷰어에게 검토를 받았고 `VERDICT: APPROVE` 를 받았습니다. 리뷰 1회로 끝났습니다. **확인이 필요한 점** - `./gradlew archTest` 는 여전히 실패합니다. 이번 변경과 무관한 기존 도서·대출 코드 위반이 원인입니다. - R2: `LoadBookPort.findRaw` 가 `BookJpaEntity` 를",
+            "로 두었습니다. - 아키텍처 리뷰어에게 검토를 받았고 `VERDICT: APPROVE` 를 받았습니다. 리뷰 1회로 끝났습니다. **확인이 필요한 점** - `./gradlew archTest` 는 여전히 실패합니다. 이번 변경과 무관한 기존 도서·대출 코드 위반이 원인입니다. - R2: `LoadBookPort.findRaw` 가 `BookJpaEntity` 를"
+          ],
+          "build": [
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다.",
+            "00, 없으면 404) - `Member` 도메인에서 JPA 어노테이션을 제거하고, 영속성은 `adapter.out` 의 `MemberJpaEntity` 가 맡도록 분리 - `./gradlew build` 통과(기존 테스트 1개 + 신규 회원 테스트 4개) - `./gradlew archTest` 는 회원 코드와 무관한 기존 도서·대출 위반(R2/R3/R4/R7)으로 여전히 실패",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`511d02c`). `./gradlew build` 는 통과했습니다. **API** - `POST /members` `{\"name\": \"김민지\"}` → `201`, `{\"memberId\": \"…\", \"name\": \"김민지\"}`"
+          ],
+          "CLAUDE.md": [
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다."
+          ],
+          "reviewer": [
+            "위반(`Member` 가 JPA 어노테이션을 가짐, R1/R5)은 이번 작업 범위라 고칩니다. 도서·대출 쪽 기존 위반(R2/R3/R4/R7)은 이번 요청 밖이라 건드리지 않고 리뷰어 결과와 함께 보고하겠습니다. 먼저 회원 도메인 파일을 읽고 작업하겠습니다.",
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다.",
+            "아키텍처 리뷰어가 백그라운드에서 검토 중입니다. 결과가 도착하면 판정에 따라 커밋하거나 수정 후 재검토하겠습니다. 현재 상태: - 회원 등록·조회 API 구현 완료: `POST /members"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
     }
   },
   "embedded": {
@@ -154,6 +317,43 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "를 그대로 돌려줍니다(멱등). - 폐기된 책도 검색과 단건 조회에는 계속 나옵니다. 요청에 제외 조건이 없어서 그대로 두었습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트 전부(LendingIntegrationTest 14개 등)와 신규 6개 통과, ArchUnit 규칙 7개 모두 PASS. 리뷰 결과가 오면 이어서 처리하겠",
+            "able()`에 두었습니다. 대출 서비스의 인라인 상태 검사는 이 메서드 호출로 바꿨습니다. - 통합 테스트 6개를 추가했습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트와 신규 6개 모두 통과, ArchUnit 규칙 7개 모두 통과. **선택 사항** - 이미 폐기된 책을 다시 폐기하면 오류 없이 `DISCARDED`를 그",
+            "를 그대로 돌려줍니다(멱등). - 폐기된 책도 검색과 단건 조회에는 계속 나옵니다. 요청에 제외 조건이 없어서 그대로 두었습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트 전부(LendingIntegrationTest 14개 등)와 신규 6개 통과, ArchUnit 규칙 7개 모두 PASS. 리뷰 결과가 오면 이어서 처리하겠"
+          ],
+          "build": [
+            "이 `DISCARDED` 를 그대로 돌려줍니다(멱등). - 폐기된 책도 검색과 단건 조회에는 계속 나옵니다. 요청에 제외 조건이 없어서 그대로 두었습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트 전부(LendingIntegrationTest 14개 등)와 신규 6개 통과, ArchUnit 규칙 7개 모두 PASS. 리뷰 결과가 오면",
+            "ook.ensureLoanable()`에 두었습니다. 대출 서비스의 인라인 상태 검사는 이 메서드 호출로 바꿨습니다. - 통합 테스트 6개를 추가했습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트와 신규 6개 모두 통과, ArchUnit 규칙 7개 모두 통과. **선택 사항** - 이미 폐기된 책을 다시 폐기하면 오류 없이 `DISC",
+            "이 `DISCARDED` 를 그대로 돌려줍니다(멱등). - 폐기된 책도 검색과 단건 조회에는 계속 나옵니다. 요청에 제외 조건이 없어서 그대로 두었습니다. **검증** - `./gradlew build archTest` 성공. 기존 테스트 전부(LendingIntegrationTest 14개 등)와 신규 6개 통과, ArchUnit 규칙 7개 모두 PASS. 리뷰 결과가 오면"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "책 폐기 기능의 구현과 테스트는 끝났습니다. 아키텍처 리뷰어의 판정을 기다리는 중이라 아직 커밋하지 않았습니다. 판정이 `APPROVE`면 커밋하고, `REJECT`면 지적 사항을 반영한 뒤 다시 검토를 요청합니다. **변경 내용** -",
+            "책 폐기 기능을 구현하고 커밋했습니다(`295bda0`). 아키텍처 리뷰는 첫 검토에서 `VERDICT: APPROVE`를 받았습니다. **구현 내용** - `POST /books/{bookId}/discard`: 성공하면 200과 `status: \"DISCARDED\"`를 담은",
+            "그대로 돌려줍니다. - 폐기된 책도 검색과 단건 조회에는 계속 나옵니다. 요청에 제외 조건이 없어서 그대로 두었습니다. 목록에서 숨겨야 하면 알려 주세요. **리뷰 참고** - 리뷰어가 지적한 사항은 차단 사유가 아니라서 이번 커밋에 넣지 않았습니다. `LoanBookService`에는 여전히 `book.setStatus(BookStatus.ON_LOAN)`이"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/service/LoanBookService.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
       }
     },
     "E2": {
@@ -189,6 +389,47 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
       }
     },
     "E3": {
@@ -226,6 +467,45 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "ter.out` 의 `MemberJpaEntity` 가 맡도록 분리 - `./gradlew build` 통과(기존 테스트 1개 + 신규 회원 테스트 4개) - `./gradlew archTest` 는 회원 코드와 무관한 기존 도서·대출 위반(R2/R3/R4/R7)으로 여전히 실패합니다. 이번 요청 범위 밖이라 손대지 않았고, 리뷰어에게도 그 점을 알렸습니다.",
+            "로 두었습니다. - 아키텍처 리뷰어에게 검토를 받았고 `VERDICT: APPROVE` 를 받았습니다. 리뷰 1회로 끝났습니다. **확인이 필요한 점** - `./gradlew archTest` 는 여전히 실패합니다. 이번 변경과 무관한 기존 도서·대출 코드 위반이 원인입니다. - R2: `LoadBookPort.findRaw` 가 `BookJpaEntity` 를",
+            "로 두었습니다. - 아키텍처 리뷰어에게 검토를 받았고 `VERDICT: APPROVE` 를 받았습니다. 리뷰 1회로 끝났습니다. **확인이 필요한 점** - `./gradlew archTest` 는 여전히 실패합니다. 이번 변경과 무관한 기존 도서·대출 코드 위반이 원인입니다. - R2: `LoadBookPort.findRaw` 가 `BookJpaEntity` 를"
+          ],
+          "build": [
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다.",
+            "00, 없으면 404) - `Member` 도메인에서 JPA 어노테이션을 제거하고, 영속성은 `adapter.out` 의 `MemberJpaEntity` 가 맡도록 분리 - `./gradlew build` 통과(기존 테스트 1개 + 신규 회원 테스트 4개) - `./gradlew archTest` 는 회원 코드와 무관한 기존 도서·대출 위반(R2/R3/R4/R7)으로 여전히 실패",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`511d02c`). `./gradlew build` 는 통과했습니다. **API** - `POST /members` `{\"name\": \"김민지\"}` → `201`, `{\"memberId\": \"…\", \"name\": \"김민지\"}`"
+          ],
+          "CLAUDE.md": [
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다."
+          ],
+          "reviewer": [
+            "위반(`Member` 가 JPA 어노테이션을 가짐, R1/R5)은 이번 작업 범위라 고칩니다. 도서·대출 쪽 기존 위반(R2/R3/R4/R7)은 이번 요청 밖이라 건드리지 않고 리뷰어 결과와 함께 보고하겠습니다. 먼저 회원 도메인 파일을 읽고 작업하겠습니다.",
+            "`./gradlew build` 가 통과했습니다(기존 1개 + 신규 4개 테스트). 커밋 전에 CLAUDE.md 규칙에 따라 아키텍처 리뷰어에게 검토를 요청하겠습니다.",
+            "아키텍처 리뷰어가 백그라운드에서 검토 중입니다. 결과가 도착하면 판정에 따라 커밋하거나 수정 후 재검토하겠습니다. 현재 상태: - 회원 등록·조회 API 구현 완료: `POST /members"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
       }
     },
     "E4": {
@@ -259,6 +539,48 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
       }
     },
     "E5": {
@@ -294,6 +616,47 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": true,
+        "hook_blocks": 3,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx",
+            "합니다. 등록되지 않은 회원 ID로 `POST /loans`를 하면 `404`를 반환합니다. 커밋은 `f18c115`입니다. `./gradlew build`, `./gradlew archTest`(7/7), 기능 테스트가 모두 통과했습니다. **변경 내용** - `Member.ensureCanBorrow`에 5권 제한 규칙을 두었습니다. 초과하면 `LoanLimitEx"
+          ],
+          "build": [
+            "ng a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing test `loaning_a_book_alread",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts.",
+            "The build passes. `build` may not include `archTest`, so I'll run it explicitly and check the test counts."
+          ],
+          "CLAUDE.md": [
+            "mon`, `findRaw` returning a JPA entity from a port, and `BookController` using the JPA repository. `CLAUDE.md` requires `./gradlew build` to pass before a commit, so these have to be fixed too. - The existing",
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits",
+            "원은 기존 `MemberNotFoundException` → 404 경로로 처리됩니다. **기존 코드 정리 (커밋에 포함)** 빌드 전에 훅이 보고한 아키텍처 위반이 있었고, `CLAUDE.md`상 커밋 전에 빌드가 통과해야 해서 함께 고쳤습니다. - `common/DateUtils` 삭제. `Loan`에서 `plusDays`를 직접 사용합니다. - `LoadBookPo"
+          ],
+          "reviewer": [
+            "All 7 arch rules and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll ma",
+            "and 7 functional tests pass. Per `CLAUDE.md`, the architecture reviewer runs before committing. The reviewer reads `git diff HEAD`, which omits untracked files, so I'll mark the new files intent-to-add first.",
+            "The architecture review is still running. I'll commit once its verdict arrives."
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
       }
     }
   },

@@ -27,6 +27,14 @@
   증거: (1) 규칙 예외의 `throw new` 위치, (2) 조건이 규칙 패턴에 맞고 블록 안에 `throw` 가 있는 `if`(후원자는 블록 무관),
   (3) 규칙 패턴 + 비교 연산자·`contains(` 가 있는 `return` 식. 두 계층 모두 증거 → `both`, 하나도 없음 → `unknown`.
   판정 로직과 한계는 experiment/README.md "위반 추적".
+치유 근거(TASK13, `healing_context` — 사람이 `healing_trigger` 를 코딩할 때 보는 근거 모음이며 분류가 아님)
+- 치유된 위반마다 `healed_at` 턴에서: (a) `hook_exit2` 훅이 위반으로 막은 횟수 > 0(turn.json hook_blocks),
+  (b) `mentions` 메인 에이전트 텍스트(중간 응답 + 최종 응답)에 archTest / build(`gradlew build`·" build ") /
+  CLAUDE.md / 리뷰어(reviewer·리뷰어·VERDICT) 언급이 있는가 + 앞뒤 발췌,
+  (c) `request_exposed` 그 턴의 요청이 원인 파일을 건드리게 하는가 — 참조 구현의 같은 턴 커밋이 그 파일을 바꿨는지로
+  근사한다(턴 1 은 lending 원본과 비교, 턴 8·10 은 TASK9 재설계 커밋). 치유 턴의 세션 diff 는 치유 자체가 그 파일을
+  바꾸므로 쓸 수 없다. 원인 파일이 참조 구현에 없으면(E4 common.DateUtils) 침식 시드에서 그 클래스를 쓰는 파일로 대신 본다,
+  (d) `reviewer_reject` 그 턴 리뷰어 판정에 REJECT 가 있는가(stream 을 run_session.parse_stream 으로 다시 읽음).
 종료 코드: 0 성공, 2 입력 오류
 """
 from __future__ import annotations
@@ -176,6 +184,97 @@ def rule_placement(ws: Path | None, head: str | None) -> dict | None:
     return out
 
 
+REF_DIR = "experiment/reference/lending-full"
+REF_REDESIGN = {8: "6dd162e", 10: "abffebe"}  # TASK9 재설계 커밋(지금 턴 8·10 요청에 해당)
+MENTION_RES = {
+    "archTest": re.compile(r"archTest"),
+    "build": re.compile(r"gradlew build|\bbuild\b(?! ?(?:file|script))", re.I),
+    "CLAUDE.md": re.compile(r"CLAUDE\.md"),
+    "reviewer": re.compile(r"reviewer|리뷰어|VERDICT", re.I),
+}
+REPO = Path(__file__).resolve().parents[2]
+
+
+def git_out(*args: str, cwd: Path = REPO) -> str:
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True).stdout
+
+
+def reference_turn_files() -> dict[int, set[str]]:
+    """참조 구현 턴 N 커밋이 바꾼 src/main/java 파일(SRC_MAIN 기준 상대 경로)."""
+    out: dict[int, set[str]] = {}
+    commits = {}
+    for line in git_out("log", "--format=%H %s", "--", REF_DIR).splitlines():
+        h, subj = line.split(" ", 1)
+        m = re.search(r"참조 구현 turn-(\d\d) ", subj)
+        if m and "재설계" not in subj:
+            commits[int(m.group(1))] = h
+    commits.update(REF_REDESIGN)
+    prefix = f"{REF_DIR}/{SRC_MAIN}"
+    for t, h in commits.items():
+        if t == 1:  # 턴 1 커밋은 프로젝트 전체를 추가했다 → lending 원본(시드의 출처)과 내용이 다른 파일만
+            files = set()
+            for f in git_out("ls-tree", "-r", "--name-only", h, "--", prefix).split():
+                rel = f[len(prefix):]
+                orig = REPO / "lending" / SRC_MAIN / rel
+                if not orig.exists() or orig.read_text() != git_out("show", f"{h}:{f}"):
+                    files.add(SRC_MAIN + rel)
+        else:
+            files = {SRC_MAIN + f[len(prefix):] for f in git_out("show", "--name-only", "--format=", h).split()
+                     if f.startswith(prefix)}
+        out[t] = files
+    return out
+
+
+def class_users(ws: Path | None, commit: str | None, fqn: str) -> set[str]:
+    """commit 시점에 fqn 을 import 하는 src/main/java 파일."""
+    if ws is None or not commit:
+        return set()
+    r = subprocess.run(["git", "grep", "-l", f"import {fqn};", commit, "--", SRC_MAIN], cwd=ws, capture_output=True, text=True)
+    return {x.split(":", 1)[1] for x in r.stdout.splitlines() if ":" in x}
+
+
+def turn_texts(stream: Path) -> list[str]:
+    texts = []
+    if not stream.exists():
+        return texts
+    for line in stream.read_text(errors="replace").splitlines():
+        try:
+            e = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if e.get("type") == "assistant" and not e.get("parent_tool_use_id"):
+            texts += [c["text"] for c in (e.get("message") or {}).get("content") or []
+                      if isinstance(c, dict) and c.get("type") == "text" and c.get("text", "").strip()]
+        elif e.get("type") == "result" and e.get("result"):
+            texts.append(str(e["result"]))
+    return texts
+
+
+def healing_context(turn_dir: Path, files: set[str], ref_files: set[str] | None) -> dict:
+    tj = json.loads((turn_dir / "turn.json").read_text())
+    texts = turn_texts(turn_dir / "stream.jsonl")
+    mentions, excerpts = {}, {}
+    for k, rx in MENTION_RES.items():
+        hits = []
+        for t in texts:
+            for m in rx.finditer(t):
+                a, b = max(0, m.start() - 100), min(len(t), m.end() + 100)
+                hits.append(" ".join(t[a:b].split()))
+                if len(hits) >= 3:
+                    break
+            if len(hits) >= 3:
+                break
+        mentions[k], excerpts[k] = bool(hits), hits
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import run_session as rs  # 리뷰어 판정은 SendMessage 재검토까지 세는 현재 파서로 다시 읽는다
+    verdicts = rs.parse_stream(turn_dir / "stream.jsonl", Path("/nonexistent"), Path("/nonexistent"))["reviewer_verdicts"]
+    return {"turn": tj["turn"], "hook_exit2": (tj.get("hook_blocks") or 0) > 0, "hook_blocks": tj.get("hook_blocks") or 0,
+            "mentions": mentions, "mention_excerpts": excerpts,
+            "request_exposed": None if ref_files is None else bool(files & ref_files),
+            "request_files_checked": sorted(files),
+            "reviewer_reject": "REJECT" in verdicts, "reviewer_verdicts": verdicts}
+
+
 def fate(series: list[tuple[int, bool | None]]) -> dict:
     """series: (턴, 있음?) — None 은 모름. 기준선(턴 0)에는 있다고 본다."""
     known = [(t, v) for t, v in series if v is not None]
@@ -217,6 +316,23 @@ def main() -> int:
         turns.append({"turn": t["turn"], "arch": arch, "head_after": t.get("head_after"),
                       "changed": changed_files(ws, t.get("head_before"), t.get("head_after"))})
 
+    ref = reference_turn_files()
+    ref_tree = {SRC_MAIN + f[len(f"{REF_DIR}/{SRC_MAIN}"):] for f in
+                git_out("ls-tree", "-r", "--name-only", "HEAD", "--", f"{REF_DIR}/{SRC_MAIN}").split()}
+    base_commit = session.get("base_commit")
+
+    def request_files(classes) -> set[str]:
+        files = {class_file(c) for c in classes}
+        for c in classes:  # 참조 구현에 없는 침식 산물(common.DateUtils)은 그 클래스를 쓰는 파일로 본다
+            if class_file(c) not in ref_tree:
+                files |= class_users(ws, base_commit, c)
+        return files
+
+    def heal_ctx(f: dict, classes) -> dict | None:
+        if f["status"] != "healed" or f["healed_at"] is None:
+            return None
+        return healing_context(args.session / f"turn-{f['healed_at']:02d}", request_files(classes), ref.get(f["healed_at"]))
+
     def exposed_turns(files: set[str]) -> list[int]:
         return [x["turn"] for x in turns if x["changed"] and x["changed"] & files]
 
@@ -226,7 +342,8 @@ def main() -> int:
         series = [(x["turn"], None if x["arch"] is None else c in x["arch"]["violating_classes_list"]) for x in turns]
         f = fate(series)
         ex = exposed_turns({class_file(c)})
-        classes_out[c] = {"rules": rules_of(base, c), **f, "exposed_turns": ex, "exposure": exposure(f, ex)}
+        classes_out[c] = {"rules": rules_of(base, c), **f, "exposed_turns": ex, "exposure": exposure(f, ex),
+                          "healing_context": heal_ctx(f, [c])}
 
     # 내장 위반 E1~E5
     embedded = {}
@@ -240,7 +357,8 @@ def main() -> int:
         f = fate(series)
         ex = exposed_turns({class_file(c) for c in spec["classes"]})
         embedded[e] = {"rules": spec["rules"], "classes": spec["classes"], **f,
-                       "exposed_turns": ex, "exposure": exposure(f, ex), "by_turn": {t: v for t, v in series}}
+                       "exposed_turns": ex, "exposure": exposure(f, ex), "by_turn": {t: v for t, v in series},
+                       "healing_context": heal_ctx(f, spec["classes"])}
 
     # 규칙 위치: 규칙이 생긴 턴의 끝 커밋과 마지막 커밋
     by_turn_head = {x["turn"]: x["head_after"] for x in turns}

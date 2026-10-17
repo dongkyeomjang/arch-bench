@@ -72,7 +72,38 @@
         7,
         12
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build so I can tell my changes apart from existing failures.",
+            "The build passes. Next I'll confirm the tests actually ran and check that the `GET /books/{id}` response is s",
+            "The diff is limited to the intended changes, and the build passed. Committing on the current feature branch."
+          ],
+          "CLAUDE.md": [
+            ": - **Merging `Book` with `BookJpaEntity` (and `Loan` with `LoanJpaEntity`) is not allowed here.** CLAUDE.md forbids JPA annotations on `domain` classes and requires separate entities in `adapter.out`. I'll k",
+            "`Book`/`BookJpaEntity` and `Loan`/`LoanJpaEntity` are not merged. CLAUDE.md forbids JPA annotations on `domain` classes and requires persistence entities in `adapter.out`, so",
+            "d be a larger change across all four aggregates. - `common/DateUtils` is a top-level package, which CLAUDE.md prohibits. `com.examplecredit.sdk` also has a package name that looks like a typo and sits outside"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -86,7 +117,38 @@
         5,
         12
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build so I can tell my changes apart from existing failures.",
+            "The build passes. Next I'll confirm the tests actually ran and check that the `GET /books/{id}` response is s",
+            "The diff is limited to the intended changes, and the build passed. Committing on the current feature branch."
+          ],
+          "CLAUDE.md": [
+            ": - **Merging `Book` with `BookJpaEntity` (and `Loan` with `LoanJpaEntity`) is not allowed here.** CLAUDE.md forbids JPA annotations on `domain` classes and requires separate entities in `adapter.out`. I'll k",
+            "`Book`/`BookJpaEntity` and `Loan`/`LoanJpaEntity` are not merged. CLAUDE.md forbids JPA annotations on `domain` classes and requires persistence entities in `adapter.out`, so",
+            "d be a larger change across all four aggregates. - `common/DateUtils` is a top-level package, which CLAUDE.md prohibits. `com.examplecredit.sdk` also has a package name that looks like a typo and sits outside"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -97,7 +159,8 @@
       "first_absent": null,
       "reappeared": false,
       "exposed_turns": [],
-      "exposure": "never_exposed"
+      "exposure": "never_exposed",
+      "healing_context": null
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -114,7 +177,38 @@
         8,
         13
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline `./gradlew build` passes. Existing `Member` is a JPA `@Entity` in `domain`, which CLAUDE.md forbids, so I'll move pe",
+            "Build passes with 5 tests (1 existing, 4 new). Checking the layering rules before committing.",
+            "회원 등록·조회 API를 추가했고 `./gradlew build`가 통과했습니다(테스트 5개: 기존 1개, 신규 4개). 변경은 `feature/member-registration` 브랜치에 커밋했습니다(`c5c9c0c`). `main`에서"
+          ],
+          "CLAUDE.md": [
+            "Baseline `./gradlew build` passes. Existing `Member` is a JPA `@Entity` in `domain`, which CLAUDE.md forbids, so I'll move persistence into `adapter.out` as part of this change. Writing the files now.",
+            "기존 핸들러가 `400`으로 바꿉니다. **기존 코드 수정 1건** - 기존 `domain/Member`에 `@Entity`, `@Id`, `@Column`이 붙어 있었습니다. CLAUDE.md는 domain에서 JPA 어노테이션을 금지하므로, `Member`를 순수 Java 클래스로 바꾸고 영속성 매핑은 `adapter.out`의 `MemberJpaEntity`와 `M",
+            "기존 핸들러가 `400`으로 바꿉니다. **기존 코드 수정 1건** - 기존 `domain/Member`에 `@Entity`, `@Id`, `@Column`이 붙어 있었습니다. CLAUDE.md는 domain에서 JPA 어노테이션을 금지하므로, `Member`를 순수 Java 클래스로 바꾸고 영속성 매핑은 `adapter.out`의 `MemberJpaEntity`와 `M"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     }
   },
   "embedded": {
@@ -153,6 +247,36 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "The build passes with all 49 tests green, including 5 new discard tests. Committing this request's changes on",
+            "책 폐기 기능을 추가했고, `./gradlew build` 가 통과했습니다(테스트 49개 전부 성공, 신규 5개 포함). 변경은 `feature/member-registration` 브랜치에 커밋했습니다(`73cbb83`). **구현",
+            "책 폐기 기능을 추가했고, `./gradlew build` 가 통과했습니다(테스트 49개 전부 성공, 신규 5개 포함). 변경은 `feature/member-registration` 브랜치에 커밋했습니다(`73cbb83`). **구현"
+          ],
+          "CLAUDE.md": [
+            "참고할 점** `BookController` 와 `LoanBookService` 는 이미 `BookJpaRepository`·`BookJpaEntity` 를 직접 참조하고 있어서 CLAUDE.md 의 의존 규칙과 맞지 않습니다. 이번 작업에서는 건드리지 않았습니다. 별도 작업으로 정리하는 것을 권합니다.",
+            "참고할 점** `BookController` 와 `LoanBookService` 는 이미 `BookJpaRepository`·`BookJpaEntity` 를 직접 참조하고 있어서 CLAUDE.md 의 의존 규칙과 맞지 않습니다. 이번 작업에서는 건드리지 않았습니다. 별도 작업으로 정리하는 것을 권합니다."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/service/LoanBookService.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E2": {
@@ -187,6 +311,37 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build so I can tell my changes apart from existing failures.",
+            "The build passes. Next I'll confirm the tests actually ran and check that the `GET /books/{id}` response is s",
+            "The diff is limited to the intended changes, and the build passed. Committing on the current feature branch."
+          ],
+          "CLAUDE.md": [
+            ": - **Merging `Book` with `BookJpaEntity` (and `Loan` with `LoanJpaEntity`) is not allowed here.** CLAUDE.md forbids JPA annotations on `domain` classes and requires separate entities in `adapter.out`. I'll k",
+            "`Book`/`BookJpaEntity` and `Loan`/`LoanJpaEntity` are not merged. CLAUDE.md forbids JPA annotations on `domain` classes and requires persistence entities in `adapter.out`, so",
+            "d be a larger change across all four aggregates. - `common/DateUtils` is a top-level package, which CLAUDE.md prohibits. `com.examplecredit.sdk` also has a package name that looks like a typo and sits outside"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E3": {
@@ -224,6 +379,37 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline `./gradlew build` passes. Existing `Member` is a JPA `@Entity` in `domain`, which CLAUDE.md forbids, so I'll move pe",
+            "Build passes with 5 tests (1 existing, 4 new). Checking the layering rules before committing.",
+            "회원 등록·조회 API를 추가했고 `./gradlew build`가 통과했습니다(테스트 5개: 기존 1개, 신규 4개). 변경은 `feature/member-registration` 브랜치에 커밋했습니다(`c5c9c0c`). `main`에서"
+          ],
+          "CLAUDE.md": [
+            "Baseline `./gradlew build` passes. Existing `Member` is a JPA `@Entity` in `domain`, which CLAUDE.md forbids, so I'll move persistence into `adapter.out` as part of this change. Writing the files now.",
+            "기존 핸들러가 `400`으로 바꿉니다. **기존 코드 수정 1건** - 기존 `domain/Member`에 `@Entity`, `@Id`, `@Column`이 붙어 있었습니다. CLAUDE.md는 domain에서 JPA 어노테이션을 금지하므로, `Member`를 순수 Java 클래스로 바꾸고 영속성 매핑은 `adapter.out`의 `MemberJpaEntity`와 `M",
+            "기존 핸들러가 `400`으로 바꿉니다. **기존 코드 수정 1건** - 기존 `domain/Member`에 `@Entity`, `@Id`, `@Column`이 붙어 있었습니다. CLAUDE.md는 domain에서 JPA 어노테이션을 금지하므로, `Member`를 순수 Java 클래스로 바꾸고 영속성 매핑은 `adapter.out`의 `MemberJpaEntity`와 `M"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E4": {
@@ -255,7 +441,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E5": {
       "rules": [
@@ -290,6 +477,37 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Before changing anything, I'll get a baseline build so I can tell my changes apart from existing failures.",
+            "The build passes. Next I'll confirm the tests actually ran and check that the `GET /books/{id}` response is s",
+            "The diff is limited to the intended changes, and the build passed. Committing on the current feature branch."
+          ],
+          "CLAUDE.md": [
+            ": - **Merging `Book` with `BookJpaEntity` (and `Loan` with `LoanJpaEntity`) is not allowed here.** CLAUDE.md forbids JPA annotations on `domain` classes and requires separate entities in `adapter.out`. I'll k",
+            "`Book`/`BookJpaEntity` and `Loan`/`LoanJpaEntity` are not merged. CLAUDE.md forbids JPA annotations on `domain` classes and requires persistence entities in `adapter.out`, so",
+            "d be a larger change across all four aggregates. - `common/DateUtils` is a top-level package, which CLAUDE.md prohibits. `com.examplecredit.sdk` also has a package name that looks like a typo and sits outside"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     }
   },

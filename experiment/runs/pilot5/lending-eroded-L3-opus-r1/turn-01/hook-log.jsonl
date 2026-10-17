@@ -1,0 +1,12 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":50,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":48,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":2269,"exit_code":2,"action":"fail"}
+{"turn_file":"","tool":"Bash","elapsed_ms":752,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"","tool":"Bash","elapsed_ms":778,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"","tool":"Bash","elapsed_ms":1817,"exit_code":0,"action":"pass"}
+{"turn_file":"","tool":"Bash","elapsed_ms":47,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":40,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":38,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":41,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}

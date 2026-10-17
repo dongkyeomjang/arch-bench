@@ -1,0 +1,722 @@
+{
+  "session_id": "lending-eroded-L3-sonnet-r1",
+  "seed": "eroded",
+  "baseline": "experiment/seed-template/eroded/baseline.json",
+  "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws/c3fb03afe648/lending",
+  "summary": {
+    "turns": 15,
+    "unknown_turns": [],
+    "baseline_violating_classes": 4,
+    "final_violating_classes": 0,
+    "persisted_count": 0,
+    "healed_count": 4,
+    "spread_count": 0,
+    "novel_count": 0,
+    "spread_at_final": 0,
+    "novel_at_final": 0,
+    "embedded_persisted": [],
+    "embedded_healed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "embedded_exposure": {
+      "E1": "healed_when_exposed",
+      "E2": "healed_when_exposed",
+      "E3": "healed_when_exposed",
+      "E4": "healed_when_exposed",
+      "E5": "healed_when_exposed"
+    },
+    "healed_when_exposed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "healed_unexposed": [],
+    "persisted_despite_exposure": [],
+    "never_exposed": [],
+    "rule_placement": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "rule_placement_final": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "e1_persisted": false,
+    "delta": -4
+  },
+  "baseline_classes": {
+    "com.example.lending.adapter.in.web.BookController": {
+      "rules": [
+        "R3"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.application.port.out.LoadBookPort": {
+      "rules": [
+        "R2"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.common.DateUtils": {
+      "rules": [
+        "R7"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.domain.Member": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    }
+  },
+  "embedded": {
+    "E1": {
+      "rules": [],
+      "classes": [
+        "com.example.lending.application.service.LoanBookService"
+      ],
+      "status": "healed",
+      "healed_at": 7,
+      "first_absent": 7,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        4,
+        7,
+        9,
+        10,
+        14
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Build passes. Requesting the architecture review.",
+            "책 폐기 기능을 추가하고 커밋했습니다(`ddeb94c`). `./gradlew build`가 통과했고, 아키텍처 리뷰도 첫 줄이 `VERDICT: APPROVE`였습니다. - **폐기 API**: `POST /books/{bookId}/discard`는 `200`과",
+            "책 폐기 기능을 추가하고 커밋했습니다(`ddeb94c`). `./gradlew build`가 통과했고, 아키텍처 리뷰도 첫 줄이 `VERDICT: APPROVE`였습니다. - **폐기 API**: `POST /books/{bookId}/discard`는 `200`과"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 이어서 처리하겠습니다.",
+            "책 폐기 기능을 추가하고 커밋했습니다(`ddeb94c`). `./gradlew build`가 통과했고, 아키텍처 리뷰도 첫 줄이 `VERDICT: APPROVE`였습니다. - **폐기 API**: `POST /books/{bookId}/discard`는 `200`과 `{\"id\", \"title\", \"status\": \"DI",
+            "*테스트**: `LendingIntegrationTest`에 폐기 성공, 폐기된 책 대출 거절, 대출 중인 책 폐기 거절, 없는 책 `404`를 확인하는 테스트를 추가했습니다. 리뷰어는 반납 경로를 읽지 않아서, 폐기된 책에 반납이 일어날 수 없다는 점은 확인하지 못했다고 밝혔습니다. 폐기는 대출 중이 아닐 때만 되고, 폐기된 책은 대출되지 않으므로 그런 대출"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/service/LoanBookService.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E2": {
+      "rules": [
+        "R2"
+      ],
+      "classes": [
+        "com.example.lending.application.port.out.LoadBookPort"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E3": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "classes": [
+        "com.example.lending.domain.Member"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E4": {
+      "rules": [
+        "R7"
+      ],
+      "classes": [
+        "com.example.lending.common.DateUtils"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E5": {
+      "rules": [
+        "R3"
+      ],
+      "classes": [
+        "com.example.lending.adapter.in.web.BookController"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`: `{\"name\":\"김민"
+          ],
+          "build": [
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:",
+            "회원 등록·조회 API를 추가하고 커밋했습니다. 커밋 전에 `./gradlew build`와 `archTest`가 모두 통과했습니다. 통합 테스트에 회원 등록·조회, 이름이 비었을 때의 400, 없는 ID의 404를 추가했습니다. - `POST /members`:"
+          ],
+          "CLAUDE.md": [
+            "Build와 archTest가 통과했습니다. CLAUDE.md 절차대로 커밋 전에 아키텍처 리뷰를 요청합니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다.",
+            "usDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메서드로 옮기는 편이 좋다고 했습니다. 이번 범위 밖이라 그대로 뒀습니다."
+          ],
+          "reviewer": [
+            "아키텍처 리뷰어의 판정을 기다리는 중입니다. 결과가 오면 그에 따라 커밋하겠습니다.",
+            "있었습니다. - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo",
+            ". - **`common.DateUtils`**: 최상위 `common` 패키지를 없애려고 삭제했고, `Loan`에서 `plusDays`를 직접 호출합니다. 아키텍처 리뷰어는 `VERDICT: APPROVE`였습니다. 참고로, `LoanBookService`가 대출 가능 여부를 직접 판단하는 부분은 CLAUDE.md의 예시처럼 `Book.loanTo` 같은 도메인 메"
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    }
+  },
+  "new_classes": {},
+  "rule_placement": {
+    "2": {
+      "rule": "limit",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if currentLoanCount >= MAX_LOANS"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if !UNLIMITED_BORROWERS.contains(id) && currentLoanCount >= MAX_LOANS"
+        ]
+      }
+    },
+    "7": {
+      "rule": "discard",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: throw BookDiscardedException",
+          "Book: if status == BookStatus.DISCARDED",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      }
+    },
+    "8": {
+      "rule": "sponsor",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: if !UNLIMITED_BORROWERS.contains(id) && currentLoanCount >= MAX_LOANS"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: if !UNLIMITED_BORROWERS.contains(id) && currentLoanCount >= MAX_LOANS"
+        ]
+      }
+    },
+    "13": {
+      "rule": "suspend",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      }
+    }
+  }
+}

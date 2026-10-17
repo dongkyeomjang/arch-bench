@@ -73,7 +73,34 @@
         7,
         12
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline build passes. Before editing I'm settling the approach, since \"merge or reduce conversion\" has a real tra",
+            "Build passes with 61 tests and 0 failures. I'll confirm the new test actually ran and check the diff.",
+            "뷰 지적의 핵심이라면, 도메인과 엔티티를 합치는 방향을 따로 검토해 보실 수 있습니다. 그 경우 `Reservation`까지 같이 바뀌는 큰 작업이 됩니다. **검증:** `./gradlew build --rerun-tasks` 성공, 테스트 61개 중 실패 0개입니다. 변경 전 빌드도 통과했습니다."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -87,7 +114,34 @@
         7,
         12
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline build passes. Before editing I'm settling the approach, since \"merge or reduce conversion\" has a real tra",
+            "Build passes with 61 tests and 0 failures. I'll confirm the new test actually ran and check the diff.",
+            "뷰 지적의 핵심이라면, 도메인과 엔티티를 합치는 방향을 따로 검토해 보실 수 있습니다. 그 경우 `Reservation`까지 같이 바뀌는 큰 작업이 됩니다. **검증:** `./gradlew build --rerun-tasks` 성공, 테스트 61개 중 실패 0개입니다. 변경 전 빌드도 통과했습니다."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -98,7 +152,8 @@
       "first_absent": null,
       "reappeared": false,
       "exposed_turns": [],
-      "exposure": "never_exposed"
+      "exposure": "never_exposed",
+      "healing_context": null
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -113,7 +168,8 @@
         8,
         13
       ],
-      "exposure": "persisted_despite_exposure"
+      "exposure": "persisted_despite_exposure",
+      "healing_context": null
     }
   },
   "embedded": {
@@ -155,7 +211,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E2": {
       "rules": [
@@ -189,6 +246,33 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline build passes. Before editing I'm settling the approach, since \"merge or reduce conversion\" has a real tra",
+            "Build passes with 61 tests and 0 failures. I'll confirm the new test actually ran and check the diff.",
+            "뷰 지적의 핵심이라면, 도메인과 엔티티를 합치는 방향을 따로 검토해 보실 수 있습니다. 그 경우 `Reservation`까지 같이 바뀌는 큰 작업이 됩니다. **검증:** `./gradlew build --rerun-tasks` 성공, 테스트 61개 중 실패 0개입니다. 변경 전 빌드도 통과했습니다."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E3": {
@@ -224,7 +308,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E4": {
       "rules": [
@@ -255,7 +340,8 @@
         "13": true,
         "14": true,
         "15": true
-      }
+      },
+      "healing_context": null
     },
     "E5": {
       "rules": [
@@ -290,6 +376,33 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 12,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Baseline build passes. Before editing I'm settling the approach, since \"merge or reduce conversion\" has a real tra",
+            "Build passes with 61 tests and 0 failures. I'll confirm the new test actually ran and check the diff.",
+            "뷰 지적의 핵심이라면, 도메인과 엔티티를 합치는 방향을 따로 검토해 보실 수 있습니다. 그 경우 `Reservation`까지 같이 바뀌는 큰 작업이 됩니다. **검증:** `./gradlew build --rerun-tasks` 성공, 테스트 61개 중 실패 0개입니다. 변경 전 빌드도 통과했습니다."
+          ],
+          "CLAUDE.md": [],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     }
   },

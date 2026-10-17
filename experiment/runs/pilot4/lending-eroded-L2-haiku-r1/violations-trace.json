@@ -4,7 +4,7 @@
   "baseline": "experiment/seed-template/eroded/baseline.json",
   "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
   "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
-  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws/3aa1c0c90210/lending",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws-pilot4/3aa1c0c90210/lending",
   "summary": {
     "turns": 15,
     "unknown_turns": [],
@@ -70,7 +70,41 @@
         6,
         7
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.application.port.out.LoadBookPort": {
       "rules": [
@@ -84,7 +118,41 @@
         3,
         5
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.common.DateUtils": {
       "rules": [
@@ -97,7 +165,42 @@
       "exposed_turns": [
         3
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": true,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     },
     "com.example.lending.domain.Member": {
       "rules": [
@@ -114,7 +217,42 @@
         8,
         13
       ],
-      "exposure": "healed_when_exposed"
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The arch hook reports only pre-existing violations (the baseline `archTest` already failed on these). My new files add no new rule violations. Next, the 404 handler for membe",
+            "`404` in `WebExceptionHandler`. **Pre-existing architecture violations (not touched)** `./gradlew archTest` already failed before my change, and the PostToolUse hook reports the same failures on every edit.",
+            "`404` in `WebExceptionHandler`. **Pre-existing architecture violations (not touched)** `./gradlew archTest` already failed before my change, and the PostToolUse hook reports the same failures on every edit."
+          ],
+          "build": [
+            "The build passes. The regex used to pull the id out of the response is fragile, so I'll switch it to `ObjectM",
+            "Build passes: `MemberIntegrationTest` 5/5 and the existing `LendingIntegrationTest` 1/1. Committing per t",
+            "`POST /members` and `GET /members/{memberId}` are in, and the change is committed as `f4f7cba`. `./gradlew build` passes: the new `MemberIntegrationTest` (5 tests) and the existing tests all succeed. **Behavior*"
+          ],
+          "CLAUDE.md": [
+            "berIntegrationTest` 5/5 and the existing `LendingIntegrationTest` 1/1. Committing per the project's CLAUDE.md rule.",
+            "are unchanged. **What changed** - `Member` was a JPA `@Entity` inside `domain`, which violates the CLAUDE.md rules. I made it plain Java and moved persistence into a new `MemberJpaEntity` in `adapter.out`, fo",
+            "are unchanged. **What changed** - `Member` was a JPA `@Entity` inside `domain`, which violates the CLAUDE.md rules. I made it plain Java and moved persistence into a new `MemberJpaEntity` in `adapter.out`, fo"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
+      }
     }
   },
   "embedded": {
@@ -153,6 +291,41 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 7,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "All 35 tests pass (6 new), and `archTest` is green. Committing as CLAUDE.md asks.",
+            "도서 폐기 기능을 추가하고 커밋했습니다(`43a3663`, 브랜치 `feat/loan-limit`). `./gradlew build`와 `./gradlew archTest`가 모두 통과했습니다. **API** - `POST /books/{bookId}/discard` → `200`, `{\"id\", \"title\", \"status\": \"DISCARD",
+            "도서 폐기 기능을 추가하고 커밋했습니다(`43a3663`, 브랜치 `feat/loan-limit`). `./gradlew build`와 `./gradlew archTest`가 모두 통과했습니다. **API** - `POST /books/{bookId}/discard` → `200`, `{\"id\", \"title\", \"status\": \"DISCARD"
+          ],
+          "build": [
+            "The build passes. Let me confirm the new tests actually ran and that the separate architecture check is green",
+            "도서 폐기 기능을 추가하고 커밋했습니다(`43a3663`, 브랜치 `feat/loan-limit`). `./gradlew build`와 `./gradlew archTest`가 모두 통과했습니다. **API** - `POST /books/{bookId}/discard` → `200`, `{\"id\", \"titl",
+            "도서 폐기 기능을 추가하고 커밋했습니다(`43a3663`, 브랜치 `feat/loan-limit`). `./gradlew build`와 `./gradlew archTest`가 모두 통과했습니다. **API** - `POST /books/{bookId}/discard` → `200`, `{\"id\", \"titl"
+          ],
+          "CLAUDE.md": [
+            "All 35 tests pass (6 new), and `archTest` is green. Committing as CLAUDE.md asks.",
+            "에 `DISCARDED`를 추가했습니다. - `Book`에 `discard()`와 `ensureLoanable()`을 추가했습니다. 대출 가능 여부 규칙을 도메인 객체로 옮기라는 CLAUDE.md 지침에 맞춘 것이고, 그래서 `LoanBookService`의 기존 `ON_LOAN` 검사도 `book.ensureLoanable()` 호출로 바꿨습니다. - 유스케이스 `Dis",
+            "에 `DISCARDED`를 추가했습니다. - `Book`에 `discard()`와 `ensureLoanable()`을 추가했습니다. 대출 가능 여부 규칙을 도메인 객체로 옮기라는 CLAUDE.md 지침에 맞춘 것이고, 그래서 `LoanBookService`의 기존 `ON_LOAN` 검사도 `book.ensureLoanable()` 호출로 바꿨습니다. - 유스케이스 `Dis"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/service/LoanBookService.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E2": {
@@ -187,6 +360,40 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E3": {
@@ -224,6 +431,41 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The arch hook reports only pre-existing violations (the baseline `archTest` already failed on these). My new files add no new rule violations. Next, the 404 handler for membe",
+            "`404` in `WebExceptionHandler`. **Pre-existing architecture violations (not touched)** `./gradlew archTest` already failed before my change, and the PostToolUse hook reports the same failures on every edit.",
+            "`404` in `WebExceptionHandler`. **Pre-existing architecture violations (not touched)** `./gradlew archTest` already failed before my change, and the PostToolUse hook reports the same failures on every edit."
+          ],
+          "build": [
+            "The build passes. The regex used to pull the id out of the response is fragile, so I'll switch it to `ObjectM",
+            "Build passes: `MemberIntegrationTest` 5/5 and the existing `LendingIntegrationTest` 1/1. Committing per t",
+            "`POST /members` and `GET /members/{memberId}` are in, and the change is committed as `f4f7cba`. `./gradlew build` passes: the new `MemberIntegrationTest` (5 tests) and the existing tests all succeed. **Behavior*"
+          ],
+          "CLAUDE.md": [
+            "berIntegrationTest` 5/5 and the existing `LendingIntegrationTest` 1/1. Committing per the project's CLAUDE.md rule.",
+            "are unchanged. **What changed** - `Member` was a JPA `@Entity` inside `domain`, which violates the CLAUDE.md rules. I made it plain Java and moved persistence into a new `MemberJpaEntity` in `adapter.out`, fo",
+            "are unchanged. **What changed** - `Member` was a JPA `@Entity` inside `domain`, which violates the CLAUDE.md rules. I made it plain Java and moved persistence into a new `MemberJpaEntity` in `adapter.out`, fo"
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E4": {
@@ -257,6 +499,41 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": true,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     },
     "E5": {
@@ -292,6 +569,40 @@
         "13": false,
         "14": false,
         "15": false
+      },
+      "healing_context": {
+        "turn": 3,
+        "hook_exit2": true,
+        "hook_blocks": 2,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": true,
+          "reviewer": false
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the test report, and check that the new tests actual",
+            "반납 API(`POST /loans/{loanId}/return`)를 추가하고 커밋했습니다(`aea8efc`). `./gradlew build`와 `./gradlew archTest`가 모두 통과합니다. **동작** - 반납에 성공하면 `200`과 `{\"loanId\": \"…\", \"returnedAt\": \"2026-10-17\"}`을 응답합니다. 책은 `AVA",
+            "두었습니다. **아키텍처 위반 수정 (범위 밖 변경)** 작업 시작 시 아키텍처 훅이 이미 커밋된 코드의 위반 4건을 보고했습니다. 훅이 `src/main/java` 변경마다 `archTest`를 돌리므로 그대로 두면 이후 작업이 계속 막힙니다. 그래서 같은 커밋에 아래 수정을 포함했습니다. - `common/DateUtils` 제거: 한 줄짜리 헬퍼라 `Loan`에서"
+          ],
+          "build": [
+            "g on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to ship. Before I plan the c",
+            "rallel batch, so the hook probably read the file before the write landed. I'll confirm with a fresh build after the tests are added. First I'll fix the import order in `WebExceptionHandler` and add integra",
+            "The full build passes. `./gradlew build` doesn't run `archTest`, though, so I'll run it explicitly along with the"
+          ],
+          "CLAUDE.md": [
+            "The hook is failing on four violations already committed at HEAD, not on anything I've changed. CLAUDE.md requires `./gradlew build` to pass before committing, so these have to be fixed for this feature to",
+            "The tree contains only the intended changes. I'll commit them per CLAUDE.md, with the Korean message and the required trailer."
+          ],
+          "reviewer": []
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": []
       }
     }
   },

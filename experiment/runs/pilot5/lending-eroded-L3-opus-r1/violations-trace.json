@@ -1,0 +1,701 @@
+{
+  "session_id": "lending-eroded-L3-opus-r1",
+  "seed": "eroded",
+  "baseline": "experiment/seed-template/eroded/baseline.json",
+  "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws/434a229ae604/lending",
+  "summary": {
+    "turns": 15,
+    "unknown_turns": [],
+    "baseline_violating_classes": 4,
+    "final_violating_classes": 0,
+    "persisted_count": 0,
+    "healed_count": 4,
+    "spread_count": 0,
+    "novel_count": 0,
+    "spread_at_final": 0,
+    "novel_at_final": 0,
+    "embedded_persisted": [],
+    "embedded_healed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "embedded_exposure": {
+      "E1": "healed_when_exposed",
+      "E2": "healed_when_exposed",
+      "E3": "healed_when_exposed",
+      "E4": "healed_when_exposed",
+      "E5": "healed_when_exposed"
+    },
+    "healed_when_exposed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "healed_unexposed": [],
+    "persisted_despite_exposure": [],
+    "never_exposed": [],
+    "rule_placement": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "rule_placement_final": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "e1_persisted": false,
+    "delta": -4
+  },
+  "baseline_classes": {
+    "com.example.lending.adapter.in.web.BookController": {
+      "rules": [
+        "R3"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.application.port.out.LoadBookPort": {
+      "rules": [
+        "R2"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        5,
+        6
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.common.DateUtils": {
+      "rules": [
+        "R7"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "com.example.lending.domain.Member": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed",
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    }
+  },
+  "embedded": {
+    "E1": {
+      "rules": [],
+      "classes": [
+        "com.example.lending.application.service.LoanBookService"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        4,
+        9,
+        10,
+        13,
+        14
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 2,
+        "hook_exit2": false,
+        "hook_blocks": 0,
+        "mentions": {
+          "archTest": false,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [],
+          "build": [
+            "Build passed. Requesting the architecture review.",
+            "회원 한 명당 동시 대출을 5권으로 제한했고, 등록되지 않은 회원 ID로 들어온 대출 요청은 거절하도록 바꿨습니다. `./gradlew build`가 통과했고 아키텍처 리뷰도 `VERDICT: APPROVE`를 받아 커밋했습니다(`a8850de`). **동작** - 이미 5권을 빌린 회원이 `POST /loans`를 보내",
+            "회원 한 명당 동시 대출을 5권으로 제한했고, 등록되지 않은 회원 ID로 들어온 대출 요청은 거절하도록 바꿨습니다. `./gradlew build`가 통과했고 아키텍처 리뷰도 `VERDICT: APPROVE`를 받아 커밋했습니다(`a8850de`). **동작** - 이미 5권을 빌린 회원이 `POST /loans`를 보내"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "회원 한 명당 동시 대출을 5권으로 제한했고, 등록되지 않은 회원 ID로 들어온 대출 요청은 거절하도록 바꿨습니다. `./gradlew build`가 통과했고 아키텍처 리뷰도 `VERDICT: APPROVE`를 받아 커밋했습니다(`a8850de`). **동작** - 이미 5권을 빌린 회원이 `POST /loans`를 보내면 `409`, `{\"error\": \"LOAN",
+            "회원 한 명당 동시 대출을 5권으로 제한했고, 등록되지 않은 회원 ID로 들어온 대출 요청은 거절하도록 바꿨습니다. `./gradlew build`가 통과했고 아키텍처 리뷰도 `VERDICT: APPROVE`를 받아 커밋했습니다(`a8850de`). **동작** - 이미 5권을 빌린 회원이 `POST /loans`를 보내면 `409`, `{\"error\": \"LOAN"
+          ]
+        },
+        "request_exposed": true,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/service/LoanBookService.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E2": {
+      "rules": [
+        "R2"
+      ],
+      "classes": [
+        "com.example.lending.application.port.out.LoadBookPort"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        5,
+        6
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/application/port/out/LoadBookPort.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E3": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "classes": [
+        "com.example.lending.domain.Member"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/domain/Member.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E4": {
+      "rules": [
+        "R7"
+      ],
+      "classes": [
+        "com.example.lending.common.DateUtils"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/common/DateUtils.java",
+          "src/main/java/com/example/lending/domain/Loan.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    },
+    "E5": {
+      "rules": [
+        "R3"
+      ],
+      "classes": [
+        "com.example.lending.adapter.in.web.BookController"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      },
+      "healing_context": {
+        "turn": 1,
+        "hook_exit2": true,
+        "hook_blocks": 1,
+        "mentions": {
+          "archTest": true,
+          "build": true,
+          "CLAUDE.md": false,
+          "reviewer": true
+        },
+        "mention_excerpts": {
+          "archTest": [
+            "violations that were already in the code (R2, R3, R4, R7). My new code doesn't break any rules, but archTest has to pass, so I'll fix them without changing behaviour.",
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \""
+          ],
+          "build": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST",
+            "회원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST"
+          ],
+          "CLAUDE.md": [],
+          "reviewer": [
+            "The build and archTest both pass. Next, I'll ask the architecture reviewer to look at the changes.",
+            "원 등록·조회 API를 추가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과",
+            "가하고 커밋했습니다(`fa6410c`). 커밋 전에 `./gradlew build` 와 `./gradlew archTest` 가 모두 통과했고, 아키텍처 리뷰어는 1회 검토에서 `VERDICT: APPROVE` 를 줬습니다. **새 API** - `POST /members` 에 `{\"name\": \"김민지\"}` 를 보내면 `201` 과 함께 `{\"memberId\": \""
+          ]
+        },
+        "request_exposed": false,
+        "request_files_checked": [
+          "src/main/java/com/example/lending/adapter/in/web/BookController.java"
+        ],
+        "reviewer_reject": false,
+        "reviewer_verdicts": [
+          "APPROVE"
+        ]
+      }
+    }
+  },
+  "new_classes": {},
+  "rule_placement": {
+    "2": {
+      "rule": "limit",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if activeLoanCount >= MAX_ACTIVE_LOANS"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if activeLoanCount >= MAX_ACTIVE_LOANS"
+        ]
+      }
+    },
+    "7": {
+      "rule": "discard",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: throw BookDiscardedException",
+          "Book: if status == BookStatus.DISCARDED",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      }
+    },
+    "8": {
+      "rule": "sponsor",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: if SPONSOR_IDS.contains(id)"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: if SPONSOR_IDS.contains(id)"
+        ]
+      }
+    },
+    "13": {
+      "rule": "suspend",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      }
+    }
+  }
+}

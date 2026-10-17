@@ -1,0 +1,4 @@
+2026-10-17T18:10:31.799+09:00  INFO 36604 --- [lending] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-10-17T18:10:31.801+09:00  INFO 36604 --- [lending] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-10-17T18:10:31.801+09:00  INFO 36604 --- [lending] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
