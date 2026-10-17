@@ -1,0 +1,6 @@
+2026-10-17T13:15:20.483+09:00  INFO 3249 --- [lending] [ionShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-10-17T13:15:20.487+09:00  INFO 3249 --- [lending] [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-10-17T13:15:20.488+09:00  INFO 3249 --- [lending] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-10-17T13:15:20.490+09:00  INFO 3249 --- [lending] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-10-17T13:15:20.491+09:00  INFO 3249 --- [lending] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended

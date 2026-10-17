@@ -1,0 +1,16 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":51,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending/src/main/java/com/example/lending/adapter/out/persistence/CreditCheckEmbeddable.java","tool":"Edit","elapsed_ms":742,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending/src/main/java/com/example/lending/adapter/out/persistence/CreditCheckEmbeddable.java","tool":"Edit","elapsed_ms":1743,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending/src/main/java/com/example/lending/adapter/out/persistence/LoanMapper.java","tool":"Edit","elapsed_ms":1553,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending/src/main/java/com/example/lending/adapter/out/persistence/CreditCheckEmbeddable.java","tool":"Edit","elapsed_ms":1612,"exit_code":0,"action":"pass"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":48,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":45,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}

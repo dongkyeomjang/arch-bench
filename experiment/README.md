@@ -141,12 +141,13 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 세션 ID | `<domain>-<level>-<model>-r<rep>` (예: `_smoke-L2-haiku-r1`). 결과 `$OUT_ROOT/<id>/` |
 | 워크스페이스 | `$ARCH_WS_ROOT/<token>/lending` (TASK6). `<token>` = `secrets.token_hex(6)`(무작위 12자 hex). 에이전트 cwd 는 `.../lending` 이라 `pwd`·`ls ..` 로 수준·모델을 알 수 없다(`ls ..` 에는 `lending` 하나). `ls ../..` 에는 형제 세션의 토큰 디렉터리가 보이지만 이름이 무작위다. `session.json` 의 `workspace_token`, 그리고 **`$OUT_ROOT/workspace-index.jsonl`**(`{token, session_id, created_at}` 한 줄 append, 에이전트가 읽지 못하게 `$ARCH_WS_ROOT` 밖)로 역추적한다 |
 | 덮어쓰기 | 결과 디렉터리(또는 우연히 같은 토큰 디렉터리)가 이미 있으면 거부, **종료 4** |
-| 시작 전 검사 (**종료 5**) | ① `--ws-root` 부터 `/` 까지 `CLAUDE.md`·`CLAUDE.local.md`·`.claude` 없음(`~/.claude` 제외, smoke 8단계와 같은 검사) ② `CLAUDE_CONFIG_DIR` 설정됨, 디렉터리 존재, `~/.claude` 자신이 아님 ③ 그 안 `settings.json` 이 없거나 `hooks` 가 비어 있음 ④ 그 안에 `CLAUDE.md` 없음, `agents/`·`skills/`·`commands/` 비어 있음 ⑤ (`--agent claude`) `claude` 가 PATH 에 있음 ⑥ (`--agent claude`, TASK9) 환경에 `ANTHROPIC_API_KEY`·`ANTHROPIC_AUTH_TOKEN` 이 **없고**(있으면 구독이 아니라 API 과금으로 나간다) `claude auth status` 가 `loggedIn: true`, `authMethod: "claude.ai"`. 인증 요약(`auth_method`·`subscription_type`·`api_provider`, 이메일 제외)은 `session.json` 의 `billing` |
+| 시작 전 검사 (**종료 5**) | ① `--ws-root` 부터 `/` 까지 `CLAUDE.md`·`CLAUDE.local.md`·`.claude` 없음(`~/.claude` 제외, smoke 8단계와 같은 검사) ② `CLAUDE_CONFIG_DIR` 설정됨, 디렉터리 존재, `~/.claude` 자신이 아님 ③ 그 안 `settings.json` 이 없거나 `hooks` 가 비어 있음 ④ 그 안에 `CLAUDE.md` 없음, `agents/`·`skills/`·`commands/` 비어 있음 ⑤ (`--agent claude`) `claude` 가 PATH 에 있음 ⑥ (`--agent claude`, TASK9) 환경에 `ANTHROPIC_API_KEY`·`ANTHROPIC_AUTH_TOKEN` 이 **없고**(있으면 구독이 아니라 API 과금으로 나간다) `claude auth status` 가 `loggedIn: true`, `authMethod: "claude.ai"`. 인증 요약(`auth_method`·`subscription_type`·`api_provider`, 이메일 제외)은 `session.json` 의 `billing` ⑦ (TASK12) `settings.json` 에 `syncClaudeAiSkills: false`·`syncClaudeAiPlugins: false`·`disableClaudeAiConnectors: true` 가 **정확히** 있음(키가 없어도 거부) ⑧ (TASK12) `plugins/` 에는 마켓플레이스 목록(`known_marketplaces.json`·`marketplaces/`)만 있음. `installed_plugins.json` 은 `plugins` 가 비어 있을 때만 허용, 그 밖의 비어 있지 않은 항목(`cache/`·`repos/`·`synced/` 등)이 있으면 거부. 동기화 스킬 경로 `skills/synced/` 는 ④ 가 막는다 |
 | 준비 | `experiment/seed` 가 없으면 `materialize-seed.sh` → `cp -R seed <ws>` → `inject-harness.sh <level> <ws>` → `base_commit` = "Initial commit" 해시 |
 | 턴 순서 | `tasks/<domain>/turn-*.md` 를 이름순. `--max-turns N` 이면 앞 N개만 |
 | 프롬프트 | 턴 파일 본문. **맨 앞의 HTML 주석 줄**(`<!-- smoke only ... -->` 같은 메타데이터)은 빼고 보낸다 |
 | 에이전트 | `claude -p <prompt> --model <m> --output-format stream-json --verbose --permission-mode bypassPermissions --setting-sources project [--resume <id>]`, `cwd=<ws>`, stdin 없음. `--session-mode resume`(기본): 첫 턴은 새 세션, 이후 턴은 **직전 턴 init 이벤트의 `session_id` 로 `--resume`**. `--session-mode fresh`(TASK9): 턴마다 `--resume` 없이 새 세션 — 에이전트는 이전 턴 대화를 모르고 코드·git 이력·CLAUDE.md(L1~L3)만 본다. 턴 단위 동작(훅 `retry-count` 삭제, 훅 로그 이동, 채점·숨겨진 테스트)은 모드와 무관하게 같다. 타임아웃 20분(프로세스 그룹 SIGTERM → 30초 뒤 SIGKILL, `agent_status: timeout`, 세션은 계속) |
-| 환경 | 부모 환경에서 `CLAUDECODE`·`CLAUDE_CODE_*`·`CLAUDE_PID`·`CLAUDE_EFFORT`·`CLAUDE_PROJECT_DIR` 를 빼고(러너를 Claude Code 안에서 띄워도 부모 세션 정보가 새지 않게) `DISABLE_AUTOUPDATER=1` 을 더한다 |
+| 환경 | 부모 환경에서 `CLAUDECODE`·`CLAUDE_CODE_*`·`CLAUDE_PID`·`CLAUDE_EFFORT`·`CLAUDE_PROJECT_DIR` 를 빼고(러너를 Claude Code 안에서 띄워도 부모 세션 정보가 새지 않게) `DISABLE_AUTOUPDATER=1` 과 (TASK12) `ENABLE_CLAUDEAI_MCP_SERVERS=false` 를 더한다. 뒤의 것은 claude.ai 커넥터 MCP 서버를 끈다 — 에이전트는 `--setting-sources project` 라 `CLAUDE_CONFIG_DIR/settings.json`(사용자 설정)이 **읽히지 않으므로** 거기의 `disableClaudeAiConnectors` 는 에이전트 세션에 효과가 없다(아래 "격리 설정 디렉터리 정리" 정정) |
+| 훅 이벤트 (TASK12) | 에이전트 명령에 `--include-hook-events`(출력 전용). 스트림의 `system/hook_response` 를 `turn.json` 의 `hook_responses`(`hook_name`·`exit_code`·`outcome`·`rules`(stderr 에서 뽑은 실패 규칙 ID)·`stderr_head` 1500자)로 남긴다. 그 전에는 훅 exit 2 의 stderr(에이전트가 받은 위반 상세)가 어디에도 남지 않았다 |
 | 턴 단계 | ① `.harness/retry-count` 삭제(남은 `hook-log.jsonl` 이 있으면 `hook-log.pre-turn.jsonl` 로 치움) ② 에이전트 실행 → `stream.jsonl`·`stderr.txt`, 끝나면 `.harness/hook-log.jsonl` 을 `turn-NN/hook-log.jsonl` 로 **이동**(없으면 빈 파일) ③ 스트림 파싱 ④ 커밋 확인 ⑤ tamper ⑥ `grade.sh <ws> turn-NN/arch.json` ⑦ 숨겨진 기능 테스트(턴 1~N 누적, `turn-NN/ft.log`) ⑧ 복사본에서 에이전트 자신의 테스트 `./gradlew test -q` ⑨ `turn-NN/turn.json` |
 | 커밋 확인 | 턴 전후 `HEAD` 가 같으면 `agent_committed: false`. 작업 트리가 더러우면(에이전트가 커밋 안 했거나, 커밋 뒤에 남긴 변경) 러너가 `git add -A && git commit -m "Save work in progress"` (`runner_committed: true`). 메시지에 턴 번호를 넣지 않는다(에이전트의 `git log` 에 보인다, 전 수준 동일). 둘 다 아니면 `no_change: true`. 그래서 턴 끝 상태 = `HEAD` 다 |
 | tamper | `git diff --name-only <base_commit> HEAD -- src/test/java/com/example/lending/architecture/` 가 비어 있지 않으면 `test_tamper: true`(L0·L1 은 `null`, 파일 목록만 기록). `.claude/ CLAUDE.md build.gradle.kts gradle/arch.gradle.kts` 중 변경 파일이 있으면 `config_tamper: true` + `config_tamper_files`(모든 수준에서 계산. **`build.gradle.kts` 는 정상적인 의존성 추가로도 바뀌므로** 분석 시 파일 목록으로 거른다) |
@@ -156,7 +157,8 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 | 세션 비용 상한 (TASK9) | `--max-session-cost USD`: **턴이 끝날 때마다** 세션 누적 `cost_usd` 를 보고 넘으면 다음 턴을 시작하지 않는다(`fail_reason: session_cost_cap`, 종료 1). 턴 도중에는 끊지 않는다 — TASK8 의 임시 감시(SIGINT)처럼 `session.json` 밖 비용을 만들지 않기 위해서다. 그래서 마지막 턴 비용만큼 넘을 수 있다 |
 | 구독 한도 (TASK9) | 아래 "구독 실행" 참조. 한도 거부는 실패로 두지 않고 대기 후 같은 턴을 다시 시작한다 |
 | 거절 (TASK9) | `task_refused` = `no_change`(턴 전후 작업 트리·HEAD 변화 없음) 이고 `agent_status: ok`. 자동 판정은 이것뿐이고, `refusal_text`(최종 응답 앞 500자)를 함께 남겨 거절·대안 제시인지 사람이 확인한다(변경 없이 끝난 정상 응답도 `true` 가 된다) |
-| 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 (resume 모드에서) 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1. 사유는 `session.json` 의 `fail_reason` ∈ `agent_error`·`no_session_id`·`session_cost_cap`·`rate_limit_timeout`·`interrupted`(완료면 `null`) |
+| 중단 | 에이전트 `agent_status: error`(0 아닌 종료, `result` 이벤트 없음, `is_error: true`) 또는 (resume 모드에서) 다음 턴에 쓸 session_id 가 없으면 그 턴까지 기록하고 **종료 1**. Ctrl-C 도 1. 사유는 `session.json` 의 `fail_reason` ∈ `agent_error`·`no_session_id`·`session_cost_cap`·`rate_limit_timeout`·`interrupted`·`config_contamination`(완료면 `null`) |
+| init 오염 (TASK12) | 턴마다 스트림 init 이벤트의 `mcp_servers`·`skills`·`plugins` 를 `turn.json` 의 `init_config` 에 남기고, 첫 init 의 목록을 `session.json` 의 `init_config` 에 둔다. **MCP 서버가 하나라도 있거나, 스킬이 CLI 2.1.301 번들 19개(`BUNDLED_SKILLS`) 밖이거나, 플러그인 source 가 `@builtin` 이 아니면** 그 턴을 끝까지 기록(채점·비용 포함)한 뒤 중단한다(`fail_reason: config_contamination`, 항목은 `config_contamination`, 종료 1). 지시서 문구는 "하나라도 있으면"이지만, 고정 CLI 의 init 에는 번들 스킬 19개와 내장 플러그인 3개(`cc-plugin-*@builtin`)가 TASK8 부터 항상 있으므로(전 파일럿 150턴 확인) 그것을 기준선으로 뺐다. CLI 버전을 바꾸면 `BUNDLED_SKILLS` 를 다시 확인한다. L3 의 프로젝트 에이전트(`architecture-reviewer`)는 `agents` 라 판정 대상이 아니다 |
 | 세션 `status` | `running`(진행 중, 러너가 강제 종료되면 이 값으로 남는다) · `completed`(종료 0) · `failed`(종료 1). TASK6 Follow-up 전에는 `failed` 대신 `aborted` 였다 |
 | 결과 | `$OUT/session.json`(평탄한 키 + `turns` 요약 배열), `$OUT/turn-NN/{turn.json,stream.jsonl,stderr.txt,hook-log.jsonl,arch.json,grade.log,ft.log,test.log}`. `session.json` 에 `ft_pass_by_turn`(턴별 `ft_pass` 배열), `final_ft_pass`·`final_ft_total`·`final_ft_passed`·`final_ft_compile_error`, `hidden_tests_sha256`. TASK9: `session_mode`, `max_session_cost`, `billing`, `fail_reason`, `turns_refused`, `rate_limited_turns`, `rate_limit_wait_s`, `agent_session_ids_distinct`(fresh 의 기대값 `true`, resume 은 `agent_session_id_consistent` 가 `true`). 워크스페이스는 지우지 않는다 |
 | 종료 코드 | 0 전 턴 완료, 1 중단, 2 인자 오류(argparse·턴 파일 없음), 4 덮어쓰기 거부, 5 시작 전 검사 실패 |
@@ -185,7 +187,7 @@ Python 3.11+ 표준 라이브러리만 쓴다(`requirements.txt` 는 비어 있�
 
 ### `--agent fake`
 
-`runner/fake_agent.sh` 를 claude 와 같은 인자로 부른다(프롬프트는 stdin, 턴 번호는 `FAKE_AGENT_TURN`). 턴 1: `Book.java` 에 `isAvailable()` 추가 + 커밋. 턴 2: `import jakarta.persistence.Entity;` + `@Entity`(R1·R5 위반), 커밋 안 함. 턴 3: `HexagonalRules.java` 에서 `new NamedRule("R1"...)` 줄 삭제 + 커밋(L0·L1 은 파일이 없어 아무것도 안 함). 턴 1 은 `ls ..; ls ../..` Bash `tool_use` 도 하나 더 낸다(실행은 안 함, `escaped_cwd_count` 확인용). stdout 은 init, `tool_use` 3~4개(Read·Edit·Bash), `result`+usage. `result.total_cost_usd` = claude 처럼 대화 누적값: `--resume` 이면 턴 번호 × `FAKE_AGENT_COST_USD`, 새 세션이면 `FAKE_AGENT_COST_USD`(기본 0) — 매트릭스 비용 가드·세션 비용 상한 확인용. `--resume` 이 없으면 새 UUID session_id, 있으면 받은 값을 그대로 쓴다(resume 배선·fresh 모드 확인). TASK9: `FAKE_AGENT_RATE_LIMIT_TURN=N` 이면 턴 N 의 첫 호출이 한도 거부(`rate_limit_event` `rejected` + `is_error` result, exit 1)로 끝난다(`FAKE_AGENT_RATE_LIMIT_RESET_S` 초 뒤 `resetsAt`, `none` 이면 없음, `FAKE_AGENT_RATE_LIMIT_REPEAT=1` 이면 매번 거부). `FAKE_AGENT_MODEL` 은 init 의 `model`(모델 변경 감지 확인용).
+`runner/fake_agent.sh` 를 claude 와 같은 인자로 부른다(프롬프트는 stdin, 턴 번호는 `FAKE_AGENT_TURN`). 턴 1: `Book.java` 에 `isAvailable()` 추가 + 커밋. 턴 2: `import jakarta.persistence.Entity;` + `@Entity`(R1·R5 위반), 커밋 안 함. 턴 3: `HexagonalRules.java` 에서 `new NamedRule("R1"...)` 줄 삭제 + 커밋(L0·L1 은 파일이 없어 아무것도 안 함). 턴 1 은 `ls ..; ls ../..` Bash `tool_use` 도 하나 더 낸다(실행은 안 함, `escaped_cwd_count` 확인용). stdout 은 init, `tool_use` 3~4개(Read·Edit·Bash), `result`+usage. `result.total_cost_usd` = claude 처럼 대화 누적값: `--resume` 이면 턴 번호 × `FAKE_AGENT_COST_USD`, 새 세션이면 `FAKE_AGENT_COST_USD`(기본 0) — 매트릭스 비용 가드·세션 비용 상한 확인용. `--resume` 이 없으면 새 UUID session_id, 있으면 받은 값을 그대로 쓴다(resume 배선·fresh 모드 확인). TASK9: `FAKE_AGENT_RATE_LIMIT_TURN=N` 이면 턴 N 의 첫 호출이 한도 거부(`rate_limit_event` `rejected` + `is_error` result, exit 1)로 끝난다(`FAKE_AGENT_RATE_LIMIT_RESET_S` 초 뒤 `resetsAt`, `none` 이면 없음, `FAKE_AGENT_RATE_LIMIT_REPEAT=1` 이면 매번 거부). `FAKE_AGENT_MODEL` 은 init 의 `model`(모델 변경 감지 확인용). TASK12: init 에 번들 스킬 `debug`·내장 플러그인 1개를 싣고, `FAKE_AGENT_INIT_MCP=<이름>` 이면 `mcp_servers` 에 그 서버를 넣는다(init 오염 중단 확인용).
 
 ### `tasks/_smoke/`
 
@@ -448,14 +450,14 @@ python3 experiment/runner/run_matrix.py --config experiment/runner/matrix.exampl
 - **fake 는 별도 루트에서만 돌린다**: `--ws-root ~/Project/arch-bench-ws-fake`. 본 실험 루트(`~/Project/arch-bench-ws`)에서 fake 를 돌리면 그 워크스페이스가 잔여물로 남아 이후 claude 매트릭스가 종료 5 로 거부된다(잔여물 검사는 `agent: claude` 에만 걸린다). `run_session.py --agent fake` 도 같다. fake 루트는 언제든 비워도 된다.
 - 본 실험 루트는 비어 있는 상태에서 매트릭스 하나로 시작하고, 그 매트릭스의 `--resume` 외에는 다른 실행에 쓰지 않는다.
 
-1. 설정 파일을 만든다(`matrix.example.json` 복사). 키: `levels`·`models`·`domains`(필수), `reps`(기본 1), `agent`(`claude`|`fake`, 기본 `claude`), `parallel`(기본 2), `max_cost_usd`(없으면 가드 없음), `shuffle_seed`(기본 20261215), `est_cost_per_session_usd`(모델별 dict, dry-run 용), `skip_agent_tests`(기본 `false`), TASK9: `session_mode`(`resume`|`fresh`, 기본 `resume`, `run_session --session-mode` 로 넘김), `max_session_cost_usd`(없으면 상한 없음, `--max-session-cost` 로 넘김).
+1. 설정 파일을 만든다(`matrix.example.json` 복사). TASK12: 평면 키 대신 `blocks` 배열(블록마다 `seeds`·`levels`·`models`·`reps`, `domains` 는 최상위 공통)도 받는다 — 블록마다 반복 수가 다른 설계용(`runner/main.json`). 둘을 섞거나 블록끼리 셀이 겹치면 종료 2. 평면 키: `levels`·`models`·`domains`(필수), `reps`(기본 1), `agent`(`claude`|`fake`, 기본 `claude`), `parallel`(기본 2), `max_cost_usd`(없으면 가드 없음), `shuffle_seed`(기본 20261215), `est_cost_per_session_usd`(모델별 dict, dry-run 용), `skip_agent_tests`(기본 `false`), TASK9: `session_mode`(`resume`|`fresh`, 기본 `resume`, `run_session --session-mode` 로 넘김), `max_session_cost_usd`(없으면 상한 없음, `--max-session-cost` 로 넘김).
 2. `--dry-run` 으로 세션 목록·순서·예상 비용을 확인한다(파일을 만들지 않는다). 예상 비용은 `est_cost_per_session_usd` 의 단순 합이며 `agent: fake` 여도 그대로 보인다(실제 비용 0).
 3. 같은 `--out` 으로 실행한다. 진행 상황은 `$OUT_ROOT/matrix-status.json`. 결과 디렉터리가 하나라도 이미 있으면 `--resume` 없이는 거부(**종료 4**).
 4. 중간에 멈췄거나(비용 가드·Ctrl-C) 실패 세션이 있으면 같은 명령에 `--resume`.
 
 | 항목 | 내용 |
 | --- | --- |
-| 전개·순서 | **블록 무작위화**(TASK9): 반복 r 하나 = 블록 r = levels × models × domains 조합 전부(본 실험 4 × 3 × 1 = 12세션). 블록마다 세션 ID 로 정렬한 뒤 하나의 `random.Random(shuffle_seed)` 로 차례로 섞고, 블록은 r 순서대로 돈다. 같은 조건이 연달아 돌면 API 상태·시간대·구독 한도 효과가 조건과 섞이므로 섞고, 블록으로 묶어 어느 시점에 멈춰도 조건별 세션 수 차이가 1 이하가 되게 한다. 시드 고정·설정 나열 순서와 무관. dry-run 에 블록 번호. `reps: 1` 이면 블록이 하나라 TASK6 의 전체 셔플과 같은 순서다. TASK6~8 은 전체 셔플이었다 |
+| 전개·순서 | **블록 무작위화**(TASK9): 반복 r 하나 = 블록 r = levels × models × domains 조합 전부(본 실험 4 × 3 × 1 = 12세션). 블록마다 세션 ID 로 정렬한 뒤 하나의 `random.Random(shuffle_seed)` 로 차례로 섞고, 블록은 r 순서대로 돈다. 같은 조건이 연달아 돌면 API 상태·시간대·구독 한도 효과가 조건과 섞이므로 섞고, 블록으로 묶어 어느 시점에 멈춰도 조건별 세션 수 차이가 1 이하가 되게 한다. 시드 고정·설정 나열 순서와 무관. dry-run 에 블록 번호. `reps: 1` 이면 블록이 하나라 TASK6 의 전체 셔플과 같은 순서다. TASK6~8 은 전체 셔플이었다. **`blocks` (TASK12):** 무작위화 블록 r = 반복 수가 r 이상인 설정 블록들의 셀(seeds × levels × models × domains)을 합친 것이다. `main.json` 은 r=1·2 가 침식 12 + 깨끗 12 = 24셀, r=3~5 가 침식 12셀이다. 평면 설정은 블록 하나로 바꿔 같은 코드로 전개하며, pilot2·pilot3·matrix.example 의 dry-run 출력이 TASK11 과 바이트 단위로 같음을 확인했다 |
 | 실행 | `parallel` 개의 워커 스레드가 각자 `run_session.py` 를 subprocess 로 호출(세션 = 프로세스 1개). 세션 stdout/stderr 는 실행 중 `$OUT_ROOT/.matrix-logs/<id>.log` 에 쓰고 끝나면 `$OUT_ROOT/<id>/runner.log` 로 옮긴다(run_session 은 결과 디렉터리가 이미 있으면 거부하므로) |
 | 세션 상태 | `completed` = `run_session` 종료 0 이고 `session.json` 의 `status: completed`. 그 밖(종료 1·4·5, `session.json` 의 `failed`·`running`, `session.json` 없음)은 모두 `failed` |
 | `--resume` | `session.json` 이 `completed` 면 `skipped`(비용은 합산에 포함). 그 밖의 흔적이 있으면 결과 디렉터리를 `<id>_failed-<ts>`, 워크스페이스 토큰 디렉터리를 `<token>_failed-<ts>` 로 옮기고 다시 돌린다. `matrix-status.json` 의 해당 세션에 `previous_attempt` |
@@ -619,9 +621,123 @@ L0·L1 × haiku × lending × 2회 = 4세션, `session_mode: fresh`, 병렬 1, `
   - E2~E5 는 규칙별 원인 클래스로, E1 은 각 턴 `head_after` 의 `LoanBookService.java` 에 `getStatus() ==` 가 있는지(`git show`)로 판정한다.
   - `arch.json` 이 없는 턴(컴파일 실패)은 `unknown` 이다.
   - 요약: `persisted_count`·`healed_count`·`spread_count`·`novel_count`·`delta`(최종 − 기준선)·`embedded_persisted/healed`·`e1_persisted`.
-  - `summarize.py` 는 세션 디렉터리에 `violations-trace.json` 이 있으면 "침식 시드 위반 추적" 표를 만들고, 히트맵에 기준선 행(턴 00)을 넣는다.
+  - `summarize.py` 는 세션 디렉터리에 `violations-trace.json` 이 있으면 "침식 시드 위반 추적" 표를 만들고, 히트맵에 기준선 행(턴 00)을 넣는다. TASK12 부터 노출 표·규칙 위치 표도 만든다.
+  - **노출 (TASK12):** 턴 N 의 `git diff --name-only --no-renames head_before head_after` 에 위반 원인 클래스의 소스 파일(`src/main/java/<FQN>.java`, 중첩 클래스는 바깥 파일, 삭제 포함)이 있으면 `exposed_turns` 에 N. E1 은 `LoanBookService.java`. 분류 `exposure`:
+    - `healed_when_exposed`: 치유된 턴(`healed_at`)에 그 파일이 바뀌었다(요청 작업이 그 코드를 건드리다 고침).
+    - `healed_unexposed`: 치유된 턴에 그 파일이 바뀌지 않았다(요청 밖 리팩터링으로 보되, 다른 파일만 바꿔도 위반이 사라질 수 있다 — 예: 의존 대상 클래스 삭제·이동).
+    - `persisted_despite_exposure`: 마지막까지 남았고, 그 파일이 한 번 이상 바뀌었다.
+    - `never_exposed`: 마지막까지 남았고, 그 파일이 한 번도 바뀌지 않았다. E4 는 설계상 이 값이 기대값이다.
+    - 한계: "파일이 바뀌었다"는 에이전트가 그 위반을 봤다는 뜻이 아니다(같은 파일의 다른 메서드만 고쳤을 수 있다). Read 도구로 읽기만 한 것은 노출로 세지 않는다.
+  - **규칙 위치 `rule_placement` (TASK12, 루브릭 D1 의 자동 근사치 — 사람 채점 대체 아님):** 턴 2(한도)·7(폐기)·8(후원자)·13(정지)의 규칙이 그 턴 끝 커밋(`at_turn`)과 마지막 커밋(`at_final`)에서 어디 있는지. `src/main/java` 의 `domain`·`application.service` 파일만 보고(주석 제거), 다음 중 하나라도 있으면 그 계층에 증거가 있다:
+    1. 규칙 예외의 `throw new` (한도 `*LimitExceeded*`, 폐기 `*Discard*Exception`, 정지 `*Suspended*Exception`. 후원자는 예외 없음).
+    2. 조건이 규칙 패턴(한도 `limit|max|5`, 폐기 `DISCARDED|discarded`, 후원자 `exempt|unlimited|sponsor|patron|vip|privileged|11111111-1111`, 정지 `suspended`, 한도·후원자는 대소문자 무시)에 맞고 블록 안에 `throw` 가 있는 `if`. 후원자는 블록 내용과 무관(면제는 보통 `return`·건너뛰기).
+    3. 규칙 패턴과 비교 연산자(`<`·`>`·`==`·`!=`)나 `.contains(` 가 함께 있는 `return` 식(도메인이 boolean 판단만 주는 경우).
+    - 결과: 두 계층 모두 증거 → `both`, domain 만 → `domain`, service 만 → `service`, 없음 → `unknown`(어댑터·설정 파일에만 있거나 이름이 패턴 밖). 근거 문자열은 `evidence_at_turn`·`evidence_at_final`.
+    - 한계: 이름 기반이다. 도메인이 `canBorrow()` 처럼 비교 없는 boolean 을 주고 서비스가 `if (!m.canBorrow()) throw new LoanLimitExceededException` 하면 `service` 로 잡힌다(실제로는 판단이 도메인에 있음). 상수가 도메인에 있고 비교가 서비스에 있으면 `service` 다. 조건 패턴 `max` 는 페이지 크기 상한 같은 무관한 비교도 잡을 수 있다(포트·어댑터는 보지 않아 줄였다). 정규식 괄호 짝 맞추기라 람다·삼항 연산자 안의 판단은 놓친다.
+    - pilot3 재적용(2026-10-17): L0 2세션은 네 규칙 모두 `service / service`, L1 2세션은 모두 `domain / domain` 이었다. TASK11 보고서에서 사람이 코드를 읽고 내린 판정과 같다.
   - fake 확인: 침식 시드 L2 3턴에서 컴파일 실패 턴은 `unknown` 이었다. 합성 상태 3개(기준선 / `Book` 에 `@Entity` / `DateUtils` 제거)를 실제로 채점해 넣으면 `Book` = spread (R1·R5, domain, 턴 2), `DateUtils`·E4 = healed@3, 나머지 persisted, delta 0 이다.
 - **파일럿 3** `runner/pilot3.json`: L0·L1 × haiku × eroded × 2, fresh, 병렬 1, `claude_code_version 2.1.301`. 보고서는 `runs/pilot3-report.md`.
+- **파일럿 4** `runner/pilot4.json`(TASK12): L2·L3 × haiku × eroded × 1, fresh, 병렬 1, `max_session_cost_usd 1.5`. 보고서는 `runs/pilot4-report.md`. 두 세션 모두 기준선 4 → 0(L2 턴 3, L3 턴 2 에 훅 exit 2 를 계기로 치유), FT 100%, 합 $0.944 (API 단가 환산 추정, 실제 청구 아님). L3 리뷰어는 15턴 모두 비동기로 돌았고 `ScheduleWakeup` 대기로 세션 시간이 L2 의 2.4배였다. `reviewer_calls` 는 `SendMessage` 재검토를 세지 못한다(보고서 5절).
+
+### 본 실험 매트릭스 초안 `runner/main.json` (TASK12, 실행하지 않음)
+
+- 침식 시드 블록 L0~L3 × haiku·sonnet·opus × 5회 = 60, 깨끗한 시드 블록 같은 12셀 × 2회 = 24, 합 **84세션**. 무작위화 블록 1·2 는 두 설정 블록을 합친 24셀, 3~5 는 침식 12셀이다.
+- `max_session_cost_usd: 3.0` 은 Sonnet·Opus 세션 비용을 모르는 상태의 추정이다. pilot4 결과로 다시 정한다(`runs/pilot4-report.md`). `est_cost_per_session_usd` 를 아직 넣지 않아 dry-run 의 예상 비용은 `?` 다.
+- **pilot4 재추정(2026-10-17, `runs/pilot4-report.md` 5절 질문 5):** 이 상한으로는 돌릴 수 없다. 금액은 모두 API 단가 환산 추정이며 실제 청구가 아니다.
+  - 짧은 프롬프트 1회씩으로 잰 토큰당 단가는 Sonnet ≈ Haiku × 19.7, Opus ≈ Haiku × 39.6 이다. 캐시·출력 배율이 같다고 가정했다.
+  - Haiku 실측 세션 비용은 L0·L1 $0.34, L2 $0.37, L3 $0.57 이다.
+  - 같은 토큰량을 가정하면 Opus L3 는 약 $22.6, Sonnet L3 는 약 $11.2 다. 84세션 합은 약 $680 으로, `max_cost_usd 150` 을 넘는다.
+  - 값은 바꾸지 않았다. 예산 결정이기 때문이다. Sonnet·Opus L3 1세션씩 실측한 뒤 모델별 상한으로 정하기를 제안한다(러너는 지금 단일 값만 받는다).
+- dry-run 출력(`run_matrix.py --config experiment/runner/main.json --ws-root … --out … --dry-run`, 2026-10-17):
+
+```
+# 84 sessions, shuffle_seed=20261215, agent=claude, parallel=1, session_mode=fresh, max_session_cost_usd=3.0, skip_agent_tests
+   1  block 1   lending-eroded-L3-opus-r1        est_usd=?
+   2  block 1   lending-L2-haiku-r1              est_usd=?
+   3  block 1   lending-L0-sonnet-r1             est_usd=?
+   4  block 1   lending-eroded-L3-haiku-r1       est_usd=?
+   5  block 1   lending-L3-haiku-r1              est_usd=?
+   6  block 1   lending-L1-sonnet-r1             est_usd=?
+   7  block 1   lending-eroded-L1-sonnet-r1      est_usd=?
+   8  block 1   lending-L0-haiku-r1              est_usd=?
+   9  block 1   lending-eroded-L3-sonnet-r1      est_usd=?
+  10  block 1   lending-eroded-L0-haiku-r1       est_usd=?
+  11  block 1   lending-eroded-L0-sonnet-r1      est_usd=?
+  12  block 1   lending-eroded-L2-haiku-r1       est_usd=?
+  13  block 1   lending-eroded-L2-sonnet-r1      est_usd=?
+  14  block 1   lending-L0-opus-r1               est_usd=?
+  15  block 1   lending-eroded-L0-opus-r1        est_usd=?
+  16  block 1   lending-L2-opus-r1               est_usd=?
+  17  block 1   lending-L1-opus-r1               est_usd=?
+  18  block 1   lending-L3-opus-r1               est_usd=?
+  19  block 1   lending-eroded-L2-opus-r1        est_usd=?
+  20  block 1   lending-eroded-L1-opus-r1        est_usd=?
+  21  block 1   lending-L2-sonnet-r1             est_usd=?
+  22  block 1   lending-eroded-L1-haiku-r1       est_usd=?
+  23  block 1   lending-L1-haiku-r1              est_usd=?
+  24  block 1   lending-L3-sonnet-r1             est_usd=?
+  25  block 2   lending-eroded-L2-sonnet-r2      est_usd=?
+  26  block 2   lending-L1-sonnet-r2             est_usd=?
+  27  block 2   lending-eroded-L0-opus-r2        est_usd=?
+  28  block 2   lending-eroded-L3-sonnet-r2      est_usd=?
+  29  block 2   lending-eroded-L0-haiku-r2       est_usd=?
+  30  block 2   lending-L0-haiku-r2              est_usd=?
+  31  block 2   lending-L2-sonnet-r2             est_usd=?
+  32  block 2   lending-eroded-L2-opus-r2        est_usd=?
+  33  block 2   lending-eroded-L1-sonnet-r2      est_usd=?
+  34  block 2   lending-L2-haiku-r2              est_usd=?
+  35  block 2   lending-L2-opus-r2               est_usd=?
+  36  block 2   lending-eroded-L3-haiku-r2       est_usd=?
+  37  block 2   lending-L1-haiku-r2              est_usd=?
+  38  block 2   lending-eroded-L3-opus-r2        est_usd=?
+  39  block 2   lending-L3-sonnet-r2             est_usd=?
+  40  block 2   lending-L0-opus-r2               est_usd=?
+  41  block 2   lending-eroded-L1-opus-r2        est_usd=?
+  42  block 2   lending-L0-sonnet-r2             est_usd=?
+  43  block 2   lending-L3-haiku-r2              est_usd=?
+  44  block 2   lending-L3-opus-r2               est_usd=?
+  45  block 2   lending-eroded-L0-sonnet-r2      est_usd=?
+  46  block 2   lending-L1-opus-r2               est_usd=?
+  47  block 2   lending-eroded-L2-haiku-r2       est_usd=?
+  48  block 2   lending-eroded-L1-haiku-r2       est_usd=?
+  49  block 3   lending-eroded-L1-opus-r3        est_usd=?
+  50  block 3   lending-eroded-L2-opus-r3        est_usd=?
+  51  block 3   lending-eroded-L3-haiku-r3       est_usd=?
+  52  block 3   lending-eroded-L0-haiku-r3       est_usd=?
+  53  block 3   lending-eroded-L2-sonnet-r3      est_usd=?
+  54  block 3   lending-eroded-L2-haiku-r3       est_usd=?
+  55  block 3   lending-eroded-L3-sonnet-r3      est_usd=?
+  56  block 3   lending-eroded-L0-opus-r3        est_usd=?
+  57  block 3   lending-eroded-L1-sonnet-r3      est_usd=?
+  58  block 3   lending-eroded-L0-sonnet-r3      est_usd=?
+  59  block 3   lending-eroded-L1-haiku-r3       est_usd=?
+  60  block 3   lending-eroded-L3-opus-r3        est_usd=?
+  61  block 4   lending-eroded-L1-haiku-r4       est_usd=?
+  62  block 4   lending-eroded-L2-opus-r4        est_usd=?
+  63  block 4   lending-eroded-L3-sonnet-r4      est_usd=?
+  64  block 4   lending-eroded-L2-haiku-r4       est_usd=?
+  65  block 4   lending-eroded-L3-haiku-r4       est_usd=?
+  66  block 4   lending-eroded-L0-haiku-r4       est_usd=?
+  67  block 4   lending-eroded-L2-sonnet-r4      est_usd=?
+  68  block 4   lending-eroded-L1-opus-r4        est_usd=?
+  69  block 4   lending-eroded-L1-sonnet-r4      est_usd=?
+  70  block 4   lending-eroded-L0-sonnet-r4      est_usd=?
+  71  block 4   lending-eroded-L0-opus-r4        est_usd=?
+  72  block 4   lending-eroded-L3-opus-r4        est_usd=?
+  73  block 5   lending-eroded-L1-sonnet-r5      est_usd=?
+  74  block 5   lending-eroded-L3-sonnet-r5      est_usd=?
+  75  block 5   lending-eroded-L0-opus-r5        est_usd=?
+  76  block 5   lending-eroded-L2-sonnet-r5      est_usd=?
+  77  block 5   lending-eroded-L1-opus-r5        est_usd=?
+  78  block 5   lending-eroded-L1-haiku-r5       est_usd=?
+  79  block 5   lending-eroded-L3-haiku-r5       est_usd=?
+  80  block 5   lending-eroded-L3-opus-r5        est_usd=?
+  81  block 5   lending-eroded-L0-sonnet-r5      est_usd=?
+  82  block 5   lending-eroded-L2-haiku-r5       est_usd=?
+  83  block 5   lending-eroded-L0-haiku-r5       est_usd=?
+  84  block 5   lending-eroded-L2-opus-r5        est_usd=?
+# estimated cost: $0.00 (no estimate for ['haiku', 'opus', 'sonnet']); max_cost_usd=150
+```
 
 ### 격리 설정 디렉터리 정리 (TASK11)
 
@@ -632,7 +748,12 @@ L0·L1 × haiku × lending × 2회 = 4세션, `session_mode: fresh`, 병렬 1, `
 - **조치:** `~/.claude-arch-bench/settings.json` 에 `"syncClaudeAiSkills": false`, `"syncClaudeAiPlugins": false`, `"disableClaudeAiConnectors": true` 를 넣었다. 설정 이름은 CLI 2.1.301 의 설정 설명에서 확인했다.
   - 동기화돼 있던 디렉터리는 `~/Project/arch-bench-archive/claude-config-synced-20261017/` 로 옮겼다(삭제 아님).
   - 확인 호출의 init: `mcp_servers: []`, 기본 스킬 19개, 내장 플러그인 3개다. TASK8 파일럿 init 과 같다.
-- **사전 검사의 빈틈:** 지금 사전 검사는 `plugins/`·커넥터를 보지 않는다. 러너 변경 범위 밖이라 이번에는 바꾸지 않았다(TASK11 Notes).
+- **정정 (TASK12):** 위 조치는 **에이전트 세션의 커넥터를 막지 못했다.** 에이전트는 `--setting-sources project` 로 떠서 이 사용자 설정 파일을 읽지 않는다. TASK11 의 "확인 호출"은 커넥터가 우연히 빠진 한 번이었다(커넥터는 턴마다 실리기도 빠지기도 한다).
+  - 기록 재집계(init 이벤트): pilot1(TASK8) 30턴 중 14턴, pilot2 60턴 중 19턴, **pilot3 60턴 중 19턴**(4세션 모두, 세션당 2~7턴)에 커넥터 MCP 서버 5개가 있었다. 그중 Claude Docs 가 `connected` 라 도구 목록에 `mcp__…` 도구가 실린 턴은 각각 8·6·13턴이다. 에이전트가 MCP 도구를 호출한 기록은 세 파일럿 모두 0건이다. 다만 연결된 서버의 사용 지침이 시스템 프롬프트에 들어갔을 수 있어, 그 턴들은 프롬프트 조건이 다르다.
+  - pilot4 첫 시도에서 TASK12 의 init 검사가 두 세션 모두 턴 1 에서 이를 잡아 `config_contamination` 으로 멈췄다(결과는 `runs/pilot4/*_failed-*` 에 남김).
+  - 고침: 러너 환경에 `ENABLE_CLAUDEAI_MCP_SERVERS=false`. 같은 CLI·같은 설정·러너 환경으로 init 만 받고 끊는 탐침에서 변수 없음 8/8 회 커넥터 5개 → 변수 있음 8/8 회 0개.
+  - `syncClaudeAiSkills`·`syncClaudeAiPlugins` 도 같은 이유로 에이전트 세션에는 적용되지 않는다. 동기화 산출물(`skills/synced/`·`plugins/synced/`)은 시작 전 검사 ④⑧ 이, 실제로 실린 스킬·플러그인은 init 검사가 막는다. settings.json 키 검사 ⑦ 은 `--setting-sources` 를 제한하지 않는 호출(`rate_semantic.py` 의 채점 호출, 대화형 로그인)이 동기화를 일으키지 않게 하는 용도로 남긴다.
+- **사전 검사의 빈틈:** 지금 사전 검사는 `plugins/`·커넥터를 보지 않는다. 러너 변경 범위 밖이라 이번에는 바꾸지 않았다(TASK11 Notes). → **TASK12 에서 메움:** 세션 러너 표의 시작 전 검사 ⑦⑧ 과 "init 오염". 확인: 임시 설정 디렉터리 7개(정상 / 동기화 키 누락 / 커넥터 켜짐 / `skills/synced/` / `plugins/synced/` / `installed_plugins.json` 에 플러그인 / 빈 `installed_plugins.json`)로 fake 세션을 돌려 정상·빈 목록만 통과(0), 나머지는 종료 5. `run_matrix.py` 도 커넥터 켜진 설정에서 종료 5. `FAKE_AGENT_INIT_MCP` 로 init 에 MCP 서버를 넣은 3턴 fake 세션은 턴 1 기록 후 `failed`·`config_contamination` 으로 멈췄다(`turns_run` 1).
 
 ## 의미론 채점 (TASK10) `rubric/` · `scripts/anonymize.sh` · `runner/rate_semantic.py`
 

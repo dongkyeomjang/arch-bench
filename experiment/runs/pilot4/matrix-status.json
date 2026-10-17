@@ -1,0 +1,52 @@
+{
+  "state": "finished",
+  "stop_reason": null,
+  "total": 2,
+  "done": 2,
+  "pending": 0,
+  "running": 0,
+  "completed": 2,
+  "skipped": 0,
+  "failed": 0,
+  "cost_usd": 0.943976,
+  "max_cost_usd": 3.0,
+  "started_at": "2026-10-17T13:20:01+09:00",
+  "updated_at": "2026-10-17T14:47:15+09:00",
+  "elapsed_s": 5234.2,
+  "avg_session_s": 2617.1,
+  "eta_s": 0.0,
+  "parallel": 1,
+  "agent": "claude",
+  "shuffle_seed": 20261215,
+  "session_mode": "fresh",
+  "max_session_cost_usd": 1.5,
+  "model_ids": {
+    "haiku": [
+      "claude-haiku-5-5"
+    ]
+  },
+  "allow_model_change": false,
+  "sessions": [
+    {
+      "session_id": "lending-eroded-L2-haiku-r1",
+      "status": "completed",
+      "cost_usd": 0.373041,
+      "wall_s": 1535.4,
+      "exit_code": 0,
+      "previous_attempt": "lending-eroded-L2-haiku-r1_failed-20261017-132001",
+      "workspace_token": "3aa1c0c90210",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    },
+    {
+      "session_id": "lending-eroded-L3-haiku-r1",
+      "status": "completed",
+      "cost_usd": 0.570935,
+      "wall_s": 3698.8,
+      "exit_code": 0,
+      "workspace_token": "83e380e9181d",
+      "model_id": "claude-haiku-5-5",
+      "fail_reason": null
+    }
+  ]
+}

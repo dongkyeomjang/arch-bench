@@ -1,0 +1,15 @@
+{"turn_file":"","tool":"Bash","elapsed_ms":40,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":40,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":39,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":39,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":43,"exit_code":0,"action":"skip"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/3aa1c0c90210/lending/src/main/java/com/example/lending/domain/Loan.java","tool":"Edit","elapsed_ms":1842,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/3aa1c0c90210/lending/src/main/java/com/example/lending/domain/Loan.java","tool":"Edit","elapsed_ms":1484,"exit_code":0,"action":"pass"}
+{"turn_file":"","tool":"Bash","elapsed_ms":564,"exit_code":0,"action":"compile_failed"}
+{"turn_file":"","tool":"Bash","elapsed_ms":1633,"exit_code":0,"action":"pass"}
+{"turn_file":"/Users/kyeom/Project/arch-bench-ws/3aa1c0c90210/lending/src/test/java/com/example/lending/LendingIntegrationTest.java","tool":"Edit","elapsed_ms":40,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":39,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":42,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":41,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":38,"exit_code":0,"action":"skip"}
+{"turn_file":"","tool":"Bash","elapsed_ms":38,"exit_code":0,"action":"skip"}

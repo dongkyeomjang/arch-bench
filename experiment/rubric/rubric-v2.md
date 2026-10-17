@@ -10,6 +10,10 @@
   4. 잠정 점수 표시와 "판단이 갈리는 사례" 예시를 지웠다. v1 사전 채점에서 채점기가 예시의 점수를 그대로 가져갔기 때문이다.
   5. v1 모호 지점 9개의 처리를 변경 이력 표로 정리했다.
 - **이 판으로 다시 채점하지 않았다.** 채점은 분산이 확인된 뒤에 한다(작업 지시 11).
+- **v2 수정(TASK12, 판 번호는 그대로):**
+  - E5 를 D2 예시에서 뺐다. E5 는 포트 우회(R3)이며 루브릭 차원에 해당하지 않는다.
+  - D1 2점 예시에 "한도·폐기·특정 ID 예외를 모두 서비스에 둔 패턴"을 합성 코드로 더했다. 파일럿 3 L0 세션에서 관찰된 유형이지만, 세션 코드를 인용하지 않고 다른 도메인(장비 대여)으로 새로 썼다(예시 순환 방지, 변경 이력 #1).
+  - 그래서 1~2점 예시의 출처는 "침식 시드 E1·E2·E4 와 합성 코드"다.
 
 ## 평가 대상과 단위
 
@@ -90,6 +94,28 @@
   book.setStatus(BookStatus.ON_LOAN);
   ```
 
+- **2 수준** — 도메인 객체에 상태가 있지만, 새로 생긴 규칙(동시 대여 한도, 퇴역 장비 대여 금지, 특정 ID 의 한도 면제)이 모두 서비스의 `if`/`throw` 로 들어가 있다. 도메인은 상태를 꺼내 주는 getter 만 쓰인다. (출처: 합성 예시 — 파일럿 3 L0 에서 관찰된 유형을 다른 도메인으로 새로 씀)
+
+  ```java
+  // application/service/RentEquipmentService.java
+  private static final Set<UUID> LIMIT_FREE_CUSTOMERS = Set.of(
+          UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"));
+
+  public Rental rent(UUID equipmentId, UUID customerId) {
+      Equipment eq = loadEquipmentPort.load(equipmentId).orElseThrow(...);
+      if (eq.getCondition() == Condition.RETIRED) {
+          throw new EquipmentRetiredException(equipmentId);
+      }
+      long open = loadRentalPort.countOpenRentals(customerId);
+      if (!LIMIT_FREE_CUSTOMERS.contains(customerId) && open >= Rental.MAX_OPEN_PER_CUSTOMER) {
+          throw new RentalLimitExceededException(customerId);
+      }
+      ...
+  }
+  ```
+
+  - 기존 규칙 하나(E1)만 서비스에 있는 경우와 같은 수준이다. 규칙이 여러 개라도 도메인의 다른 규칙(예: 반납 상태 전이)이 도메인 메서드에 있으면 3점이 아니다.
+
 - **3 수준** — 도메인 객체가 getter/setter 뿐이고 모든 규칙이 서비스에 있다. (출처: 합성 예시)
 
   ```java
@@ -143,17 +169,6 @@
   // application/port/out/LoadBookPort.java
   Optional<Book> loadBook(UUID bookId);
   BookJpaEntity findRaw(UUID id);
-  ```
-
-- **1 수준** — 인바운드 어댑터가 포트를 거치지 않고 아웃바운드 어댑터(리포지토리)를 직접 쓰고, JPA 엔티티를 응답으로 낸다. (출처: 침식 시드 E5)
-  - 포트 시그니처 문제는 아니다. 하지만 지시서는 "포트가 우회되어 어댑터 기술 타입이 경계 밖으로 나가는 것"을 D2 에 넣었다.
-
-  ```java
-  // adapter/in/web/BookController.java
-  @GetMapping("/{id}")
-  public BookJpaEntity getBook(@PathVariable UUID id) {
-      return bookJpaRepository.findById(id).orElseThrow(() -> new BookNotFoundException(id));
-  }
   ```
 
 - **3 수준** — 포트가 리포지토리 인터페이스를 그대로 복제하고 JPA 엔티티를 주고받는다. (출처: 합성 예시)
@@ -268,6 +283,7 @@
   ```
 
 - 침식 시드 E3(도메인 `Member` 에 `@Entity`·`@Id`·`@Column`, 별도 JPA 엔티티 없음)는 구조 규칙(R1·R5)으로 잡히고, 네 차원 어디의 예시로도 쓰지 않는다(지시서 표의 루브릭 열 "—").
+- **침식 시드 E5(인바운드 어댑터가 포트를 거치지 않고 리포지토리를 직접 써서 JPA 엔티티를 응답으로 냄)는 포트 우회(R3)이며 루브릭 차원에 해당하지 않는다.** 포트 시그니처가 오염된 것이 아니므로 D2 로 채점하지 않는다(TASK12 에서 D2 예시에서 뺌). 구조 지표 R3 로만 센다.
 
 ## 평가 절차 (요약)
 
@@ -302,4 +318,5 @@ v1 사전 채점 보고서(`experiment/runs/semantic-pretest.md` 5절 질문 4·
 | 9 | D4 횡단 관심사(감사 기록 호출을 서비스마다 덧붙임) | 미처리 |
 | — | (질문 2) 참조 구현 D1=1 의 원인: "존재 여부" 문구 | **처리.** D1 1점에서 "존재 여부"를 지우고 "없는 ID → 404 는 정상 조회 처리이며 비즈니스 규칙이 아니다"를 명시했다 |
 | — | (질문 5) 턴 8 하드코딩의 점수 | **처리.** "특정 ID 집합이 한도 규칙의 분기 조건 = 2점"을 확정 기재했다. 1점의 "매직 값 1건"은 분기에 쓰이지 않는 리터럴로 좁혔다(#4) |
-| — | 침식 시드 E5 의 차원 | **추가.** 지시서대로 D2=1 예시로 넣었다. 포트 시그니처 문제가 아니라 포트 우회라서 D2 정의("포트 인터페이스의 시그니처")와 어긋난다. 교정 라운드 안건 |
+| — | 침식 시드 E5 의 차원 | **추가.** 지시서대로 D2=1 예시로 넣었다. 포트 시그니처 문제가 아니라 포트 우회라서 D2 정의("포트 인터페이스의 시그니처")와 어긋난다. 교정 라운드 안건 → **TASK12 처리:** 이전 결정: D2=1 예시 → 변경: 예시에서 빼고 "포트 우회(R3), 루브릭 차원 아님" 명시, 사유: D2 정의와 어긋남(작업 지시 12) |
+| — | D1 2점의 "여러 규칙이 서비스에" 유형 | **TASK12 추가.** 파일럿 3 L0 의 한도·폐기·특정 ID 서비스 배치를 합성 코드(장비 대여)로 재작성해 2점 예시로 넣었다. 세션 코드 직접 인용은 하지 않았다(#1 순환 방지) |

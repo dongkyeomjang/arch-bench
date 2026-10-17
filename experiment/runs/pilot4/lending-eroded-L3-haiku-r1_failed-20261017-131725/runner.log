@@ -1,0 +1,3 @@
+$ /opt/homebrew/opt/python@3.13/bin/python3.13 /Users/kyeom/Project/arch-bench/experiment/runner/run_session.py --level L3 --model haiku --domain lending --rep 1 --ws-root /Users/kyeom/Project/arch-bench-ws --out /Users/kyeom/Project/arch-bench/experiment/runs/pilot4 --agent claude --seed eroded --skip-tests --session-mode fresh --claude-code-version 2.1.301 --max-session-cost 1.5
+[lending-eroded-L3-haiku-r1] turn-01: agent=ok 122.87s committed=True grade=0 vc=3 r1=0 test_tamper=False ft=4/4 tests=None cost=0.03581619
+run_session: config contamination on turn-01: ['mcp:claude.ai Claude Docs', 'mcp:claude.ai Google Drive', 'mcp:claude.ai Google Calendar', 'mcp:claude.ai Gmail', 'mcp:claude.ai Notion']; stopping

@@ -1,0 +1,373 @@
+{
+  "session_id": "lending-eroded-L3-haiku-r1",
+  "seed": "eroded",
+  "baseline": "experiment/seed-template/eroded/baseline.json",
+  "baseline_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "session_seed_commit": "6f24aa5a5aa039b9332f7b01e931fb1bf59efa24",
+  "workspace_used_for_e1": "/Users/kyeom/Project/arch-bench-ws/83e380e9181d/lending",
+  "summary": {
+    "turns": 15,
+    "unknown_turns": [],
+    "baseline_violating_classes": 4,
+    "final_violating_classes": 0,
+    "persisted_count": 0,
+    "healed_count": 4,
+    "spread_count": 0,
+    "novel_count": 0,
+    "spread_at_final": 0,
+    "novel_at_final": 0,
+    "embedded_persisted": [],
+    "embedded_healed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "embedded_exposure": {
+      "E1": "healed_when_exposed",
+      "E2": "healed_when_exposed",
+      "E3": "healed_when_exposed",
+      "E4": "healed_when_exposed",
+      "E5": "healed_when_exposed"
+    },
+    "healed_when_exposed": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "healed_unexposed": [],
+    "persisted_despite_exposure": [],
+    "never_exposed": [],
+    "rule_placement": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "rule_placement_final": {
+      "2": "domain",
+      "7": "domain",
+      "8": "domain",
+      "13": "domain"
+    },
+    "e1_persisted": false,
+    "delta": -4
+  },
+  "baseline_classes": {
+    "com.example.lending.adapter.in.web.BookController": {
+      "rules": [
+        "R3"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed"
+    },
+    "com.example.lending.application.port.out.LoadBookPort": {
+      "rules": [
+        "R2"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2,
+        5,
+        6
+      ],
+      "exposure": "healed_when_exposed"
+    },
+    "com.example.lending.common.DateUtils": {
+      "rules": [
+        "R7"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2
+      ],
+      "exposure": "healed_when_exposed"
+    },
+    "com.example.lending.domain.Member": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed"
+    }
+  },
+  "embedded": {
+    "E1": {
+      "rules": [],
+      "classes": [
+        "com.example.lending.application.service.LoanBookService"
+      ],
+      "status": "healed",
+      "healed_at": 7,
+      "first_absent": 7,
+      "reappeared": false,
+      "exposed_turns": [
+        2,
+        3,
+        4,
+        7,
+        9,
+        10,
+        14
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+        "5": true,
+        "6": true,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E2": {
+      "rules": [
+        "R2"
+      ],
+      "classes": [
+        "com.example.lending.application.port.out.LoadBookPort"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2,
+        5,
+        6
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E3": {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "classes": [
+        "com.example.lending.domain.Member"
+      ],
+      "status": "healed",
+      "healed_at": 1,
+      "first_absent": 1,
+      "reappeared": false,
+      "exposed_turns": [
+        1,
+        2,
+        8,
+        13
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": false,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E4": {
+      "rules": [
+        "R7"
+      ],
+      "classes": [
+        "com.example.lending.common.DateUtils"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    },
+    "E5": {
+      "rules": [
+        "R3"
+      ],
+      "classes": [
+        "com.example.lending.adapter.in.web.BookController"
+      ],
+      "status": "healed",
+      "healed_at": 2,
+      "first_absent": 2,
+      "reappeared": false,
+      "exposed_turns": [
+        2,
+        6,
+        7
+      ],
+      "exposure": "healed_when_exposed",
+      "by_turn": {
+        "1": true,
+        "2": false,
+        "3": false,
+        "4": false,
+        "5": false,
+        "6": false,
+        "7": false,
+        "8": false,
+        "9": false,
+        "10": false,
+        "11": false,
+        "12": false,
+        "13": false,
+        "14": false,
+        "15": false
+      }
+    }
+  },
+  "new_classes": {},
+  "rule_placement": {
+    "2": {
+      "rule": "limit",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if currentLoanCount >= MAX_CONCURRENT_LOANS"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw LoanLimitExceededException",
+          "Member: if currentLoanCount >= MAX_CONCURRENT_LOANS"
+        ]
+      }
+    },
+    "7": {
+      "rule": "discard",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: throw CannotDiscardBookOnLoanException",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Book: throw BookDiscardedException",
+          "Book: throw BookDiscardedException",
+          "Book: throw CannotDiscardBookOnLoanException",
+          "Book: if status == BookStatus.DISCARDED",
+          "Book: if status == BookStatus.DISCARDED"
+        ]
+      }
+    },
+    "8": {
+      "rule": "sponsor",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: if UNLIMITED_LOAN_MEMBER_IDS.contains(id)"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: if UNLIMITED_LOAN_MEMBER_IDS.contains(id)"
+        ]
+      }
+    },
+    "13": {
+      "rule": "suspend",
+      "at_turn": "domain",
+      "at_final": "domain",
+      "evidence_at_turn": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      },
+      "evidence_at_final": {
+        "domain": [
+          "Member: throw MemberSuspendedException",
+          "Member: if suspended"
+        ]
+      }
+    }
+  }
+}
